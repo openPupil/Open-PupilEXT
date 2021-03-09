@@ -11,8 +11,4 @@ Coming soon.
 
 ## License
 
-The Twitter icon <img src="img/Twitter_Logo_Blue.svg" alt="Icon Google Scholar" width=20>in the folder `img/`was taken from: https://about.twitter.com/de/company/brand-resources.html
-
-The Google Scholar icon <img src="img/Google_Scholar_logo.svg" alt="Icon Google Scholar" width=20>in the folder `img/`was taken from: https://commons.wikimedia.org/wiki/File:Google_Scholar_logo.svg
-
 This work is licensed under a [Creative Commons Attribution 4.0 International License.](http://creativecommons.org/licenses/by/4.0/)
