@@ -1,0 +1,111 @@
+cmake_minimum_required(VERSION 3.15)
+project(PupilExt)
+set(CMAKE_CXX_STANDARD 17)
+
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
+if(CMAKE_VERSION VERSION_LESS "3.7.0")
+    set(CMAKE_INCLUDE_CURRENT_DIR ON)
+endif()
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
+
+set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/papillonmac/Qt/5.15.0/clang_64")
+#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/papillonmac/Qt/6.0.0/clang_64")
+set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/usr/local/Cellar/glog/0.4.0")
+set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/usr/local/include/gflags")
+set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Library/Frameworks/pylon.framework")
+
+set(GLOG_INCLUDE_DIR "/usr/local/Cellar/glog/0.4.0/include")
+
+if(CMAKE_BUILD_TYPE STREQUAL Debug)
+    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/usr/local/share/ceres-solver")
+else()
+    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/usr/local/share/ceres-solver")
+endif()
+
+
+#set(TBB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external/tbb/include")
+set(BOOST_ROOT "${PROJECT_SOURCE_DIR}/external/boost_1_72_0")
+
+set(SPII_INSTALL_DIR "/usr/local/include/spii")
+set(EIGEN_INCLUDE_DIR "/usr/local/Cellar/eigen/3.3.7/include/eigen3/Eigen")
+set(EIGEN3_INCLUDE_DIR "/usr/local/include/eigen3")
+set(spii_INCLUDE_DIRS ${SPII_INSTALL_DIR}/include)
+
+SET("OpenCV_DIR" "/usr/local/Cellar/opencv/4.5.1_3/lib/cmake/opencv4")
+
+set(PYLON_HOME "/Library/Frameworks/pylon.framework")
+set(PYLON_INCLUDE_DIR "/Library/Frameworks/pylon.framework/Headers")
+#set(PYLON_LIBRARIES "/Library/Frameworks/pylon.framework/Libraries")
+
+
+find_package(Qt5 COMPONENTS Widgets Concurrent SerialPort Charts Svg PrintSupport REQUIRED)
+#find_package(Qt6 COMPONENTS Widgets Concurrent SerialPort Charts Svg PrintSupport REQUIRED)
+find_package(OpenCV REQUIRED PATHS "/usr/local/Cellar/opencv/4.5.1_3")
+find_package(Boost 1.72 REQUIRED)
+find_package(TBB REQUIRED PATHS "${PROJECT_SOURCE_DIR}/external/tbb")
+find_package(Eigen3 REQUIRED )
+find_package(Ceres REQUIRED)
+
+find_package(Pylon REQUIRED)
+
+# OpenGL
+find_package(OpenGL REQUIRED)
+
+set(TBB_LIBRARY_DEBUG "/usr/local/include/tbb")
+set(TBB_LIBRARY_RELEASE "/usr/local/include/tbb")
+
+find_library (spii_LIBRARY_RELEASE
+        spii
+        PATHS ${SPII_INSTALL_DIR}/lib/)
+find_library (meschach_LIBRARY_RELEASE
+        meschach
+        PATHS ${SPII_INSTALL_DIR}/lib/)
+if (spii_LIBRARY_RELEASE AND meschach_LIBRARY_RELEASE)
+    set(spii_LIBRARIES ${spii_LIBRARY_RELEASE} ${meschach_LIBRARY_RELEASE})
+else()
+    set(spii_LIBRARIES "")
+endif()
+message(STATUS "spii_LIBRARIES:\"${spii_LIBRARIES}\"")
+
+
+include_directories(${Qt5Core_INCLUDE_DIRS}
+        ${OpenCV_INCLUDE_DIRS}
+        ${Boost_INCLUDE_DIRS}
+        ${TBB_INCLUDE_DIR}
+        ${spii_INCLUDE_DIRS}
+        ${EIGEN_INCLUDE_DIR}
+        ${CERES_INCLUDE_DIRS}
+        ${PYLON_INCLUDE_DIR}
+        "singleeyefitter")
+
+
+add_subdirectory (src)
+add_subdirectory (singleeyefitter)
+
+
+message(STATUS "")
+message(STATUS "--- Include directories ---" )
+message(STATUS " QT5Core_INCLUDE_DIRS: ${Qt5Core_INCLUDE_DIRS}" )
+message(STATUS " OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}" )
+message(STATUS " Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}" )
+message(STATUS " TBB_INCLUDE_DIRS: ${TBB_INCLUDE_DIR}" )
+message(STATUS " spii_INCLUDE_DIRS: ${spii_INCLUDE_DIRS}" )
+message(STATUS " EIGEN_INCLUDE_DIR: ${EIGEN_INCLUDE_DIR}" )
+message(STATUS " CERES_INCLUDE_DIRS: ${CERES_INCLUDE_DIRS}" )
+message(STATUS " Pylon_INCLUDE_DIRS: ${PYLON_INCLUDE_DIR}" )
+message(STATUS "---------------------------" )
+message(STATUS "")
+
+
+#get_cmake_property(_variableNames VARIABLES)
+#list (SORT _variableNames)
+#foreach (_variableName ${_variableNames})
+#    message(STATUS "${_variableName}=${${_variableName}}")
+#endforeach()
+
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -O3")
