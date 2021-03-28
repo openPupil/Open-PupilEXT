@@ -4,7 +4,16 @@
 
 -----------------
 
-[![Publication](https://img.shields.io/badge/Frontiers%20in%20Neuroscience-Under%20Review-yellow)](https://www.frontiersin.org/journals/neuroscience) [![GNU GPLv3](https://img.shields.io/badge/License%20PupilEXT-GNU%20GPLv3-blue)](https://www.gnu.org/licenses/gpl-3.0.txt) [![Version](https://img.shields.io/badge/Version-0.1.0%20Beta-green)]() [![Contribution](https://img.shields.io/badge/Contributions-Welcome-green)]()
+<div align="center">
+  <a href="https://www.frontiersin.org/journals/neuroscience" alt="Publication">
+        <img src="https://img.shields.io/badge/Frontiers%20in%20Neuroscience-Under%20Review-yellow"/></a>
+ <a href="https://www.gnu.org/licenses/gpl-3.0.txt" alt="GNU-GPLv3">
+        <img src="https://img.shields.io/badge/License%20PupilEXT-GNU%20GPLv3-blue"/></a>
+ <a href="https://github.com/openPupil/Open-PupilEXT" alt="Version">
+        <img src="https://img.shields.io/badge/Version-0.1.0%20Beta-green"/></a>
+ <a href="https://github.com/openPupil/Open-PupilEXT" alt="Contribution">
+        <img src="https://img.shields.io/badge/Contributions-Welcome-green"/></a>
+</div>
 
 # *Code Repository of the Article* <br/>PupilEXT: flexible open-source platform for high resolution pupillometry in vision research
 
