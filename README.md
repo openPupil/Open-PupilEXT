@@ -1,4 +1,10 @@
-# *Code Repository* <br/>PupilEXT: flexible open-source platform for high resolution pupillometry in vision research
+<div align="center">
+  <img src="img/PupilEXT-Logo.png" height="100"><br>
+</div>
+
+-----------------
+
+# *Code Repository of the Article* <br/>PupilEXT: flexible open-source platform for high resolution pupillometry in vision research
 
 [![Publication](https://img.shields.io/badge/Frontiers%20in%20Neuroscience-Under%20Review-yellow)](https://www.frontiersin.org/journals/neuroscience) [![GNU GPLv3](https://img.shields.io/badge/License%20PupilEXT-GNU%20GPLv3-blue)](https://www.gnu.org/licenses/gpl-3.0.txt) [![Version](https://img.shields.io/badge/Version-0.1.0%20Beta-green)]() [![Contribution](https://img.shields.io/badge/Contributions-Welcome-green)]()
 
