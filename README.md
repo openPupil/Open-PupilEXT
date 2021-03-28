@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="img/PupilEXT-Logo.svg" style = "max-height:80px">
+  <img src="img/PupilEXT-Logo.pdf" height ="60">
 </div><br/>
 
 <div align="center">
