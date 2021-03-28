@@ -1,6 +1,6 @@
 <div align="center">
   <img src="img/PupilEXT-Logo.png" height="60"><br>
-</div>
+</div><br/>
 
 <div align="center">
   <a href="https://www.frontiersin.org/journals/neuroscience" alt="Publication">
@@ -11,7 +11,7 @@
         <img src="https://img.shields.io/badge/Version-0.1.0%20Beta-green"/></a>
  <a href="https://github.com/openPupil/Open-PupilEXT" alt="Contribution">
         <img src="https://img.shields.io/badge/Contributions-Welcome-green"/></a>
-</div>
+</div><br/>
 -----------------
 # *Code Repository of the Article* <br/>PupilEXT: flexible open-source platform for high resolution pupillometry in vision research
 
