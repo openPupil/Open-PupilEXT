@@ -1,6 +1,7 @@
 <div align="center">
-  <img src="img/PupilEXT-Logo.pdf" height ="60">
+  <img src="img/PupilEXT-Logo.png" height ="60">
 </div><br/>
+
 
 <div align="center">
   <a href="https://www.frontiersin.org/journals/neuroscience" alt="Publication">
