@@ -683,4 +683,5 @@ The work's content is licensed under a [Creative Commons Attribution 4.0 Interna
 
 The embedded code for the STM32 Nucleo is licensed under the [MIT](https://opensource.org/licenses/mit-license.php) license.
 
-The software PupilEXT is licensed under [GNU General Public License v.3.0.](https://www.gnu.org/licenses/gpl-3.0.txt) Note that third-party libraries used in PupilEXT may be distributed under other open-source licenses.
+The software PupilEXT is licensed under [GNU General Public License v.3.0.](https://www.gnu.org/licenses/gpl-3.0.txt) Note that third-party libraries used in PupilEXT may be distributed under other open-source licenses. Please read the above section 7: Open source projects inside PupilEXT.
+
