@@ -1,0 +1,2 @@
+Radius_Min,Radius_Max,CannyBlur,CannyThreshold1,CannyThreshold2,StarburstPoints,PercentageInliers,InlierIterations,ImageAwareSupport,EarlyTerminationPercentage,EarlyRejection
+26,104,0.5,49,50,13,49,7,False,84,False
