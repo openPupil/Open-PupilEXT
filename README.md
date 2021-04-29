@@ -27,6 +27,8 @@ The pupil diameter has become an important biomarker in medical diagnostics or c
 <a style="font-weight:bold" href="https://www.frontiersin.org/articles/10.3389/fnins.2021.676220/abstract">[Supplementary materials]</a>
 </div>
 
+-----
+
 **Features of PupilEXT**
 
 - [x]  High resolution pupillometry
