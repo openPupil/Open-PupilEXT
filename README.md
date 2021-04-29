@@ -6,7 +6,7 @@
 <div align="center">
   <a href="https://www.frontiersin.org/articles/10.3389/fnins.2021.676220/abstract" alt="Publication">
         <img src="https://img.shields.io/badge/Frontiers%20in%20Neuroscience-Provisionally%20accepted-green"/></a>
- <a href="https://www.gnu.org/licenses/gpl-3.0.txt" alt="GNU-GPLv3">
+ <a href="https://github.com/openPupil/Open-PupilEXT/blob/main/PupilEXT/LICENSE" alt="GNU-GPLv3">
         <img src="https://img.shields.io/badge/License%20PupilEXT-GNU%20GPLv3-blue"/></a>
  <a href="https://github.com/openPupil/Open-PupilEXT" alt="Version">
         <img src="https://img.shields.io/badge/Version-0.1.0%20Beta-green"/></a>
@@ -685,5 +685,5 @@ The work's content is licensed under a [Creative Commons Attribution 4.0 Interna
 
 The embedded code for the STM32 Nucleo is licensed under the [MIT](https://opensource.org/licenses/mit-license.php) license.
 
-The software PupilEXT is licensed under [GNU General Public License v.3.0.](https://www.gnu.org/licenses/gpl-3.0.txt), Copyright (c) 2021 Technical University of Darmstadt. Note that third-party libraries used in PupilEXT may be distributed under other open-source licenses. Please read the above section 7: Open source projects inside PupilEXT.
+The software PupilEXT is licensed under [GNU General Public License v.3.0.](https://github.com/openPupil/Open-PupilEXT/blob/main/PupilEXT/LICENSE), Copyright (c) 2021 Technical University of Darmstadt. Note that third-party libraries used in PupilEXT may be distributed under other open-source licenses. Please read the above section 7: Open source projects inside PupilEXT.
 
