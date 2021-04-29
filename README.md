@@ -4,8 +4,8 @@
 
 
 <div align="center">
-  <a href="https://www.frontiersin.org/journals/neuroscience" alt="Publication">
-        <img src="https://img.shields.io/badge/Frontiers%20in%20Neuroscience-Under%20Review-yellow"/></a>
+  <a href="https://www.frontiersin.org/articles/10.3389/fnins.2021.676220/abstract" alt="Publication">
+        <img src="https://img.shields.io/badge/Frontiers%20in%20Neuroscience-Provisionally%20accepted-green"/></a>
  <a href="https://www.gnu.org/licenses/gpl-3.0.txt" alt="GNU-GPLv3">
         <img src="https://img.shields.io/badge/License%20PupilEXT-GNU%20GPLv3-blue"/></a>
  <a href="https://github.com/openPupil/Open-PupilEXT" alt="Version">
@@ -19,6 +19,7 @@
 This repository provides the official implementation of a free pupillometry cross-platform (MacOS, Windows, Linux) system called PupilEXT proposed in the article *"PupilEXT: flexible open-source platform for high resolution pupillometry in vision research"* authored by [Babak Zandi](https://www.lichttechnik.tu-darmstadt.de/fachgebiet_lichttechnik_lt/team_lt/mitarbeiter_lt_detail_65600.en.jsp), Moritz Lode, Alexander Herzog, Georgios Sakas and [Tran Quoc Khanh](https://www.lichttechnik.tu-darmstadt.de/fachgebiet_lichttechnik_lt/team_lt/mitarbeiter_lt_detail_34952.en.jsp) from the Technical University of Darmstadt. PupilEXT can record eye images using a stereo camera system or a single camera to measure the pupil diameter in real-time. Additionally, it is possible to analyse externally-recorded images without connected cameras through the PupilEXT interface.<br/>
 
 The pupil diameter has become an important biomarker in medical diagnostics or cognitive psychology. Additionally, the human pupil behaviour as a function of light spectra is the subject of current research efforts to characterise and model the neuro visual process behind the pupil light response. Usually, commercial eye-tracking systems are used to measure the pupil diameter, which is associated with high investment costs. Therefore, we aimed to provide a professional open-source pupillometry measurement platform, making an easy and inexpensive entry into pupil research for interdisciplinary research groups possible. PupilEXT integrates high-resolution industrial cameras from Basler. The pupil detection itself can be performed with one of the state-of-the-art open-source algorithms, ElSe [[1\]](#1), ExCuSe [[2\]](#2), PuRe [[3\]](#3), PuReST [[4\]](#4), Starburst [[5\]](#5), and Swirski2D [[6\]](#6).
+[[**Abstract**]](https://www.frontiersin.org/articles/10.3389/fnins.2021.676220/abstract) [[**Supplementary materials**]]()
 
 **Features of PupilEXT**
 - [x]  High resolution pupillometry
@@ -683,5 +684,5 @@ The work's content is licensed under a [Creative Commons Attribution 4.0 Interna
 
 The embedded code for the STM32 Nucleo is licensed under the [MIT](https://opensource.org/licenses/mit-license.php) license.
 
-The software PupilEXT is licensed under [GNU General Public License v.3.0.](https://www.gnu.org/licenses/gpl-3.0.txt) Note that third-party libraries used in PupilEXT may be distributed under other open-source licenses. Please read the above section 7: Open source projects inside PupilEXT.
+The software PupilEXT is licensed under [GNU General Public License v.3.0.](https://www.gnu.org/licenses/gpl-3.0.txt), Copyright (c) 2021 Technical University of Darmstadt. Note that third-party libraries used in PupilEXT may be distributed under other open-source licenses. Please read the above section 7: Open source projects inside PupilEXT.
 
