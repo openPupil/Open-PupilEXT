@@ -5,7 +5,7 @@
 
 <div align="center">
   <a href="https://www.frontiersin.org/articles/10.3389/fnins.2021.676220/abstract" alt="Publication">
-        <img src="https://img.shields.io/badge/Frontiers%20in%20Neuroscience-Provisionally%20accepted-green"/></a>
+        <img src="https://img.shields.io/badge/Frontiers%20in%20Neuroscience-Published-green"/></a>
  <a href="https://github.com/openPupil/Open-PupilEXT/blob/main/PupilEXT/LICENSE" alt="GNU-GPLv3">
         <img src="https://img.shields.io/badge/License%20PupilEXT-GNU%20GPLv3-blue"/></a>
  <a href="https://github.com/openPupil/Open-PupilEXT" alt="Version">
@@ -25,7 +25,7 @@ The pupil diameter has become an important biomarker in medical diagnostics or c
 -----
 
 <div align="center">
-<a style="font-weight:bold" href="https://www.frontiersin.org/articles/10.3389/fnins.2021.676220/abstract">[Abstract]</a>
+<a style="font-weight:bold" href="https://www.frontiersin.org/articles/10.3389/fnins.2021.676220/abstract">[Paper]</a>
 <a style="font-weight:bold" href="https://www.frontiersin.org/articles/10.3389/fnins.2021.676220/abstract">[Supplementary materials]</a>
 </div>
 
@@ -307,7 +307,7 @@ The accuracy can also be increased by selecting a specific region of interest (R
 ### 2.5. How to use PupilEXT ?
 Three videos are provided to illustrate the handling and the features of the *PupilEXT* software. The first video introduces the *PupilEXT* software in stereo vision mode. The second video shows how the pupillometry can be carried out by using a single camera. The third video shows how pupillometry can be carried out with existing eye images without connected cameras.
 
-**Video Tutorial 1 – Stereo camera setup:** [Link to Video 1](https://1drv.ms/v/s!AhN8-XVXLRd2jq0hC0UQx-4B4CYS3g?e=4JGTRm)
+**Video Tutorial 1 – Stereo camera setup:** https://player.vimeo.com/video/564556788
 
 **Video Tutorial 2 – Single camera setup:** [Link to Video 2](https://1drv.ms/v/s!AhN8-XVXLRd2jq0iOBu4RvDjcSzdDQ?e=fuQiFX)
 
@@ -630,17 +630,16 @@ In order to start the programme, the SPII DLL must be added to ``PupilEXT\cmake-
 Please consider to cite our work if you find this repository or our results useful for your research:
 
 ```bib
-@Article{ ,
-AUTHOR = {},
-TITLE = {},
-JOURNAL = {},
-VOLUME = {},
-YEAR = {},
-NUMBER = {},
-ARTICLE-NUMBER = {},
-URL = {},
-ISSN = {},
-DOI = {}}
+@Article{10.3389/fnins.2021.676220,
+AUTHOR = {Zandi, Babak and Lode, Moritz and Herzog, Alexander and Sakas, Georgios and Khanh, Tran Quoc},
+TITLE = {PupilEXT: Flexible Open-Source Platform for High-Resolution Pupillometry in Vision Research},
+JOURNAL = {Frontiers in Neuroscience},
+VOLUME={15},      
+PAGES={603},     
+YEAR={2021}, 
+URL={https://www.frontiersin.org/article/10.3389/fnins.2021.676220},
+DOI={10.3389/fnins.2021.676220},    
+ISSN={1662-453X}}
 ```
 
 ## 6. References
