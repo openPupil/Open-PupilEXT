@@ -307,11 +307,11 @@ The accuracy can also be increased by selecting a specific region of interest (R
 ### 2.5. How to use PupilEXT ?
 Three videos are provided to illustrate the handling and the features of the *PupilEXT* software. The first video introduces the *PupilEXT* software in stereo vision mode. The second video shows how the pupillometry can be carried out by using a single camera. The third video shows how pupillometry can be carried out with existing eye images without connected cameras.
 
-**Video Tutorial 1 – Stereo camera setup:** https://player.vimeo.com/video/564556788
+**Video Tutorial 1 – Stereo camera setup:** https://vimeo.com/showcase/8584160/video/564556788
 
-**Video Tutorial 2 – Single camera setup:** [Link to Video 2](https://1drv.ms/v/s!AhN8-XVXLRd2jq0iOBu4RvDjcSzdDQ?e=fuQiFX)
+**Video Tutorial 2 – Single camera setup:** https://vimeo.com/showcase/8584160/video/564776313
 
-**Video Tutorial 3 – Offline analysis:** [Link to Video 3](https://1drv.ms/v/s!AhN8-XVXLRd2jq0jU9IHQXIEmO6Ogg?e=X4OxaG)
+**Video Tutorial 3 – Offline analysis:** https://vimeo.com/showcase/8584160/video/564778587
 
 ## 3. Build PupilEXT from source: The advanced way
 If you want to extend PupilEXT with your own features or if the provided installations cannot be opened on your machine, building PupilEXT on your own computer is a good alternative. We recommend using CLion for this: https://www.jetbrains.com/clion/
