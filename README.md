@@ -43,6 +43,17 @@ The pupil diameter has become an important biomarker in medical diagnostics or c
 - [x]  Cross-platform software: MacOS, Windows, Linux
 - [x]  Intgrates six leading open-source pupil detection algorithms: ElSe [[1\]](#1), ExCuSe [[2\]](#2), PuRe [[3\]](#3), PuReST [[4\]](#4), Starburst [[5\]](#5), and Swirski2D [[6\]](#6).
 
+**!! NEW !! Watch the video tutorials of PupilEXT that walk trough the interface**
+
+*Tutorial 1/3:* Stereo camera recording<br/>
+https://vimeo.com/showcase/8584160/video/564556788
+
+*Tutorial 2/3:* Single camera recording<br/>
+https://vimeo.com/showcase/8584160/video/564776313
+
+*Tutorial 3/3:* External image analysis<br/>
+https://vimeo.com/showcase/8584160/video/564778587
+
 If you need help to setup our proposed pupillometry system for your research, feel free to contact the corresponding author Babak Zandi.
 
 **Correspondence:** [zandi@lichttechnik.tu-darmstadt.de](mailto:zandi@lichttechnik.tu-darmstadt.de)
