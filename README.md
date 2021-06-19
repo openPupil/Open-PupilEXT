@@ -46,13 +46,13 @@ The pupil diameter has become an important biomarker in medical diagnostics or c
 **!! NEW !! Watch the video tutorials of PupilEXT that walk trough the interface**
 
 **Tutorial 1/3:** Stereo camera recording<br/>
-https://vimeo.com/showcase/8584160/video/564556788
+https://vimeo.com/564556788
 
 **Tutorial 2/3:** Single camera recording<br/>
-https://vimeo.com/showcase/8584160/video/564776313
+https://vimeo.com/564776313
 
 **Tutorial 3/3:** External image analysis<br/>
-https://vimeo.com/showcase/8584160/video/564778587
+https://vimeo.com/564778587
 
 If you need help to setup our proposed pupillometry system for your research, feel free to contact the corresponding author Babak Zandi.
 
@@ -318,11 +318,11 @@ The accuracy can also be increased by selecting a specific region of interest (R
 ### 2.5. How to use PupilEXT ?
 Three videos are provided to illustrate the handling and the features of the *PupilEXT* software. The first video introduces the *PupilEXT* software in stereo vision mode. The second video shows how the pupillometry can be carried out by using a single camera. The third video shows how pupillometry can be carried out with existing eye images without connected cameras.
 
-**Video Tutorial 1 – Stereo camera setup:** https://vimeo.com/showcase/8584160/video/564556788
+**Video Tutorial 1 – Stereo camera setup:** https://vimeo.com/564556788
 
-**Video Tutorial 2 – Single camera setup:** https://vimeo.com/showcase/8584160/video/564776313
+**Video Tutorial 2 – Single camera setup:** https://vimeo.com/564776313
 
-**Video Tutorial 3 – Offline analysis:** https://vimeo.com/showcase/8584160/video/564778587
+**Video Tutorial 3 – Offline analysis:** https://vimeo.com/564778587
 
 ## 3. Build PupilEXT from source: The advanced way
 If you want to extend PupilEXT with your own features or if the provided installations cannot be opened on your machine, building PupilEXT on your own computer is a good alternative. We recommend using CLion for this: https://www.jetbrains.com/clion/
