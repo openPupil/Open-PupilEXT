@@ -636,6 +636,8 @@ In order to start the programme, the SPII DLL must be added to ``PupilEXT\cmake-
 
 ## 4. Known issues
 - **MacOS:** Quick-toolbar icons not visible in dark-mode. ***Solution:*** *Open PupilEXT in light-mode of MacOS.* ***Comment:*** *Need to add positive-constrast icons and make it dependent on the light-mode or dark-mode state.* ***Priority:*** *Low*
+  
+- **MacOS:** PupilEXT crashed when choosing ExCuSe a pupil detection ***Solution:*** *Unknown, as this issue only happens on Mac.* ***Comment:*** *Please do not use the ExCuSe algorithm if you are on a Mac* ***Priority:*** *Low*
 
 ## 5. Citation
 Please consider to cite our work if you find this repository or our results useful for your research:
