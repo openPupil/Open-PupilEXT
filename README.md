@@ -104,7 +104,7 @@ Download the Pylon Camera Software Suite (*.dmg) from the Basler Website:
 
 https://www.baslerweb.com/de/vertrieb-support/downloads/downloads-software/
 
-We tested PupilEXT with Pylon 6.2.0. If the Pylon installation does not start because of a security warning from Apple: Open the system preferences from macOS, click on "security & privacy" and press "Open Anyway" under the "General" tab. During the Pylon installation, ensure that a complete installation is carried out with the C++ binaries. The Pylon library is necessary for PupilEXT to control and communicate with Basler branded cameras. The installation is also needed if no camera is connected, as the Basler drivers are part of the software.
+We tested PupilEXT with Pylon 6.2.0. (on Windows only Pylon 6.0.1 works, see the Win instructions below). If the Pylon installation does not start because of a security warning from Apple: Open the system preferences from macOS, click on "security & privacy" and press "Open Anyway" under the "General" tab. During the Pylon installation, ensure that a complete installation is carried out with the C++ binaries (Important!). For this, you need to choose the "custom" profile and activate all checkboxes under "Pylon runtime" and "SDKs". The Pylon library is necessary for PupilEXT to control and communicate with Basler branded cameras. The installation is also needed if no camera is connected, as the Basler drivers are part of the software.
 
 Please test your Baslers camera(s) with the installed Pylon Viewer from Basler (see [Basler-Documentation: Pylon Viewer](https://docs.baslerweb.com/overview-of-the-pylon-viewer)) before driving the camera(s) with PupilEXT.
 
@@ -131,7 +131,7 @@ Download the Pylon Camera Software Suite (*.exe) from the Basler Website:
 
 https://www.baslerweb.com/de/vertrieb-support/downloads/downloads-software/
 
-We tested PupilEXT with Pylon 6.2.0. During the Pylon installation, ensure that a complete installation is carried out with the C++ binaries. The Pylon library is necessary for PupilEXT to control and communicate with Basler branded cameras. The installation is also needed when no camera is connected, as the Basler drivers are part of the software.
+We tested PupilEXT with **Pylon 6.0.1.** on Windows 10. Only the **Pylon 6.0.1.** version works with PupilEXT, as Windows is a diva. During the Pylon installation, ensure that a complete installation is carried out with the C++ binaries (Important!). For this, you need to choose the "custom" profile and activate all checkboxes under "Pylon runtime" and "SDKs". The Pylon library is necessary for PupilEXT to control and communicate with Basler branded cameras. The installation is also needed when no camera is connected, as the Basler drivers are part of the software.
 
 Please test your camera with the installed Pylon Viewer from Basler (see [Basler-Documentation: Pylon Viewer](https://docs.baslerweb.com/overview-of-the-pylon-viewer)) before driving the cameras with PupilEXT.
 
