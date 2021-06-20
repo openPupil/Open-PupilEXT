@@ -56,8 +56,6 @@ https://vimeo.com/564776313
 **Tutorial 3/3:** External image analysis<br/>
 https://vimeo.com/564778587
 
-**Correspondence:** [zandi@lichttechnik.tu-darmstadt.de](mailto:zandi@lichttechnik.tu-darmstadt.de)
-**Twitter:** [@BkZandi](https://twitter.com/bkzandi)
 
 <p align="center">
   <img src="img/PupilEXT-Introduction.gif">
