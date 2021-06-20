@@ -72,7 +72,7 @@ With PupilEXT, you can detect the pupil diameter with three different setup conf
 </p>
 
 ### 1.2 Hardware and software requirements
-Depending on which setup configuration is used, additional hardware components must be purchased. Below is a list of components with which our demo system was built. In general, every Basler branded camera is compatible with PupilEXT. For offline analysis with externally captured images, none of the listed hardware components is necessary. In any case, the [Pylon Camera Software Suite](https://www.baslerweb.com/de/produkte/software/basler-pylon-camera-software-suite/) from Basler must be installed on your system, as the drivers are needed to start PupilEXT, even if no camera(s) is connected. Check out our publication if you need additional information on how to build the hardware system.
+Depending on which setup configuration is used, additional hardware components must be purchased. Below is a list of components with which our demo system was built. In general, USB3 Basler branded camera should be compatible with PupilEXT, as we use Pylon. For offline analysis with externally captured images, none of the listed hardware components is necessary. In any case, the [Pylon Camera Software Suite](https://www.baslerweb.com/de/produkte/software/basler-pylon-camera-software-suite/) from Basler must be installed on your system, as the drivers are needed to start PupilEXT, even if no camera(s) is connected. Check out our publication if you need additional information on how to build the hardware system.
 
 **Components: Stereo camera configuration**
 
