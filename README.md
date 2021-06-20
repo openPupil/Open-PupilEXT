@@ -43,6 +43,8 @@ We aimed to provide a professional open-source pupillometry measurement platform
 - [x]  Cross-platform software: MacOS, Windows, Linux
 - [x]  Intgrates six leading open-source pupil detection algorithms: ElSe [[1\]](#1), ExCuSe [[2\]](#2), PuRe [[3\]](#3), PuReST [[4\]](#4), Starburst [[5\]](#5), and Swirski2D [[6\]](#6).
 
+For initial testing, we recommend using the provided demo datasets. See section 2.4 in this repository.
+
 **!! NEW !! Watch the video tutorials of PupilEXT that walk trough the interface**
 
 **Tutorial 1/3:** Stereo camera recording<br/>
