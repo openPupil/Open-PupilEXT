@@ -54,8 +54,6 @@ https://vimeo.com/564776313
 **Tutorial 3/3:** External image analysis<br/>
 https://vimeo.com/564778587
 
-If you need help to setup our proposed pupillometry system for your research, feel free to contact the corresponding author Babak Zandi.
-
 **Correspondence:** [zandi@lichttechnik.tu-darmstadt.de](mailto:zandi@lichttechnik.tu-darmstadt.de)
 **Twitter:** [@BkZandi](https://twitter.com/bkzandi)
 
@@ -124,20 +122,20 @@ After you have downloaded the software, you can open the dmg file and run PupilE
 
 It should be noted that the PupilEXT software is not designed for the dark-mode of macOS, as the icons in the quick-toolbar are colored with black lines. Therefore, the icons will not be visible when running PupilEXT in dark mode. We recommend to use the software only in light-mode of macOS.
 
-### 2.2. Installation on Windows 10
+### 2.2. Installation on Windows 10 (64 bit)
 **Step 1: Download and install the Pylon Camera Softwware**
 
 Download the Pylon Camera Software Suite (*.exe) from the Basler Website:
 
 https://www.baslerweb.com/de/vertrieb-support/downloads/downloads-software/
 
-We tested PupilEXT with **Pylon 6.0.1.** on Windows 10. Only the **Pylon 6.0.1.** version works with PupilEXT, as Windows is a diva. During the Pylon installation, ensure that a complete installation is carried out with the C++ binaries (Important!). For this, you need to choose the "custom" profile and activate all checkboxes under "Pylon runtime" and "SDKs". The Pylon library is necessary for PupilEXT to control and communicate with Basler branded cameras. The installation is also needed when no camera is connected, as the Basler drivers are part of the software.
+We tested PupilEXT with **Pylon 6.0.1.** on several fresh installed Windows 10 (64 bit) machines. Only the **Pylon 6.0.1.** version works with PupilEXT, as Windows is a diva. During the Pylon installation, ensure that a complete installation is carried out with the C++ binaries (Important!). For this, you need to choose the "custom" profile and activate all checkboxes under "Pylon runtime" and "SDKs". The Pylon library is necessary for PupilEXT to control and communicate with Basler branded cameras. The installation is also needed when no camera is connected, as the Basler drivers are part of the software.
 
 Please test your camera with the installed Pylon Viewer from Basler (see [Basler-Documentation: Pylon Viewer](https://docs.baslerweb.com/overview-of-the-pylon-viewer)) before driving the cameras with PupilEXT.
 
 **Step 2: Download and run PupilEXT**
 
-For Windows, we have already built the software so that PupilEXT can simply be downloaded and will start without any further dependencies. Unpack the downloaded zip file and open PupilEXT.exe. It should run, as we tested it on several systems. However, if you run into unknown issues, you need to build PupilEXT from source.
+For Windows, we have already built the software so that PupilEXT can simply be downloaded and will start without any further dependencies. Unpack the downloaded zip file and open PupilEXT.exe. It should run, as we tested it on several systems. However, if you run into unknown issues, you need to build PupilEXT from source (see instructions below).
 
 Download PupilEXT Version 0.1.0 Beta (Windows): [(PupilEXT-WIN-0.1.0-Beta-Release.zip, 41.6 MB)](https://storage.googleapis.com/pupilext-data-repository/PupilEXT-Releases/PupilEXT-WIN-Release-0.1.0-Beta.zip)
 
