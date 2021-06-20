@@ -35,10 +35,10 @@ We aimed to provide a professional open-source pupillometry measurement platform
 
 - [x]  High resolution pupillometry
 - [x]  Real-time pupillometry 
-- [x]  Professional graphical user interface prgrammed with QT/C++ 
+- [x]  Professional graphical user interface programmed with QT/C++ 
 - [x]  Supporting stereo camera setups
 - [x]  Supporting single camera setups
-- [x]  Supporting all Basler branded cameras 
+- [x]  Supporting Basler branded cameras (USB3) 
 - [x]  Offline pupillometry with externally recorded images 
 - [x]  Cross-platform software: MacOS, Windows, Linux
 - [x]  Intgrates six leading open-source pupil detection algorithms: ElSe [[1\]](#1), ExCuSe [[2\]](#2), PuRe [[3\]](#3), PuReST [[4\]](#4), Starburst [[5\]](#5), and Swirski2D [[6\]](#6).
