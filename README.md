@@ -110,7 +110,7 @@ Please test your Baslers camera(s) with the installed Pylon Viewer from Basler (
 
 We have built and deployed PupilEXT for macOS 10.15 or later. You only need to download PupilEXT and open it. If you run into security warnings from Apple, you need to open the system preferences, click on "security & privacy" and then press "Open Anyway" under the "General" tab.
 
-Download PupilEXT Version 0.1.0 Beta (MAC): [(PupilEXT-macOS-0.1.0-Beta-Release.dmg, 95.2 MB)](https://storage.googleapis.com/pupilext-data-repository/PupilEXT-Releases/PupilEXT-macOS-Release-0.1.1-Beta.dmg)
+Download PupilEXT Version 0.1.0 Beta (MAC): [(PupilEXT-macOS-0.1.1-Beta-Release.dmg, 95.2 MB)](https://storage.googleapis.com/pupilext-data-repository/PupilEXT-Releases/PupilEXT-macOS-Release-0.1.1-Beta.dmg)
 
 After you have downloaded the software, you can open the dmg file and run PupilEXT (see animation). We tested the program on a fresh installed Macbook Pro (Intel) with macOS Big Sur (Version 11.2.3) and a Mac Mini (Intel) with macOS Catalina (Version 10.15.7). If you run into issues, you need to build PupilEXT from source.
 
@@ -137,7 +137,7 @@ Please test your camera with the installed Pylon Viewer from Basler (see [Basler
 
 For Windows, we have already built the software so that PupilEXT can simply be downloaded and will start without any further dependencies. Unpack the downloaded zip file and open PupilEXT.exe. It should run, as we tested it on several systems. However, if you run into unknown issues, you need to build PupilEXT from source (see instructions below).
 
-Download PupilEXT Version 0.1.0 Beta (Windows): [(PupilEXT-WIN-0.1.0-Beta-Release.zip, 41.6 MB)](https://storage.googleapis.com/pupilext-data-repository/PupilEXT-Releases/PupilEXT-Windows-Release-0.1.1-Beta.zip)
+Download PupilEXT Version 0.1.0 Beta (Windows): [(PupilEXT-WIN-0.1.1-Beta-Release.zip, 41.6 MB)](https://storage.googleapis.com/pupilext-data-repository/PupilEXT-Releases/PupilEXT-Windows-Release-0.1.1-Beta.zip)
 
 ### 2.3. Setup the microcontroller for the stereo camera configuration
 A microcontroller is necessary if a real-time online pupil measurement should be carried out with a stereo camera system. The microcontroller has the task of generating a so-called electrical hardware-trigger, which is used to trigger the image acquisition on the camera (see [Basler-Documentation: Triggering](https://docs.baslerweb.com/triggered-image-acquisition)). The electrical hardware-trigger consists of a timed voltage signal of 3.3 V, which is applied to one of the camera's GPIO-Pins. If a sequence of images need to be acquired with a stable FPS, the hardware-trigger is a PWM-signal with a fixed frequency (see [Basler-Documentation: Trigger-Types](https://docs.baslerweb.com/trigger-selector) and [Basler-Documentation: GPIO Lines](https://docs.baslerweb.com/general-purpose-io-(gpio)-lines)). The advantage of acquiring images through a hardware-trigger signal is that the electrical signal can be connected parallel to both cameras, leading to a highly synchronized image recording. Synchronous image acquisition from both cameras is essential in a stereo camera system; otherwise, the conversion from pixels to mm is not reliable. The PupilEXT software uses a hardware-trigger from an external microcontroller (STM32 Nucleo) to acquire images from the stereo camera system. If you only want to use a single camera for pupil measurement, section 2.3 is not relevant for you.
