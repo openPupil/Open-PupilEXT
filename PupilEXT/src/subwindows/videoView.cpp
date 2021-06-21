@@ -79,6 +79,16 @@ void VideoView::updateView(const cv::Mat &img) {
             if(mode==FIT) {
                 graphicsView->fitInView(graphicsScene->sceneRect(), Qt::KeepAspectRatio);
             }
+
+            // ML: ADDED START 20.06.21
+            // Reason: Prevent error if the ROI is bigger than the image itself
+            QRectF roi = roiSelection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
+            if(!graphicsScene->sceneRect().contains(roi)) {
+                roiSelection->setRect(0, 0, 32, 32);
+                saveROISelection();
+            }
+            // ML: ADDED END
+
             initialFit = true;
         }
     }
@@ -205,7 +215,12 @@ void VideoView::setROISelection(float roiSize) {
 
 // Sets a ROI selection based on a given rectangle
 void VideoView::setROISelection(QRectF roi) {
-    if(!roi.isEmpty() && graphicsScene->sceneRect().contains(roi)) {
+    //if(!roi.isEmpty() && graphicsScene->sceneRect().contains(roi)) {
+    //    roiSelection->setRect(roi);
+    //}
+    // ML: CHANGED START 20.06.21
+    if(!roi.isEmpty()) {
         roiSelection->setRect(roi);
     }
+    // ML: CHANGED END
 }

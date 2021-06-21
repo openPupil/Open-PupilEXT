@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     // Changing this may change the settings path thus not loading old application settings!
     QCoreApplication::setOrganizationName("FGLT");
     QCoreApplication::setApplicationName("PupilEXT");
-    QCoreApplication::setApplicationVersion("0.1.0 Beta");
+    QCoreApplication::setApplicationVersion("0.1.1 Beta");
 
     qRegisterMetaTypeStreamOperators<QMap<QString, QList<float>>>("QMap<QString,QList<float>>");
     qRegisterMetaTypeStreamOperators<QList<QPair<QString, QString>>>("QList<QPair<QString, QString>>");

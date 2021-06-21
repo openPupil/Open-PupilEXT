@@ -21,14 +21,19 @@ QWizardPage* GettingsStartedWizard::createIntroPage()
     QWizardPage *page = new QWizardPage;
     page->setTitle("Introduction");
 
-    QLabel *label = new QLabel(tr("<b>%1</b> is an open source application for pupillometry.<br><br>Presented in the work:<br>Babak Zandi, Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh, <b>PupilEXT: flexible open-source platform for high resolution pupil measurement in vision research</b>"
+    QLabel *label = new QLabel(tr("<b>%1 Version: %2 </b> is an open source application for pupillometry.<br><br>"
+                                  "Babak Zandi, Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh. (2021). "
+                                  "PupilEXT: Flexible Open-Source Platform for High-Resolution Pupil Measurement in Vision Research.</br>"
+                                  " Frontiers in Neuroscience. doi:10.3389/fnins.2021.676220."
                                   "<br><br>Consider to cite our work, if you find this tool useful for your research."
-                                  "<br><br> Links:<br>"
-                                  "Github: <a href=\"https://github.com/openPupil/Open-PupilEXT\">https://github.com/openPupil/Open-PupilEXT</a><br>"
-                                  "OpenPupil Project: <a href=\"https://openpupil.io\">www.openPupil.io</a><br><br>"
-                                  "Powered by <b>Open Source</b>. Licensed under <a href=\"https://www.gnu.org/licenses/gpl-3.0.txt\">GPL 3</a>"
-    ).arg(QCoreApplication::applicationName()));
+                                  "Github: <a href=\"https://github.com/openPupil/Open-PupilEXT\">https://github.com/openPupil/Open-PupilEXT</a><br><br>"
+                                  "The software PupilEXT is licensed under <a href=\"https://github.com/openPupil/Open-PupilEXT/blob/main/PupilEXT/LICENSE\">GNU General Public License v.3.0.</a>"
+                                  ", Copyright (c) 2021 Technical University of Darmstadt. PupilEXT is for academic and non-commercial use only."
+                                  " Note that third-party libraries used in PupilEXT may be distributed under other open-source licenses (see GitHub repository).<br><br>"
+                                  "Application settings path: %3<br>"
+    ).arg(QCoreApplication::applicationName(),QCoreApplication::applicationVersion(), applicationSettings->fileName()));
 
+    label->setOpenExternalLinks(true);
     label->setWordWrap(true);
 
     QVBoxLayout *layout = new QVBoxLayout;
@@ -58,6 +63,7 @@ QWizardPage* GettingsStartedWizard::createInfo1Page()
 
     QLabel *label2= new QLabel("For more information and detailed video instructions visit the project website: <a href=\"https://github.com/openPupil/Open-PupilEXT\">PupilEXT</a>");
     label2->setWordWrap(true);
+    label2->setOpenExternalLinks(true);
 
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(label);
@@ -72,7 +78,7 @@ QWizardPage* GettingsStartedWizard::createConclusionPage()
     QWizardPage *page = new QWizardPage;
     page->setTitle("Conclusion");
 
-    QLabel *label = new QLabel("You are now ready to conduct pupil experiments! <br><br><br>Consider visiting <a href=\"https://openpupil.io\">openPupil.io</a> to review openly available pupil datasets and contribute your insights.");
+    QLabel *label = new QLabel("You are now ready to conduct pupil experiments! <br><br><br>Consider visiting <a href=\"https://openpupil.io\">openPupil.io</a> (under construction) to review openly available pupil datasets and contribute your insights.");
     label->setWordWrap(true);
 
     QVBoxLayout *layout = new QVBoxLayout;

@@ -386,15 +386,23 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 }
 
 void MainWindow::about() {
-    QMessageBox::about(this, tr("About ") + QCoreApplication::applicationName(),
-            tr("<b>%1</b> is an open source application for pupillometry.<br><br>Publication:<br>Babak Zandi, Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh, <b>PupilEXT: flexible open-source platform for high resolution pupil measurement in vision research</b>"
-               "<br><br>"
-               "Github: <a href=\"https://github.com/openPupil/Open-PupilEXT\">https://github.com/openPupil/Open-PupilEXT</a><br>"
-               "OpenPupil Project: <a href=\"https://openpupil.io\">www.openpupil.io</a><br><br>"
-               "Developer-Team: Moritz Lode, Babak Zandi<br>Version: %2<br>"
-                                                      "<br>Application settings: %3<br><br><br>"
-                                                      "Powered by <b>Open Source</b>. Licensed under <a href=\"https://www.gnu.org/licenses/gpl-3.0.txt\">GPL 3</a>"
-    ).arg(QCoreApplication::applicationName(), QCoreApplication::applicationVersion(), applicationSettings->fileName()));
+    GettingsStartedWizard* wizard = new GettingsStartedWizard(this);
+    wizard->show();
+    connect(wizard->button(QWizard::FinishButton), SIGNAL(clicked()), this , SLOT(onGettingsStartedWizardFinish()));
+
+//    QMessageBox::about(this, tr("About ") + QCoreApplication::applicationName(),
+//            tr("%1 is an open source application for pupillometry.<br><br>"
+//               "Babak Zandi, Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh. (2021)."
+//               " PupilEXT: Flexible Open-Source Platform for High-Resolution Pupil Measurement in Vision Research. "
+//               "Frontiers in Neuroscience. doi:10.3389/fnins.2021.676220."
+//               "<br><br>"
+//               "Github: <a href=\"https://github.com/openPupil/Open-PupilEXT\">https://github.com/openPupil/Open-PupilEXT</a><br>"
+//               "Developer-Team: Moritz Lode, Babak Zandi<br>Version: %2<br><br>"
+//               "The software PupilEXT is licensed under <a href=\"https://github.com/openPupil/Open-PupilEXT/blob/main/PupilEXT/LICENSE\">GNU General Public License v.3.0.</a>"
+//               ", Copyright (c) 2021 Technical University of Darmstadt. PupilEXT is for academic and non-commercial use only."
+//               " Third-party libraries may be distributed under other open-source licenses (see GitHub repository).<br><br>"
+//               "Application settings: %3<br>"
+//    ).arg(QCoreApplication::applicationName(), QCoreApplication::applicationVersion(), applicationSettings->fileName()));
 }
 
 void MainWindow::openSourceDialog() {
@@ -432,7 +440,7 @@ void MainWindow::openSourceDialog() {
             "Breeze Icon Theme, License: <a href=\"https://www.gnu.org/licenses/lgpl-3.0.txt\">LGPL v3</a><br><br>");
 
     scroll->setWidget(label);
-
+    label->setOpenExternalLinks(true);
     dialog->setLayout(l);
     dialog->show();
 }
