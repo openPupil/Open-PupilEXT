@@ -111,6 +111,7 @@ Please test your Baslers camera(s) with the installed Pylon Viewer from Basler (
 We have built and deployed PupilEXT for macOS 10.15 or later. You only need to download PupilEXT and open it. If you run into security warnings from Apple, you need to open the system preferences, click on "security & privacy" and then press "Open Anyway" under the "General" tab.
 
 Download PupilEXT Version 0.1.1 Beta (MAC) from the release page of the project's GitHub repository:
+
 https://github.com/openPupil/Open-PupilEXT/releases/tag/v0.1.1-beta
 
 After you have downloaded the software, you can open the dmg file and run PupilEXT (see animation). We tested the program on a fresh installed Macbook Pro (Intel) with macOS Big Sur (Version 11.2.3) and a Mac Mini (Intel) with macOS Catalina (Version 10.15.7). If you run into issues, you need to build PupilEXT from source.
@@ -139,6 +140,7 @@ Please test your camera with the installed Pylon Viewer from Basler (see [Basler
 For Windows, we have already built the software so that PupilEXT can simply be downloaded and will start without any further dependencies. Unpack the downloaded zip file and open PupilEXT.exe. It should run, as we tested it on several systems. However, if you run into unknown issues, you need to build PupilEXT from source (see instructions below).
 
 Download PupilEXT Version 0.1.1 Beta (Windows) from the release page of the project's GitHub repository:
+
 https://github.com/openPupil/Open-PupilEXT/releases/tag/v0.1.1-beta
 
 ### 2.3. Setup the microcontroller for the stereo camera configuration
