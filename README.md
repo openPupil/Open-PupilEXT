@@ -6,6 +6,8 @@
 <div align="center">
   <a href="https://www.frontiersin.org/articles/10.3389/fnins.2021.676220/abstract" alt="Publication">
         <img src="https://img.shields.io/badge/Frontiers%20in%20Neuroscience-Published-green"/></a>
+  <a href="https://doi.org/10.3389/fnins.2021.676220" alt="DOI">
+        <img src="https://img.shields.io/badge/DOI-10.3389%2Ffnins.2021.676220-blue"/></a>
  <a href="https://github.com/openPupil/Open-PupilEXT/blob/main/PupilEXT/LICENSE" alt="GNU-GPLv3">
         <img src="https://img.shields.io/badge/License%20PupilEXT-GNU%20GPLv3-blue"/></a>
  <a href="https://github.com/openPupil/Open-PupilEXT" alt="Version">
