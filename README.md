@@ -124,7 +124,7 @@ After you have downloaded the software, you can open the dmg file and run PupilE
 
 **Step 3: Testing with the demo datasets**
 
-You can load the provided demo dataset (see section 2.4) into PupilEXT for initial testing and enjoying the features during offline analysis. We recommend watching the video tutorials of PupilEXT before using the provided eye images. 
+You can load the provided demo dataset (see section 2.4) into PupilEXT for initial testing and enjoying the features during offline analysis. We recommend watching the video tutorials (see section 2.5) of PupilEXT before using the provided eye images. 
 
 **Additional Information**
 
@@ -151,7 +151,7 @@ https://github.com/openPupil/Open-PupilEXT/releases/tag/v0.1.1-beta
 
 **Step 3: Testing with the demo datasets**
 
-You can load the provided demo dataset (see section 2.4) into PupilEXT for initial testing and enjoying the features during offline analysis. We recommend watching the video tutorials of PupilEXT before using the provided eye images.
+You can load the provided demo dataset (see section 2.4) into PupilEXT for initial testing and enjoying the features during offline analysis. We recommend watching the video tutorials (see section 2.5) of PupilEXT before using the provided eye images.
 
 ### 2.3. Setup the microcontroller for the stereo camera configuration
 A microcontroller is necessary if a real-time online pupil measurement should be carried out with a stereo camera system. The microcontroller has the task of generating a so-called electrical hardware-trigger, which is used to trigger the image acquisition on the camera (see [Basler-Documentation: Triggering](https://docs.baslerweb.com/triggered-image-acquisition)). The electrical hardware-trigger consists of a timed voltage signal of 3.3 V, which is applied to one of the camera's GPIO-Pins. If a sequence of images need to be acquired with a stable FPS, the hardware-trigger is a PWM-signal with a fixed frequency (see [Basler-Documentation: Trigger-Types](https://docs.baslerweb.com/trigger-selector) and [Basler-Documentation: GPIO Lines](https://docs.baslerweb.com/general-purpose-io-(gpio)-lines)). The advantage of acquiring images through a hardware-trigger signal is that the electrical signal can be connected parallel to both cameras, leading to a highly synchronized image recording. Synchronous image acquisition from both cameras is essential in a stereo camera system; otherwise, the conversion from pixels to mm is not reliable. The PupilEXT software uses a hardware-trigger from an external microcontroller (STM32 Nucleo) to acquire images from the stereo camera system. If you only want to use a single camera for pupil measurement, section 2.3 is not relevant for you.
