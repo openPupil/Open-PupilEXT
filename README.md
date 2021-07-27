@@ -668,6 +668,8 @@ In order to start the programme, the SPII DLL must be added to ``PupilEXT\cmake-
 ## 5. Citation
 Please consider to cite our work if you find this repository or our results useful for your research:
 
+B. Zandi, M. Lode, A. Herzog, G. Sakas, and T. Q. Khanh, “PupilEXT: Flexible Open-Source Platform for High-Resolution Pupillometry in Vision Research,” Front. Neurosci., vol. 15, Jun. 2021, doi: 10.3389/fnins.2021.676220.
+
 ```bib
 @Article{10.3389/fnins.2021.676220,
 AUTHOR = {Zandi, Babak and Lode, Moritz and Herzog, Alexander and Sakas, Georgios and Khanh, Tran Quoc},
