@@ -103,7 +103,7 @@ Depending on which setup configuration is used, additional hardware components m
 
 We also tested the system with a Basler acA1300-200um camera model. To build a cheap pupillometry system, you can also have a look to the Basler dart series cameras, which cost approximatley 120 Euro. Note that we did not test PupilEXT with a dart series camera from Basler, but it should work as we use the standard Pylon library from Basler to communicate with the USB3 cameras.
 
-Please use our discussion forum to share your ideas, setup and experience with PupilEXT to other community members:
+Please use our discussion forum to share your ideas, setup and experience with PupilEXT with other community members:
 
 https://github.com/openPupil/Open-PupilEXT/discussions
 
