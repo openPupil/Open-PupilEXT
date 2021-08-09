@@ -16,7 +16,11 @@
         <img src="https://img.shields.io/badge/Contributions-Welcome-green"/></a>
 </div>
 
-# *Code Repository of the Article* <br/>PupilEXT: flexible open-source platform for high resolution pupillometry in vision research
+<p align="center">
+  <img src="img/StartupAnim.gif">
+</p>
+
+# PupilEXT: flexible open-source platform for high resolution pupillometry in vision research
 
 This repository provides the official implementation of a free pupillometry cross-platform (MacOS, Windows, Linux) system called PupilEXT proposed in the article *"PupilEXT: flexible open-source platform for high resolution pupillometry in vision research"* authored by [Babak Zandi](https://www.lichttechnik.tu-darmstadt.de/fachgebiet_lichttechnik_lt/team_lt/mitarbeiter_lt_detail_65600.en.jsp) (Twitter: [@BkZandi](https://twitter.com/bkzandi)), Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh from the Technical University of Darmstadt.<br/>
 
