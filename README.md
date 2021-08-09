@@ -17,8 +17,10 @@
 </div>
 
 <p align="center">
-  <img src="img/StartupAnim.gif">
-</p>
+    <img src="img/StartupAnim.gif" align="center" height="215">&nbsp;
+  <img src="img/Calibration.gif" align="center" height="200">
+  </p>
+ 
 
 # PupilEXT: flexible open-source platform for high resolution pupillometry in vision research
 
