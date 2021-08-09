@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="img/PupilEXT-Logo.png" height ="60">
+  <img src="img/PupilEXT-Logo.png" width="50%" height="15%">
 </div><br/>
 
 
@@ -17,7 +17,7 @@
 </div>
 
 <p align="center">
-    <img src="img/StartupAnim.gif" align="center" width="50%" height="20%">&nbsp;
+    <img src="img/StartupAnim.gif" align="center" width="55%" height="20%">&nbsp;
   <img src="img/Calibration.gif" align="center" width="40%" height="15%">
   </p>
  
