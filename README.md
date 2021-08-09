@@ -17,8 +17,8 @@
 </div>
 
 <p align="center">
-    <img src="img/StartupAnim.gif" align="center" height="215">&nbsp;
-  <img src="img/Calibration.gif" align="center" height="200">
+    <img src="img/StartupAnim.gif" align="center" width="50%" height="20%">&nbsp;
+  <img src="img/Calibration.gif" align="center" width="40%" height="15%">
   </p>
  
 
