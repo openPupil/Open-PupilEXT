@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="img/PupilEXT-Logo.png" width="50%" height="15%">
+  <img src="img/PupilEXT-Logo.png" width="70%" height="25%">
 </div><br/>
 
 
