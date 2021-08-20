@@ -49,7 +49,7 @@ We aimed to provide a professional open-source pupillometry measurement platform
 - [x]  Supporting Basler branded cameras (USB3). Tested with Basler acA2040-120um and acA1300-200um.
 - [x]  Offline pupillometry with externally recorded images 
 - [x]  Cross-platform software: MacOS, Windows, Linux
-- [x]  Intgrates six leading open-source pupil detection algorithms: ElSe [[1\]](#1), ExCuSe [[2\]](#2), PuRe [[3\]](#3), PuReST [[4\]](#4), Starburst [[5\]](#5), and Swirski2D [[6\]](#6).
+- [x]  Intgrates six leading open-source pupil detection algorithms: Starburst [[1\]](#1), Swirski2D [[2\]](#2), ExCuSe [[3\]](#3), ElSe [[4\]](#4), PuRe [[5\]](#5), and PuReST [[6\]](#6).
 
 For initial testing, we recommend using the provided demo datasets. See section 2.4 in this repository. Pay attention to the image playback speed under "preference" (see video tutorial) if you are on a laptop with low computational power.
 
