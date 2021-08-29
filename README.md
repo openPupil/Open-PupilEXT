@@ -365,7 +365,9 @@ Three videos are provided to illustrate the handling and the features of the *Pu
 ## 3. Build PupilEXT from source: The advanced way
 If you want to extend PupilEXT with your own features or if the provided installations cannot be opened on your machine, building PupilEXT on your own computer is a good alternative. We recommend using CLion for this: https://www.jetbrains.com/clion/
 
-PupilEXT need the following libraries: Boost 1.75-0_2, Ceres 2.0.0, Eigen 3.3.9, OpenCV 4.5.1_3, QT 5.15.0, [spii](https://github.com/PetterS/spii), tbb, pylon 6.
+PupilEXT need the following libraries: Glog 0.4.0, Boost 1.75-0_2, Ceres 2.0.0, Eigen 3.3.9, OpenCV 4.5.1_3, QT 5.15.0, [spii](https://github.com/PetterS/spii), tbb 2020_U3_1, pylon 6.
+
+**Important note:** When using Boost@1.76 or higher you will run into compiling issues, as boost::math::sign will not work, which is used by one of the pupil detection methods.
 
 ### 3.1 How to build from source on MacOS
 
@@ -402,7 +404,7 @@ brew install tbb
 brew install opencv
 ```
 
-**Step 5: Download and build the spin library**
+**Step 5: Download and build the spii library**
 
 An additional library called spii must be downloaded and built manually. This library is not included in Homebrew. First, go to the following GitHub repository and download it:
 
