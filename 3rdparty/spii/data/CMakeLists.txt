@@ -1,0 +1,41 @@
+# Author: petter.strandmark@gmail.com (Petter Strandmark)
+
+configure_file(CIR.txt ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/CIR.txt COPYONLY)
+
+# BAL problem
+configure_file(problem-16-22106-pre.txt ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/balproblem.txt COPYONLY)
+
+# NIST files
+configure_file(nist/Bennett5.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Bennett5.dat COPYONLY)
+configure_file(nist/BoxBOD.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/BoxBOD.dat COPYONLY)
+configure_file(nist/Chwirut1.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Chwirut1.dat COPYONLY)
+configure_file(nist/Chwirut2.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Chwirut2.dat COPYONLY)
+configure_file(nist/DanWood.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/DanWood.dat COPYONLY)
+configure_file(nist/Eckerle4.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Eckerle4.dat COPYONLY)
+configure_file(nist/ENSO.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/ENSO.dat COPYONLY)
+configure_file(nist/Gauss1.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Gauss1.dat COPYONLY)
+configure_file(nist/Gauss2.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Gauss2.dat COPYONLY)
+configure_file(nist/Gauss3.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Gauss3.dat COPYONLY)
+configure_file(nist/Hahn1.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Hahn1.dat COPYONLY)
+configure_file(nist/Kirby2.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Kirby2.dat COPYONLY)
+configure_file(nist/Lanczos1.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Lanczos1.dat COPYONLY)
+configure_file(nist/Lanczos2.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Lanczos2.dat COPYONLY)
+configure_file(nist/Lanczos3.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Lanczos3.dat COPYONLY)
+configure_file(nist/MGH09.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/MGH09.dat COPYONLY)
+configure_file(nist/MGH10.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/MGH10.dat COPYONLY)
+configure_file(nist/MGH17.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/MGH17.dat COPYONLY)
+configure_file(nist/Misra1a.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Misra1a.dat COPYONLY)
+configure_file(nist/Misra1b.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Misra1b.dat COPYONLY)
+configure_file(nist/Misra1c.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Misra1c.dat COPYONLY)
+configure_file(nist/Misra1d.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Misra1d.dat COPYONLY)
+configure_file(nist/Nelson.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Nelson.dat COPYONLY)
+configure_file(nist/Rat42.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Rat42.dat COPYONLY)
+configure_file(nist/Rat43.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Rat43.dat COPYONLY)
+configure_file(nist/Roszman1.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Roszman1.dat COPYONLY)
+configure_file(nist/Thurber.dat ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/nist/Thurber.dat COPYONLY)
+
+# Ceres files.
+configure_file(../thirdparty/ceres-solver-data/2x2.foe ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/2x2.foe COPYONLY)
+configure_file(../thirdparty/ceres-solver-data/3x3.foe ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/3x3.foe COPYONLY)
+configure_file(../thirdparty/ceres-solver-data/5x5.foe ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/5x5.foe COPYONLY)
+configure_file(../thirdparty/ceres-solver-data/ceres_noisy.pgm ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ceres_noisy.pgm COPYONLY)

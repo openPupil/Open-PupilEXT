@@ -1,0 +1,17 @@
+# Author: petter.strandmark@gmail.com (Petter Strandmark)
+
+MACRO (LARGE_TEST NAME)
+	ADD_EXECUTABLE(${NAME} 
+	               ${NAME}.cpp
+	               ${SPII_HEADERS})
+
+	TARGET_LINK_LIBRARIES(${NAME} spii)
+	SET_PROPERTY(TARGET ${NAME}         PROPERTY FOLDER "Large tests")
+ENDMACRO (LARGE_TEST)
+
+FILE(GLOB TEST_FILES large_*.cpp)
+FOREACH (TEST_FILE ${TEST_FILES})
+	GET_FILENAME_COMPONENT(TEST_NAME ${TEST_FILE} NAME_WE)
+	MESSAGE("-- Adding large test: " ${TEST_NAME})
+	LARGE_TEST(${TEST_NAME})
+ENDFOREACH()

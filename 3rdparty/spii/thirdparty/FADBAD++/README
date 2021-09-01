@@ -1,0 +1,76 @@
+
+ FADBAD++ Templates for Automatic Differentiation
+ ================================================
+
+   FADBAD++ defines C++ templates for performing automatic differentiation
+of functions implemented as C/C++ programs. Three types of automatic
+differentiation has been implemented. The forward and the backward methods
+are implemented to compute first order derivatives and the Taylor expansion
+method is implemented to compute Taylor series expansion.
+   All templates are flexible in the way that the arithmetic used in as
+template-arguments can be chosen by the user. This way differentiation of 
+programs, based on any arithmetic such as: double, interval, multiprecision 
+etc. is possible. This flexibility also makes it possible to perform automatic
+differentiation on a program which itself uses automatic differentiation.
+All three methods can be mixed in an application and the user can obtain 
+derivatives using the most optimal combination of methods for the application.
+
+APPLICATIONS:
+
+  * Forward automatic differentiation on a function f : R^n->R^n, evaluated 
+    in interval arithmetics, using the BIAS/PROFIL package, to obtain function
+    values and derivatives. Used with the interval Newton method to obtain 
+    guarenteed enlosures of all solutions to the nonlinear equation f(x)=0.
+
+  * Forward-Backward automatic differentiation on a function f : R^n->R, 
+    evaluated in interval arithmetics, using the BIAS/PROFIL package and the 
+    backward method to obtain first order derivatives (the gradient) and the 
+    forward method to differentiate the first order derivatives to obtain the 
+    second order derivatives (the Hessian). Used with the interval Krawczyk 
+    method to perform global optimization obtaining a guarenteed enclosure of 
+    the global minimum. 
+
+  * Numerical integration of a function f : RxR^n->R, using a
+    three-point-two-derivative formula. The Backward method has been used to
+    differentiate the Numerical integration program obtaining the n partial 
+    derivatives of the integral with respect to the n parameters in the 
+    function. 
+
+  * Taylor expansion of the solution to an ordinary differential equation, 
+    used to solve initial value problems. The Forward method has been used to 
+    differentiate the initial value problem solver to obtain the solution of 
+    the variational problem.
+
+  * Taylor expansion of the solution to an ordinary differential equation 
+    using interval arithmetics and using the Forward method to obtain 
+    derivatives of the Taylor coefficients with respect to the point of 
+    expansion, which are the values of the Taylor coefficients for the 
+    solution of the variational problem. Used in a method which solves initial
+    value problems with guaranteed enclosures.
+
+LICENSING:
+
+FADBAD++ is distributed under the dual licensing business model similer to the 
+model used by MySQL, Trolltech and Sleepycat. In return for the advantages you 
+realize from using FADBAD++ in your application, we require that you do one of 
+the following:
+
+  * Either: Contribute to the continued development of the product by 
+    purchasing commercial licenses from the authors. This option secures you 
+    the right to distribute your application under the license terms of your 
+    choice.
+
+  * Or: Contribute to the Open Source community by placing your application 
+    under an Open Source license (e.g. the GPL). This option secures all users 
+    the rights to obtain the application's full source code, modify it, and 
+    redistribute it. 
+
+Contact the authors if you want to obtain a commercial licence or if you are 
+unsure about what license to use <info@fadbad.com>.
+
+More information about automatic differentiation in general and source code
+for FADBAD++ with documentation can be obtained from the FADBAD++ homepage:
+
+                     http://www.fadbad.com 
+
+

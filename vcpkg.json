@@ -1,0 +1,38 @@
+{
+    "name": "pupilext",
+    "port-version": 1,
+    "version-string": "0.1.1.",
+    "homepage": "https://github.com/openPupil/Open-PupilEXT",
+    "description": "Implementation of a open-source pupillometry platform called PupilEXT.",
+    "builtin-baseline": "3426db05b996481ca31e95fff3734cf23e0f51bc",
+    "dependencies": [
+        {
+            "name": "boost",
+            "version>=": "1.75.0"
+        },
+        {
+            "name": "eigen3",
+            "version>=": "3.3.9"
+        },
+        {
+            "name": "tbb",
+            "version>=": "2020_U3"
+        },
+        {
+            "name": "ceres",
+            "version>=": "2.0.0#3"
+        },
+        {
+            "name": "opencv",
+            "version>=": "4.5.1",
+            "features": [
+                "dnn",
+                "jpeg",
+                "png",
+                "quirc",
+                "tiff",
+                "ffmpeg"
+            ]
+        }
+    ]
+}

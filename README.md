@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="img/PupilEXT-Logo.png" width="70%" height="25%">
+  <img src="Misc/img/PupilEXT-Logo.png" width="70%" height="25%">
 </div><br/>
 
 
@@ -17,8 +17,8 @@
 </div>
 
 <p align="center">
-    <img src="img/StartupAnim.gif" align="center" width="55%" height="20%">&nbsp;
-  <img src="img/Calibration.gif" align="center" width="40%" height="15%">
+    <img src="Misc/img/StartupAnim.gif" align="center" width="55%" height="20%">&nbsp;
+  <img src="Misc/img/Calibration.gif" align="center" width="40%" height="15%">
   </p>
  
 
@@ -73,7 +73,7 @@ https://vimeo.com/564778587
 
 
 <p align="center">
-  <img src="img/PupilEXT-Introduction.gif">
+  <img src="Misc/img/PupilEXT-Introduction.gif">
 </p>
 
 ## 1. Overview
@@ -83,7 +83,7 @@ PupilEXT is a real-time pupillometry software whose graphical user interface is 
 With PupilEXT, you can detect the pupil diameter with three different setup configurations (see Figure). In the stereo camera configuration, the pupil diameter can be recorded directly in millimetres through an internal triangulation procedure. In the simplest case, only one camera must be connected for measuring the pupil diameter in pixels. The conversion from pixels to mm can then manually be performed using a circular reference object. If no camera is available, PupilEXT offers the possibility to load externally recorded images for offline analysis. The externally acquired images can be treated as a live feed, unlocking the full functionality of PupilEXT.
 
 <p align="center">
-  <img src="img/PupilEXT_Measuremtn_Setups.png">
+  <img src="Misc/img/PupilEXT_Measuremtn_Setups.png">
 </p>
 
 ### 1.2 Hardware and software requirements
@@ -138,7 +138,7 @@ https://github.com/openPupil/Open-PupilEXT/releases/tag/v0.1.1-beta
 After you have downloaded the software, you can open the dmg file and run PupilEXT (see animation). We tested the program on a fresh installed Macbook Pro (Intel) with macOS Big Sur (Version 11.2.3) and a Mac Mini (Intel) with macOS Catalina (Version 10.15.7). If you run into issues, you need to build PupilEXT from source.
 
 <p align="center">
-  <img src="img/PupilEXT_Start_Mac.gif">
+  <img src="Misc/img/PupilEXT_Start_Mac.gif">
 </p>
 
 **Step 3: Testing with the demo datasets**
@@ -177,7 +177,7 @@ A microcontroller is necessary if a real-time online pupil measurement should be
 
 In this way, the image capture process is as follows: The PupilEXT software sends a command (Protocol) to the microcontroller via USB (uart), aiming to start a logical hardware-trigger signal, which is transmitted from the microcontroller to the camera(s). The captured images are passed directly from the camera to PupilEXT via USB3. In continuous shooting, PupilEXT sends a command to let the microcontroller generate a continuous PWM signal, so there is no need for a single command for each trigger signal. This procedure is standard for all professional stereo camera systems. Hardware trigger signals can also be generated from the camera itself, but there is a risk that due to internal delays, the images will not be captured synchronously. Therefore, adding an external signal generator increases the stability of the system.
 
-Since a standardised protocol between the PupilEXT software and the microcontroller is required, we have uploaded the corresponding embedded code in this repository in [``Microcontroller/STMNucleo_F767ZI``](Microcontroller/STMNucleo_F767ZI) and [``Microcontroller/STMNucleo_L432KC``](Microcontroller/STMNucleo_L432KC). The embedded projects were created using PlatformIO in Visual Studio Code. You can use either an STM32 Nucleo F767ZI or STM32 Nucleo L432KC microcontroller to flash our provided code to the microcontroller. Alternatively, you can use your own microcontroller, but you must pay attention to the communication protocol (see our publication).
+Since a standardised protocol between the PupilEXT software and the microcontroller is required, we have uploaded the corresponding embedded code in this repository in [``Misc/Microcontroller/STMNucleo_F767ZI``](Misc/Microcontroller/STMNucleo_F767ZI) and [``Misc/Microcontroller/STMNucleo_L432KC``](Misc/Microcontroller/STMNucleo_L432KC). The embedded projects were created using PlatformIO in Visual Studio Code. You can use either an STM32 Nucleo F767ZI or STM32 Nucleo L432KC microcontroller to flash our provided code to the microcontroller. Alternatively, you can use your own microcontroller, but you must pay attention to the communication protocol (see our publication).
 
 We used the [Mbed 5 framework](https://os.mbed.com) for programming the STM32 Nucleo microcontroller. To simplify the flashing process for you, we highly recommend flashing the microcontroller using [Mbed Studio](https://os.mbed.com/studio/), as this is more user-friendly. Below is a step-by-step guide on how to flash the microcontroller with Mbed Studio.
 
@@ -189,7 +189,7 @@ https://os.mbed.com/studio/
 
 **Step 2: Flash the microcontroller**
 
-Create a new project inside Mbed Studio and select your connected microcontroller from the list. In the following, we assume that you are using an STM32 Nucleo L432KC. Be sure to select Mbed OS 5 as a template from the list. You can select an empty programme as template. In the fresh created main.cpp file, paste the below-listed code and press the play button in Mbed Studio (Build profile: Release) to flash the microcontroller. If you are using an STM32 Nucleo F767ZI, use another code from the file [Microcontroller/STMNucleo_F767ZI/src/main.cpp](Microcontroller/STMNucleo_F767ZI/src/main.cpp), as the pin assignment is different.
+Create a new project inside Mbed Studio and select your connected microcontroller from the list. In the following, we assume that you are using an STM32 Nucleo L432KC. Be sure to select Mbed OS 5 as a template from the list. You can select an empty programme as template. In the fresh created main.cpp file, paste the below-listed code and press the play button in Mbed Studio (Build profile: Release) to flash the microcontroller. If you are using an STM32 Nucleo F767ZI, use another code from the file [Misc/Microcontroller/STMNucleo_F767ZI/src/main.cpp](Misc/Microcontroller/STMNucleo_F767ZI/src/main.cpp), as the pin assignment is different.
 
 ```c++
 #include "RawSerial.h"
@@ -329,24 +329,24 @@ Pinout sketch STM32 Nucleo F767ZI: https://os.mbed.com/platforms/ST-Nucleo-F767Z
 
 We recommend verifying that the microcontroller has been successfully flashed. To do this, you can enter the following command <TX10X1000000> (Protocol: <T X Count_of_Trigger X Time_Trigger_on_us>) in a serial monitor (Baudrate: 115200). For this, either the integrated serial monitor of Mbed Studio can be used or another one like HWMonitor or [CoolTerm](https://freeware.the-meiers.org). This command should start a flashing green LED (10 times) on the microcontroller, with a turn-on time of 1000000 microseconds in each cycle. Since the hardware-trigger PIN of the microcontroller is "connected" to the LED, it signifies that the PC-to-microcontroller communication and the signal generation are working. Additionally, the trigger signal can be measured using an oscilloscope. 
 
-Once the microcontroller's correct operation has been checked, the cameras can be connected to the microcontroller and the PC via USB. Simultaneously, the hardware trigger PIN of the microcontroller should be connected in parallel with GPIO PINs of camera 1 and camera 2. Do not forget to connect the GND line of the camera to the GND PIN of the microcontroller. The figure in [``img/PupilEXT_Measuremtn_Setups.png``](img/PupilEXT_Measuremtn_Setups.png) illustrates the setup of a stereo camera configuration. After the connection has been made correctly, the PupilEXT software can be started to begin measuring the pupil diameter through the stereo camera system.
+Once the microcontroller's correct operation has been checked, the cameras can be connected to the microcontroller and the PC via USB. Simultaneously, the hardware trigger PIN of the microcontroller should be connected in parallel with GPIO PINs of camera 1 and camera 2. Do not forget to connect the GND line of the camera to the GND PIN of the microcontroller. The figure in [``Misc/img/PupilEXT_Measuremtn_Setups.png``](Misc/img/PupilEXT_Measuremtn_Setups.png) illustrates the setup of a stereo camera configuration. After the connection has been made correctly, the PupilEXT software can be started to begin measuring the pupil diameter through the stereo camera system.
 
 ### 2.4. Demo dataset for offline analysis
 We provide three different recorded datasets containing eye images that can be analysed using PupilEXT. This should give users the possibility to work directly with the software PupilEXT. The first two data sets were recorded using a single camera. Data set number 3 was recorded with a stereo camera system and is used in the video tutorial of PupilEXT (see section 2.5). The images were acquired directly with PupilEXT, as we offer the feature to record images for later offline measurement of the pupil diameter without connected cameras. The data set is suitable for playing around with PupilEXT and getting a first impression.
 
 | Description | Preview | Download-Link | File-size |
 | :---         |     :---:      |          :---: |         :---: |
-| Recorded with a single camera under natural light with a filter in front of the lens. Dataset is without a calibration file. | <img src="img/Demo_Data_1_Single_Camera.gif" width="200"/> | [Download dataset 1](https://storage.googleapis.com/pupilext-data-repository/PupilEXT-Demo-Data/Single_camera_recording_1.zip) | 1.2 GB |
-| Recorded with a single camera under natural light without a filter in front of the lens. Dataset is without a calibration file | <img src="img/Demo_Data_2_Single_Camera.gif" width="200"/> | [Download dataset 2](https://storage.googleapis.com/pupilext-data-repository/PupilEXT-Demo-Data/Single_camera_recording_2.zip) | 600 MB |
-| Recorded using a stereo camera system with IR-illumination and a filter in front of the lens. Calibration files are available and loaded to PupilEXT. | <img src="img/Demo_Data_3_Stereo_Camera.gif" width="200"/> | [Download dataset 3](https://storage.googleapis.com/pupilext-data-repository/PupilEXT-Demo-Data/Stereo_camera_recording_2.zip) | 9.6 GB |
+| Recorded with a single camera under natural light with a filter in front of the lens. Dataset is without a calibration file. | <img src="Misc/img/Demo_Data_1_Single_Camera.gif" width="200"/> | [Download dataset 1](https://storage.googleapis.com/pupilext-data-repository/PupilEXT-Demo-Data/Single_camera_recording_1.zip) | 1.2 GB |
+| Recorded with a single camera under natural light without a filter in front of the lens. Dataset is without a calibration file | <img src="Misc/img/Demo_Data_2_Single_Camera.gif" width="200"/> | [Download dataset 2](https://storage.googleapis.com/pupilext-data-repository/PupilEXT-Demo-Data/Single_camera_recording_2.zip) | 600 MB |
+| Recorded using a stereo camera system with IR-illumination and a filter in front of the lens. Calibration files are available and loaded to PupilEXT. | <img src="Misc/img/Demo_Data_3_Stereo_Camera.gif" width="200"/> | [Download dataset 3](https://storage.googleapis.com/pupilext-data-repository/PupilEXT-Demo-Data/Stereo_camera_recording_2.zip) | 9.6 GB |
 
-  
+
 **Note on externally acquired images**
-  
+
 When loading images to PupilEXT for offline analysis, take care of proper file names. For example, if you label your files with sequenced numbers such as 1.png, 2.png, 3.png, 4.png, 5.png, 6.png, 7.png, 8.png, 9.png, 10.png, 11.png, you will run into issues, as the order of the images will be changed to 1.png, 10.png, 11.png, 2.png, ...
 
 It is better to label the images with 001.png, with the time stamp in milliseconds or similar. If you recorded the images with PupilEXT, everything is labelled correctly as we use the timestamp in milliseconds as filenames. The provided demo datasets are recorded with PupilEXT.
-  
+
 ### 2.5 Notes about the pupil detection acuracy
 
 The pupil detection can be determined in PupilEXT with one of the six open-source pupil detection methods ElSe [[1\]](#1), ExCuSe [[2\]](#2), PuRe [[3\]](#3), PuReST [[4\]](#4), Starburst [[5\]](#5), and Swirski2D [[6\]](#6). The respective algorithm can be selected directly within the pupillometry interface. A pupil measurement's accuracy depends on the applied detection algorithm if the image quality and composition are ideal. Each pupil detection algorithm has a certain number of parameters (constants) that the user must set.  For instance, at least the minimum or maximum possible pupil diameter must be adjusted, which can depend on the image's resolution. In PupilEXT, we offer the possibility to adjust the parameters of an applied detection algorithm, leading to more freedom in increasing the measurement accuracy. The original publications' standard parameters are usually not ideal for all measurement settings and should be adjusted if the detection rate is not good enough.
@@ -365,9 +365,9 @@ Three videos are provided to illustrate the handling and the features of the *Pu
 ## 3. Build PupilEXT from source: The advanced way
 If you want to extend PupilEXT with your own features or if the provided installations cannot be opened on your machine, building PupilEXT on your own computer is a good alternative. We recommend using CLion for this: https://www.jetbrains.com/clion/
 
-PupilEXT need the following libraries: Glog 0.4.0, Boost 1.75-0_2, Ceres 2.0.0, Eigen 3.3.9, OpenCV 4.5.1_3, QT 5.15.0, [spii](https://github.com/PetterS/spii), tbb 2020_U3_1, pylon 6.
+PupilEXT need the following libraries: Boost 1.75-0_2, Ceres 2.0.0, Eigen 3.3.9, OpenCV 4.5.1_3, QT 5.15.0, [spii](https://github.com/PetterS/spii), tbb, pylon 6.
 
-**Important note:** When using Boost@1.76 or higher you will run into compiling issues, as boost::math::sign will not work, which is used by one of the pupil detection methods.
+**Important Note:** When using Boost@1.76 or higher you will run into compiling issues, as boost::math::sign will not work, which is used by one of the pupil detection methods.
 
 ### 3.1 How to build from source on MacOS
 
@@ -674,12 +674,17 @@ C:\vcpkg\installed\x64-windows\bin
 
 In order to start the programme, the SPII DLL must be added to ``PupilEXT\cmake-build-debug\src``. If everything has been done correctly, you can now press Start and the software should open without any issues. 
 
-## 4. Known issues
+## 4. Misc
+
+**Camera emulation**
+For debugging porpuses, the Pylon SDK supports emulating camera devices that are then displayed as physical cameras in the PupilExt software. To activate the camera emulation, the system environment variable "PYLON_CAMEMU" needs to be set. The number of available emulator devices can be controlled by exporting the PYLON_CAMEMU environment variable. For example, ``export PYLON_CAMEMU=2``.
+
+## 5. Known issues
 - **MacOS:** Quick-toolbar icons not visible in dark-mode. ***Solution:*** *Open PupilEXT in light-mode of MacOS.* ***Comment:*** *Need to add positive-constrast icons and make it dependent on the light-mode or dark-mode state.* ***Priority:*** *Low*
   
 - **MacOS:** PupilEXT crashed when choosing ExCuSe a pupil detection ***Solution:*** *Unknown, as this issue only happens on Mac.* ***Comment:*** *Please do not use the ExCuSe algorithm if you are on a Mac* ***Priority:*** *Low*
 
-## 5. Citation
+## 6. Citation
 Please consider to cite our work if you find this repository or our results useful for your research:
 
 B. Zandi, M. Lode, A. Herzog, G. Sakas, and T. Q. Khanh, “PupilEXT: Flexible Open-Source Platform for High-Resolution Pupillometry in Vision Research,” Front. Neurosci., vol. 15, Jun. 2021, doi: 10.3389/fnins.2021.676220.
@@ -697,7 +702,7 @@ DOI={10.3389/fnins.2021.676220},
 ISSN={1662-453X}}
 ```
 
-## 6. References
+## 7. References
 <a id="1">**[1]**</a> Dongheng Li and Derrick J. Parkhurst. Starburst: A robust algorithm for video-based eye tracking. IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR), September 2005.
 
 <a id="2">**[2]**</a> Lech Swirski, Andreas Bulling, and Neil Dodgson. Robust real-time pupil tracking in highly off-axis images. In Proceedings - 2012 ACM Symposium on Eye Tracking Research and Applications (ETRA), pages 173–176, 2012.
@@ -712,43 +717,63 @@ ISSN={1662-453X}}
 
 <a id="7">**[7]**</a> Thiago Santini, Wolfgang Fuhl, David Geisler and Enkelejda Kasneci. EyeRecToo: Open-source Software for Real-time Pervasive Head-mounted Eye Tracking. VISIGRAPP 2017.
 
-## 7. Open source projects inside PupilEXT
-For a full list of all open-source projects and publications from the literature that are part of PupilEXT, please read our work or check out the "Open Source Lincences" window under "Help" in the PupilEXT interface.
+## 8. Open source projects inside PupilEXT
+PupilEXT integrates several open source libraries. This document provides a list of the used libraries. The respective licenses of the libraries are provided as *.txt file in in the subfolder `3rdparty/PupilEXT_Third_Party_Licenses`.
 
-[**QT**](https://www.qt.io/) is an open-source widget toolkit for creating graphical user interfaces as well as cross-platform applications that run on various software and hardware platforms such as Linux, Windows, macOS, Android or embedded systems. (License: GPL2.0/3.0 & LGPL 3.0)
+### List of Pupil Detection Libraries
 
-[**OpenCV**](https://opencv.org/) is a highly optimized computer vision library with focus on real-time applications. In this repository it is used for image manipulation and plotting of ellipse pupil detections. (License: Apache 2 / BSD)
+<a id="EyeRecToo" href="https://github.com/tcsantini/EyeRecToo"><b>EyeRecToo</b></a> is an open-source eye tracking software for head-mounted eye tracker and integrates the most advanced state-of-the-art open-source pupil detection algorithms.  We used the implementation of the EyeRecToo’s pupil class and the integrated detection methods for PupilEXT. (License: Copyright (c) 2018, Thiago Santini / University of Tübingen). **License:** For academic and non-commercial use only ([Link License](https://github.com/tcsantini/EyeRecToo/blob/master/LICENSE) | [Project Page](https://github.com/tcsantini/EyeRecToo)).
 
-[**Basler Pylon**](https://www.baslerweb.com/en/products/software/basler-pylon-camera-software-suite/pylon-open-source-projects/) is a software package consisting of an easy-to-use SDK as well as drivers and tools that let you operate any Basler camera on a PC with a Windows, Linux, or macOS operating system. (License: Not specified)
+<a id="PuRe" href="https://www.sciencedirect.com/science/article/abs/pii/S1077314218300146?via%3Dihub"><b>PuRe</b></a> Thiago Santini, Wolfgang Fuhl, Enkelejda Kasneci, PuRe: Robust pupil detection for real-time pervasive eye tracking. *Computer Vision and Image Understanding*. **2018**, ISSN 1077-3142. https://doi.org/10.1016/j.cviu.2018.02.002. Part of the [EyeRecToo](https://github.com/tcsantini/EyeRecToo) software. Copyright (c) 2018, Thiago Santini, University of Tübingen. **License:** For non-commercial purposes only ([Link](https://github.com/tcsantini/EyeRecToo/blob/master/EyeRecToo/src/pupil-detection/PuRe.h)).
 
-[**QCustomPlot**](https://www.qcustomplot.com/) is a Qt C++ widget for plotting and data visualization. It has no further dependencies and is well documented. (License: GPL 3.0)
+<a id="PuReST" href="https://github.com/tcsantini/EyeRecToo/blob/master/EyeRecToo/src/pupil-tracking/PuReST.h"><b>PuReST</b></a> Thiago Santini, Wolfgang Fuhl, Enkelejda Kasneci. PuReST: Robust pupil tracking for real-time pervasive eye tracking. *Symposium on Eye Tracking Research and Applications (ETRA)*. **2018**. https://doi.org/10.1145/3204493.3204578. Part of the [EyeRecToo](https://github.com/tcsantini/EyeRecToo) software. Copyright (c) 2018, Thiago Santini, University of Tübingen. **License:** For non-commercial purposes ([Link](https://github.com/tcsantini/EyeRecToo/blob/master/EyeRecToo/src/pupil-tracking/PuReST.h)).
 
-[**EyeRecToo**](https://github.com/tcsantini/EyeRecToo) is an open-source eye tracking software for head-mounted eye tracker and integrates the most advanced state-of-the-art open-source pupil detection algorithms.  We used the implementation of the EyeRecToo’s pupil class and the integrated detection methods for PupilEXT. (License: Copyright (c) 2018, Thiago Santini / University of Tübingen). **License:** For academic and non-commercial use only ([Link](https://github.com/tcsantini/EyeRecToo/blob/master/LICENSE)).
+<a id="ElSe" href="https://dl.acm.org/doi/10.1145/3204493.3204578"><b>ElSe</b></a> Wolfgang Fuhl, Thiago Santini, Thomas Kübler, Enkelejda Kasneci. ElSe: Ellipse Selection for Robust Pupil Detection in Real-World Environments. *ETRA 2016 : Eye Tracking Research and Application.* **2016.** Part of the [EyeRecToo](https://github.com/tcsantini/EyeRecToo) software. Copyright (c) 2018, Thiago Santini, University of Tübingen. **License:** For non-comercial use only ([Link](https://github.com/tcsantini/EyeRecToo/blob/master/EyeRecToo/src/pupil-detection/ElSe.h)).
 
-**[PuRe:](https://www.sciencedirect.com/science/article/abs/pii/S1077314218300146?via%3Dihub)** Thiago Santini, Wolfgang Fuhl, Enkelejda Kasneci, PuRe: Robust pupil detection for real-time pervasive eye tracking. *Computer Vision and Image Understanding*. **2018**, ISSN 1077-3142. https://doi.org/10.1016/j.cviu.2018.02.002. Part of the [EyeRecToo](https://github.com/tcsantini/EyeRecToo) software. Copyright (c) 2018, Thiago Santini, University of Tübingen. **License:** For non-commercial purposes only ([Link](https://github.com/tcsantini/EyeRecToo/blob/master/EyeRecToo/src/pupil-detection/PuRe.h)).
+<a id="ExCuSe" href="https://link.springer.com/chapter/10.1007/978-3-319-23192-1_4"><b>ExCuSe</b></a> Wolfgang Fuhl, Thomas Kübler, Katrin Simpel, Wolfgang Rosenstiel, Enkelejda Kasneci. ExCuSe: Robust Pupil Detection in Real-World Scenarios. *CAIP 2015 : Computer Analysis of Images and Patterns*. **2015**. Part of the [EyeRecToo](https://github.com/tcsantini/EyeRecToo) software. Copyright (c) 2018, Thiago Santini, University of Tübingen. **License:** For non-comercial use only ([Link](https://github.com/tcsantini/EyeRecToo/blob/master/EyeRecToo/src/pupil-detection/ExCuSe.h)).
 
-**[PuReST:](https://github.com/tcsantini/EyeRecToo/blob/master/EyeRecToo/src/pupil-tracking/PuReST.h)** Thiago Santini, Wolfgang Fuhl, Enkelejda Kasneci. PuReST: Robust pupil tracking for real-time pervasive eye tracking. *Symposium on Eye Tracking Research and Applications (ETRA)*. **2018**. https://doi.org/10.1145/3204493.3204578. Part of the [EyeRecToo](https://github.com/tcsantini/EyeRecToo) software. Copyright (c) 2018, Thiago Santini, University of Tübingen. **License:** For non-commercial purposes ([Link](https://github.com/tcsantini/EyeRecToo/blob/master/EyeRecToo/src/pupil-tracking/PuReST.h)).
+<a id="Starburst" href="https://ieeexplore.ieee.org/document/1565386"><b>Starburst</b></a> Dongheng Li, Winfield, D., Parkhurst, D. J. Starburst: A hybrid algorithm for video-based eye tracking combining feature-based and model-based approaches. in *2005 IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR’05) - Workshops* vol. 3 79–79 (IEEE, 2005). https://doi.org/10.1109/CVPR.2005.531. Based on the [cvEyeTracker](https://github.com/thirtysixthspan/cvEyeTracker) Version 1.2.5 implementation. **License:** GNU General Public License ([Link](https://github.com/thirtysixthspan/cvEyeTracker/blob/master/ransac_ellipse.cpp))
 
-**[ElSe:](https://dl.acm.org/doi/10.1145/3204493.3204578)** Wolfgang Fuhl, Thiago Santini, Thomas Kübler, Enkelejda Kasneci. ElSe: Ellipse Selection for Robust Pupil Detection in Real-World Environments. *ETRA 2016 : Eye Tracking Research and Application.* **2016.** Part of the [EyeRecToo](https://github.com/tcsantini/EyeRecToo) software. Copyright (c) 2018, Thiago Santini, University of Tübingen. **License:** For non-comercial use only ([Link](https://github.com/tcsantini/EyeRecToo/blob/master/EyeRecToo/src/pupil-detection/ElSe.h)).
+<a id="Swirski2D" href="https://dl.acm.org/doi/10.1145/2168556.2168585"><b>Swirski2D</b></a>  Lech Swirski, Andreas Bulling, Neil Dodgson. Robust real-time pupil tracking in highly off-axis images. *ETRA 2012: Proceedings of the Symposium on Eye Tracking Research and Applications*. **2012**. https://doi.org/10.1145/2168556.2168585.  **License:** MIT License, Copyright (c) 2014 Lech Swirski ([Link](https://github.com/LeszekSwirski/pupiltracker/blob/master/LICENSE.md))
 
-**[ExCuSe:](https://link.springer.com/chapter/10.1007/978-3-319-23192-1_4)** Wolfgang Fuhl, Thomas Kübler, Katrin Simpel, Wolfgang Rosenstiel, Enkelejda Kasneci. ExCuSe: Robust Pupil Detection in Real-World Scenarios. *CAIP 2015 : Computer Analysis of Images and Patterns*. **2015**. Part of the [EyeRecToo](https://github.com/tcsantini/EyeRecToo) software. Copyright (c) 2018, Thiago Santini, University of Tübingen. **License:** For non-comercial use only ([Link](https://github.com/tcsantini/EyeRecToo/blob/master/EyeRecToo/src/pupil-detection/ExCuSe.h)).
+<a id="Swirski3D" href="https://www.cl.cam.ac.uk/research/rainbow/projects/eyemodelfit/"><b>Swirski2D</b></a> Lech Swirski, Neil Dodgson. A fully-automatic, temporal approach to single camera, glint-free 3D eye model fitting. *Proceedings of ECEM 2013*. **2013**.  **License:** MIT License, Copyright (c) 2014 Lech Swirski ([Link](https://github.com/LeszekSwirski/singleeyefitter/blob/master/LICENSE.md))
 
-**[Starburst:](https://ieeexplore.ieee.org/document/1565386)** Dongheng Li, Winfield, D., Parkhurst, D. J. Starburst: A hybrid algorithm for video-based eye tracking combining feature-based and model-based approaches. in *2005 IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR’05) - Workshops* vol. 3 79–79 (IEEE, 2005). https://doi.org/10.1109/CVPR.2005.531. Based on the [cvEyeTracker](https://github.com/thirtysixthspan/cvEyeTracker) Version 1.2.5 implementation. **License:** GNU General Public License ([Link](https://github.com/thirtysixthspan/cvEyeTracker/blob/master/ransac_ellipse.cpp))
+### List of Software Libraries
 
-**[Swirski2D:](https://dl.acm.org/doi/10.1145/2168556.2168585)** Lech Swirski, Andreas Bulling, Neil Dodgson. Robust real-time pupil tracking in highly off-axis images. *ETRA 2012: Proceedings of the Symposium on Eye Tracking Research and Applications*. **2012**. https://doi.org/10.1145/2168556.2168585.  **License:** MIT License, Copyright (c) 2014 Lech Swirski ([Link](https://github.com/LeszekSwirski/pupiltracker/blob/master/LICENSE.md))
+<a id="QT" href="https://www.qt.io/"><b>QT</b></a>  is an open-source widget toolkit for creating graphical user interfaces as well as cross-platform applications that run on various software and hardware platforms such as Linux, Windows, macOS, Android or embedded systems. (License: GPL 3.0)
 
-## 8. Acknowledgment
+<a id="QCustomPlot" href="https://www.qcustomplot.com/"><b>QCustomPlot</b></a> is a Qt C++ widget for plotting and data visualization. It has no further dependencies and is well documented. (License: GPL 3.0)
+
+<a id="OpenCV" href="https://opencv.org/"><b>OpenCV</b></a> is a highly optimized computer vision library with focus on real-time applications. In this repository it is used for image manipulation and plotting of ellipse pupil detections. (License: Apache 2 / BSD)
+
+<a id="Glog" href="https://github.com/google/glog"><b>Glog</b></a> is a library for logging. ([License](https://github.com/google/glog/blob/master/COPYING))
+
+<a id="Boost" href="https://www.boost.org"><b>Boost</b></a> is a set of various C++ libraries for processing tasks. ([License](https://www.boost.org/users/license.html))
+
+<a id="Ceres-Solver" href="http://ceres-solver.org"><b>Ceres-Solver</b></a> is a optimisation library. ([License](https://github.com/ceres-solver/ceres-solver/blob/master/LICENSE))
+
+<a id="Eigen" href="https://eigen.tuxfamily.org/index.php?title=Main_Page#License"><b>Eigen</b></a> is a library for linear algebra. ([License](https://eigen.tuxfamily.org/index.php?title=Main_Page#License))
+
+<a id="Spii" href="https://github.com/PetterS/spii"><b>Spii</b></a> is a library for optimisation. ([License](https://github.com/PetterS/spii/blob/master/LICENSE))
+
+<a id="Tbb" href="https://github.com/oneapi-src/oneTBB"><b>Tbb</b></a> is for parallel programming. ([License](https://github.com/oneapi-src/oneTBB/blob/master/LICENSE.txt))
+
+<a id="Breeze-Icons" href="https://github.com/KDE/breeze-icons"><b>Breeze Icons</b></a> is a set of icons. ([License](https://github.com/KDE/breeze-icons/blob/master/icons/LICENSE))
+
+<a id="Gflags" href="https://github.com/gflags/gflags"><b>Gflags</b></a> is a library for comandline processing. ([License](https://github.com/gflags/gflags/blob/master/COPYING.txt))
+
+## 9. Acknowledgment
 We thank the German Research Foundation (DFG) by funding the research (grant number: 450636577).
 
 This project was made possible by the outstanding previous published open-source projects in the field of pupil detection and eye-tracking. Therefore, we would like to thank the authors of the ground-breaking algorithms PuRe, PuReST, ElSe, ExCuSe, Starburst and Swirski, who made their methods available to the public. Namely, we have to thank Wolfgang Fuhl, Thiago Santini, Thomas Kübler, Enkelejda Kasneci, Katrin Sippel, Wolfgang Rosenstiel, Dongheng Li, D. Winfield, D. Parkhurst, Lech Swirski, Andreas Bulling and Neil Dodgson for their open-source contributions which are part of PupilEXT. Additionally, we would like to thank the outstanding developers of the software EyeRecToo, whose open-source eye-tracking software inspired us for this work. We used the implementation of the EyeRecToo’s pupil class and the integrated detection methods for PupilEXT.
 
 We appreciate the contributions of Paul Myland, who supported us as a co-supervisor in a bachelor thesis, which topically worked on one part of this project. We highly welcome the contribution of Mohammad Zidan for the mechanical construction of the stereo camera system and the NIR illumination, which was done during his bachelor thesis, supervised by Babak Zandi. Finally, we would like to thank Felix Wirth and Thomas Lautenschläger who joined us as student assistants in the initial phase of the project.
 
-## 9. License
+## 10. License
 
-The work's content is licensed under a [Creative Commons Attribution 4.0 International License.](http://creativecommons.org/licenses/by/4.0/)
+The work's content (Paper) is licensed under a [Creative Commons Attribution 4.0 International License.](http://creativecommons.org/licenses/by/4.0/)
 
 The embedded code for the STM32 Nucleo is licensed under the [MIT](https://opensource.org/licenses/mit-license.php) license.
 
-The software PupilEXT is licensed under [GNU General Public License v.3.0.](https://github.com/openPupil/Open-PupilEXT/blob/main/PupilEXT/LICENSE), Copyright (c) 2021 Technical University of Darmstadt. PupilEXT is for academic and non-commercial use only. Note that third-party libraries used in PupilEXT may be distributed under other open-source licenses. Please read the above section 7: Open source projects inside PupilEXT.
+The software PupilEXT is licensed under [GNU General Public License v.3.0.](https://github.com/openPupil/Open-PupilEXT/blob/main/PupilEXT/LICENSE), Copyright (c) 2021 Technical University of Darmstadt. However, the pupil detection functionalities of PupilEXT are only for academic and non-commercial use only. Please note that third-party libraries used in PupilEXT may be distributed under other open-source licenses. Please read the above section 8: Open source projects inside PupilEXT.
 

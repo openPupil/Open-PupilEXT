@@ -1,0 +1,15 @@
+CC = CC -KPIC -features=tmplife 
+CFLAGS = -I..    
+OBJ = TestAll.o TestFADBAD.o TestUDT.o TestTAD.o 
+
+%.o:%.cpp
+	$(CC) $(CFLAGS) -c $<
+
+TestAll : $(OBJ)
+	$(CC) -o $@ $(OBJ)
+
+all: TestAll
+
+clean:
+	-rm *.o TestAll
+
