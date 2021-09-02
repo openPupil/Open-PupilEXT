@@ -516,9 +516,22 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -O3")
 
 Make sure that all folder paths in the ``CMakelist.txt`` are adapted to your system. For instance, the path ``/Users/papillonmac/Qt/5.15.0/clang_64`` must be changed with the name of your user name and your specific QT version installed on your PC.
 
-The last step is to change something in the Pylon library; otherwise, the library will not be found properly. For this, open the following folder on your computer: 
+----
 
-/Library/Frameworks/pylon.framework/Versions/A/Headers/GenICam. All files in this folder must be copied to /Library/Frameworks/pylon.framework/Versions/A/Headers. Now, you should be able to start PupilEXT properly in CLion. Please remember to use the release option as in step 5; otherwise, PupilEXT will run in debug mode and will be significantly slower. 
+The described changes to the Pylon library in this section can be skipped, as we included in the updated CMakelists.txt the following code for macOS:
+
+```cmake
+set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/Library/Frameworks/pylon.framework/Headers")
+    set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/Library/Frameworks/pylon.framework/Headers/GenICam")
+```
+
+**Old description (not needed):**
+
+The last step is to change something in the Pylon library; otherwise, the library will not be found properly. For this, open the following folder on your computer: /Library/Frameworks/pylon.framework/Versions/A/Headers/GenICam. All files in this folder must be copied to /Library/Frameworks/pylon.framework/Versions/A/Headers. 
+
+---
+
+Now, you should be able to start PupilEXT properly in CLion. Please remember to use the **release** option as in step 5; otherwise, PupilEXT will run in debug mode and will be significantly slower. 
 
 ### 3.2 How to build from source on Windows 10
 
