@@ -1,3 +1,22 @@
+# Description
+# When using find_package() it will search in the CMAKE_MODULE_PATH to find the Find<package-name>.cmake file of a lib
+# When using find_package(<package-name> REQUIRED) , it will throw an error, if the package whas not found.
+# When a package is found several env variables will be set: <package-name>_FOUND, <package-name>_INCLUDE_DIR, <package-name>_LIBRARIES, <package-name>_LINK_DIRECTORIES
+# Source: http://wiki.icub.org/wiki/CMake_and_FIND_PACKAGE
+# When using find_package() in config mode, the <package-name>Config.cmake must be added together with find_package(<package-name> CONFIG REQUIRED)
+# CMAKE_PREFIX_PATH --> is the base folder for the search engine
+# CMAKE_MODULE_PATH --> for find <package-name>.cmake. Note cmake does not search in CMAKE_PREFIX_PATH for <package-name>.cmake
+# <package-name>_DIR --> It will be searched there for the <package-name>config.cmake file
+# The variables should be chained together with the following command set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/opencv")
+# In the modern way it can also be used list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
+# A value can be set with set(OpenCV_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
+# Messages can be printed out with message(STATUS "OpenCV library status:")
+
+# The folders can be checked after compilation in the CMakeCache.txt in the build folder to check if anything is pointed correctly
+
+# During build it is important to set the VCPKG_TARGET_TRIPLET env variable
+
 cmake_minimum_required(VERSION 3.15)
 project(PupilEXT)
 
@@ -11,78 +30,106 @@ if(CMAKE_VERSION VERSION_LESS "3.15.0")
     set(CMAKE_INCLUDE_CURRENT_DIR ON)
 endif()
 
+# Output of initial values -----------------------------------------------
+message("----- Output of initial values -----")
+message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
+message("CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
+message(STATUS "--------------------------------------------------------" )
+# ------------------------------------------------------------------------
 
+# The VCPKG_TARGET_TRIPLET should be commented out if you already set it during the cmake call in the settings.json
 if(APPLE)
 	set(PYLON_HOME "/Library/Frameworks/pylon.framework")
+    set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/Library/Frameworks/pylon.framework/Headers")
+    set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/Library/Frameworks/pylon.framework/Headers/GenICam")
+    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Library/Frameworks/pylon.framework")
+    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake) # The find pylon file is in the cmake folder
+
+    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/papillonmac/Qt/5.15.0/clang_64")
+    set(Qt5_DIR "/Users/papillonmac/Qt/5.15.0/clang_64/lib/cmake/Qt5")
+
     set(VCPKG_TARGET_TRIPLET x64-osx CACHE STRING "")
 elseif(MSVC OR WIN32)
 	set(PYLON_HOME "C:/Program Files/Basler/pylon 6/Development")
+    set(PYLON_INCLUDE_DIR "C:/Program Files/Basler/pylon 6/Development/include")
+
+    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "C:/Qt/Qt5.13.1/5.10.0/msvc2017_64")
+
     set(VCPKG_TARGET_TRIPLET x64-windows CACHE STRING "")
 endif()
+# ----------------------------------------------------------------------------------------------
 
-set(VCPKG_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed/")
-set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share")
-set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake"
-      CACHE STRING "")
-
-# -------------------------------------------------------
-set(OpenCV_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
-set(Boost_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
-set(TBB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
-set(spii_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/3rdparty/spii/include/")
-set(EIGEN_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
-set(CERES_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
-
-if(APPLE)
-	set(PYLON_INCLUDE_DIR "/Library/Frameworks/pylon.framework/Headers")
-elseif(MSVC OR WIN32)
-    set(PYLON_INCLUDE_DIR "C:/Program Files/Basler/pylon 6/Development/include")
-endif()
-
-set(EIGEN3_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
-set(GLOG_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
+set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share")
+# set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share") # Normally this is set with the cmake call
 
 
-# -------------------------------------------------------
-SET("OpenCV_DIR" "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/opencv")
-set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/opencv")
-set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/tbb")
-set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/eigen3")
-set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/ceres")
-set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/glog")
+# Setting the module paths to the <package-name>config.cmake files for each lib -------------------
+set(OpenCV_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/opencv")
+set(TBB_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/tbb")
+set(Eigen3_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/eigen3")
+set(Ceres_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/ceres")
+set(glog_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/glog")
+# TODO: It seems that boost has no config file in vcpkg. The dirs need to be set manually on mac
+# ------------------------------------------------------------------------------------------------
+
+# Using the find package commands ----------------------------------------------------------------
 find_package(OpenCV CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED)
 find_package(TBB CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(Ceres CONFIG REQUIRED)
 find_package(glog CONFIG REQUIRED)
-
-if(APPLE)
-    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/papillonmac/Qt/5.15.0/clang_64")
-    set(Qt5_DIR "/Users/papillonmac/Qt/5.15.0/clang_64/lib/cmake/Qt5")
-elseif(MSVC OR WIN32)
-    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "C:/Qt/Qt5.13.1/5.10.0/msvc2017_64")
-endif()
-
 find_package(Qt5 COMPONENTS Widgets Concurrent SerialPort Charts Svg PrintSupport REQUIRED) # OpenGL
-if (${Qt5Core_FOUND})
-    message("Found Qt " ${Qt5_VERSION})
+find_package(Pylon REQUIRED) # The "FindPylon.cmake" is in the project folder in cmake/
+
+#find_package(Boost CONFIG REQUIRED)
+
+# Check if everthing was found correctly for each used package
+if(OPENCV_FOUND)
+message(STATUS "----- OpenCV was found with the following status: -----")
+message(STATUS "Version: ${OpenCV_VERSION}")
+message(STATUS "Libraries: ${OpenCV_LIBS}")
+message(STATUS "Include path: ${OpenCV_INCLUDE_DIRS}")
+message(STATUS "Dir path: ${OpenCV_DIR}")
+message(STATUS "Lib path: ${OpenCV_LIB_DIR}")
+message(STATUS "--------------------------------------------------------" )
 else()
-    message("Couldn't find Qt")
+message(STATUS "----- OpenCV packageconfig was not found ! -----")
 endif()
 
-if(APPLE)
-    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Library/Frameworks/pylon.framework")
-    set(PYLON_HOME "/Library/Frameworks/pylon.framework")
-    set(PYLON_INCLUDE_DIR "/Library/Frameworks/pylon.framework/Headers")
-elseif(MSVC OR WIN32)
-    set(PYLON_HOME "C:/Program Files/Basler/pylon 6/Development/")
+if(TBB_FOUND)
+message(STATUS "----- TBB was found -----")
+else()
+message(STATUS "----- TBB packageconfig was not found ! -----")
 endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
-find_package(Pylon REQUIRED)
+if(EIGEN3_FOUND)
+message(STATUS "----- EIGEN3 was found -----")
+else()
+message(STATUS "----- EIGEN3 packageconfig was not found ! -----")
+endif()
+
+if(Ceres_FOUND)
+message(STATUS "----- Ceres was found -----")
+else()
+message(STATUS "----- Ceres packageconfig was not found ! -----")
+endif()
+
+if(${Qt5Core_FOUND})
+message(STATUS "----- QTCore was found -----")
+else()
+message(STATUS "----- QTCore packageconfig was not found ! -----")
+endif()
+
+# -------------------------------------------------------
+set(Boost_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
+set(TBB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
+set(EIGEN_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
+set(CERES_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/")
 # -------------------------------------------------------
 
+# Adjustments for spii -------------------------------------------------------
+# You need to build SPII manually
+set(spii_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/3rdparty/spii/include/")
 set(SPII_INSTALL_DIR "3rdparty/spii/build")
 find_library (spii_LIBRARY_RELEASE
         spii
@@ -92,14 +139,28 @@ find_library (meschach_LIBRARY_RELEASE
         PATHS ${SPII_INSTALL_DIR}/lib/)
 if (spii_LIBRARY_RELEASE AND meschach_LIBRARY_RELEASE)
     set(spii_LIBRARIES ${spii_LIBRARY_RELEASE} ${meschach_LIBRARY_RELEASE})
+    message(STATUS "--------------------- SPII was found ---------------------")
+    message(STATUS "Libraries: ${spii_LIBRARIES}")
+    message(STATUS "--------------------------------------------------------" )
 else()
     set(spii_LIBRARIES "")
+    message(STATUS "-------------- WARNING SPII NOT FOUND: PLEASE INSTALL SPII LIBS ! ---------------------")
+    message(STATUS "-------------- WARNING SPII NOT FOUND: PLEASE INSTALL SPII LIBS ! ---------------------")
+    message(STATUS "-------------- WARNING SPII NOT FOUND: PLEASE INSTALL SPII LIBS ! ---------------------")
+    message(STATUS "-------------- WARNING SPII NOT FOUND: PLEASE INSTALL SPII LIBS ! ---------------------")
+    message(STATUS "-------------- WARNING SPII NOT FOUND: PLEASE INSTALL SPII LIBS ! ---------------------")
 endif()
-message(STATUS "spii_LIBRARIES:\"${spii_LIBRARIES}\"")
+# -------------------------------------------------------
 
+# Output of initial values -----------------------------------------------
+message("----- Output of ENDING values -----")
+message("CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
+message("CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
+message(STATUS "--------------------------------------------------------" )
+# ------------------------------------------------------------------------
 
 include_directories(${Qt5Core_INCLUDE_DIRS}
-        ${OpenCV_INCLUDE_DIR}
+        ${OpenCV_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIR}
         ${TBB_INCLUDE_DIR}
         ${spii_INCLUDE_DIR}
@@ -108,29 +169,22 @@ include_directories(${Qt5Core_INCLUDE_DIRS}
         ${PYLON_INCLUDE_DIR}
         "singleeyefitter")
 
-#link_directories(/Users/papillonmac/Documents/Testing/build/vcpkg_installed/x64-osx/lib/)
+add_subdirectory(src)
 
-message(STATUS "OpenCV library status:")
-message(STATUS "    version: ${OpenCV_VERSION}")
-message(STATUS "    libraries: ${OpenCV_LIBS}")
-message(STATUS "    include path: ${OpenCV_INCLUDE_DIRS}")
-message(STATUS "    dir path: ${OpenCV_DIR}")
-message(STATUS "    lib dir path: ${OpenCV_LIB_DIR}")
+add_subdirectory(singleeyefitter)
 
-add_subdirectory (src)
-
-add_subdirectory (singleeyefitter)
+# -------------------------------------------------------
 
 message(STATUS "")
 message(STATUS "--- Include directories ---" )
-message(STATUS " QT5Core_INCLUDE_DIRS: ${Qt5Core_INCLUDE_DIRS}" )
-message(STATUS " OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}" )
-message(STATUS " Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}" )
-message(STATUS " TBB_INCLUDE_DIRS: ${TBB_INCLUDE_DIR}" )
-message(STATUS " spii_INCLUDE_DIRS: ${spii_INCLUDE_DIRS}" )
-message(STATUS " EIGEN_INCLUDE_DIR: ${EIGEN_INCLUDE_DIR}" )
-message(STATUS " CERES_INCLUDE_DIRS: ${CERES_INCLUDE_DIRS}" )
-message(STATUS " Pylon_INCLUDE_DIRS: ${PYLON_INCLUDE_DIR}" )
+message(STATUS " QT5Core_INCLUDE_DIRS: ${Qt5Core_INCLUDE_DIRS}")
+message(STATUS " OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}")
+message(STATUS " Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIR}")
+message(STATUS " tbb_INCLUDE_DIRS: ${TBB_INCLUDE_DIR}")
+message(STATUS " spii_INCLUDE_DIRS: ${spii_INCLUDE_DIR}")
+message(STATUS " EIGEN_INCLUDE_DIR: ${EIGEN_INCLUDE_DIR}")
+message(STATUS " CERES_INCLUDE_DIRS: ${CERES_INCLUDE_DIRS}")
+message(STATUS " Pylon_INCLUDE_DIRS: ${PYLON_INCLUDE_DIR}")
 message(STATUS "---------------------------" )
 message(STATUS "")
 
