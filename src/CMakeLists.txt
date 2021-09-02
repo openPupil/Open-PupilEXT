@@ -110,7 +110,7 @@ install(PROGRAMS "$<TARGET_FILE:Qt5::Svg>" DESTINATION "${PROJECT_SOURCE_DIR}/bi
 install(PROGRAMS "$<TARGET_FILE:TBB::tbb>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
 
 if(MSVC OR WIN32)
-    install(PROGRAMS "$<TARGET_FILE:opencv_world>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
+    #install(PROGRAMS "$<TARGET_FILE:opencv_world>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
 endif()
 
 if(MSVC OR WIN32)

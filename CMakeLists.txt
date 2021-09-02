@@ -52,10 +52,10 @@ if(APPLE)
 elseif(MSVC OR WIN32)
 	set(PYLON_HOME "C:/Program Files/Basler/pylon 6/Development")
     set(PYLON_INCLUDE_DIR "C:/Program Files/Basler/pylon 6/Development/include")
+    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake) # The find pylon file is in the cmake folder
+    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "C:/Qt/5.15.2/msvc2019_64")
 
-    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "C:/Qt/Qt5.13.1/5.10.0/msvc2017_64")
-
-    set(VCPKG_TARGET_TRIPLET x64-windows CACHE STRING "")
+    #set(VCPKG_TARGET_TRIPLET x64-windows-static-md CACHE STRING "")
 endif()
 # ----------------------------------------------------------------------------------------------
 
