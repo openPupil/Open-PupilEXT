@@ -371,6 +371,12 @@ PupilEXT need the following libraries: Boost 1.75-0_2, Ceres 2.0.0, Eigen 3.3.9,
 
 We are changing the build pipline to vcpkg manifest files, so before following the below listed tutorial, you need to remove the 'vcpkg.json' file and the '.vscode' folder. 
 
+### 3.0 Build PupilEXT with vcpkg manifest (under construction)
+
+```shell
+git clone --recurse-submodules https://github.com/openPupil/Open-PupilEXT.git
+```
+
 ### 3.1 How to build from source on MacOS
 
 **Step 1: Download and install the Pylon Camera Softwware**
