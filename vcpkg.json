@@ -7,7 +7,27 @@
     "builtin-baseline": "3426db05b996481ca31e95fff3734cf23e0f51bc",
     "dependencies": [
         {
-            "name": "boost",
+            "name": "boost-math",
+            "version>=": "1.75.0"
+        },
+        {
+            "name": "boost-foreach",
+            "version>=": "1.75.0"
+        },
+        {
+            "name": "boost-range",
+            "version>=": "1.75.0"
+        },
+        {
+            "name": "boost-iterator",
+            "version>=": "1.75.0"
+        },
+        {
+            "name": "boost-config",
+            "version>=": "1.75.0"
+        },
+        {
+            "name": "boost-fusion",
             "version>=": "1.75.0"
         },
         {

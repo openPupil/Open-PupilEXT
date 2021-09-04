@@ -22,6 +22,10 @@ project(PupilEXT)
 
 #set(CMAKE_CXX_STANDARD 17)
 
+# Build the spii lib manually or automatically by add_subdirectory()
+# Please adjust with TRUE for automatic or FALSE for manually
+set(SPII_BUILD_MODE_VAR TRUE)
+
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
@@ -45,8 +49,8 @@ if(APPLE)
     set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Library/Frameworks/pylon.framework")
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake) # The find pylon file is in the cmake folder
 
-    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/papillonmac/Qt/5.15.0/clang_64")
-    set(Qt5_DIR "/Users/papillonmac/Qt/5.15.0/clang_64/lib/cmake/Qt5")
+    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/papillon/Qt/5.15.2/clang_64")
+    set(Qt5_DIR "/Users/papillon/Qt/5.15.2/clang_64/lib/cmake/Qt5")
 
     set(VCPKG_TARGET_TRIPLET x64-osx CACHE STRING "")
 elseif(MSVC OR WIN32)
@@ -128,27 +132,58 @@ set(CERES_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARG
 # -------------------------------------------------------
 
 # Adjustments for spii -------------------------------------------------------
-# You need to build SPII manually
 set(spii_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/3rdparty/spii/include/")
+set(spii_LIB_DIR lib)
 set(SPII_INSTALL_DIR "3rdparty/spii/build")
-find_library (spii_LIBRARY_RELEASE
-        spii
-        PATHS ${SPII_INSTALL_DIR}/lib/)
-find_library (meschach_LIBRARY_RELEASE
-        meschach
-        PATHS ${SPII_INSTALL_DIR}/lib/)
-if (spii_LIBRARY_RELEASE AND meschach_LIBRARY_RELEASE)
-    set(spii_LIBRARIES ${spii_LIBRARY_RELEASE} ${meschach_LIBRARY_RELEASE})
-    message(STATUS "--------------------- SPII was found ---------------------")
-    message(STATUS "Libraries: ${spii_LIBRARIES}")
-    message(STATUS "--------------------------------------------------------" )
+set(spii_LIB_NAME 3rdparty/spii)
+
+if(SPII_BUILD_MODE_VAR)
+# Autimatic build for spii
+    message(STATUS "--------------------- SPII automatic mode ---------------------")
+    # Check install status of the library
+    find_library(spii_LIBRARY_RELEASE
+    spii
+    PATHS ${CMAKE_BINARY_DIR}/lib/)
+
+    find_library(meschach_LIBRARY_RELEASE
+    meschach
+    PATHS ${CMAKE_BINARY_DIR}/lib/)
+
+        if(spii_LIBRARY_RELEASE AND meschach_LIBRARY_RELEASE)
+            message(STATUS "--------------------- SPII found (automatic)---------------------")
+            set(spii_LIBRARIES ${spii_LIBRARY_RELEASE} ${meschach_LIBRARY_RELEASE})
+            message(STATUS "Libraries: ${spii_LIBRARIES}")
+            set(SPII_BUILD_FOUND TRUE)
+        else(spii_LIBRARY_RELEASE AND meschach_LIBRARY_RELEASE)
+            message(STATUS "--------------------- SPII not found will be installed (automatic) ---------------------")
+            add_subdirectory(${spii_LIB_NAME})
+            link_directories(${CMAKE_BINARY_DIR}/lib)
+            set(spii_LIBRARIES "")
+        endif()
 else()
-    set(spii_LIBRARIES "")
-    message(STATUS "-------------- WARNING SPII NOT FOUND: PLEASE INSTALL SPII LIBS ! ---------------------")
-    message(STATUS "-------------- WARNING SPII NOT FOUND: PLEASE INSTALL SPII LIBS ! ---------------------")
-    message(STATUS "-------------- WARNING SPII NOT FOUND: PLEASE INSTALL SPII LIBS ! ---------------------")
-    message(STATUS "-------------- WARNING SPII NOT FOUND: PLEASE INSTALL SPII LIBS ! ---------------------")
-    message(STATUS "-------------- WARNING SPII NOT FOUND: PLEASE INSTALL SPII LIBS ! ---------------------")
+# Manual build for spii
+message(STATUS "--------------------- SPII manual mode ---------------------")
+    find_library (spii_LIBRARY_RELEASE
+            spii
+            PATHS ${spii_LIB_NAME}/lib/)
+    find_library (meschach_LIBRARY_RELEASE
+            meschach
+            PATHS ${spii_LIB_NAME}/lib/)
+    if (spii_LIBRARY_RELEASE AND meschach_LIBRARY_RELEASE)
+        set(spii_LIBRARIES ${spii_LIBRARY_RELEASE} ${meschach_LIBRARY_RELEASE})
+        set(SPII_BUILD_FOUND TRUE)
+        message(STATUS "--------------------- SPII was found ---------------------")
+        message(STATUS "Libraries: ${spii_LIBRARIES}")
+        message(STATUS "--------------------------------------------------------" )
+    else()
+        set(spii_LIBRARIES "")
+        set(SPII_BUILD_FOUND TRUE)
+        message(STATUS "-------------- WARNING SPII NOT FOUND: PLEASE INSTALL SPII LIBS ! ---------------------")
+        message(STATUS "-------------- WARNING SPII NOT FOUND: PLEASE INSTALL SPII LIBS ! ---------------------")
+        message(STATUS "-------------- WARNING SPII NOT FOUND: PLEASE INSTALL SPII LIBS ! ---------------------")
+        message(STATUS "-------------- WARNING SPII NOT FOUND: PLEASE INSTALL SPII LIBS ! ---------------------")
+        message(STATUS "-------------- WARNING SPII NOT FOUND: PLEASE INSTALL SPII LIBS ! ---------------------")
+    endif()
 endif()
 # -------------------------------------------------------
 

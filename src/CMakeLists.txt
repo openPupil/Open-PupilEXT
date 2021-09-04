@@ -61,18 +61,36 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         subwindows/calibrationHelpDialog.h subwindows/calibrationHelpDialog.cpp
         subwindows/pupil-detection-methods/json.h)
 
+if(SPII_BUILD_FOUND)
 
-target_link_libraries(${CMAKE_PROJECT_NAME}
+    target_link_libraries(${CMAKE_PROJECT_NAME}
+            "singleeyefitter"
+            Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport #Qt5::OpenGL
+            ${Boost_LIBRARIES}
+            TBB::tbb
+            ${spii_LIBRARIES}
+            ${CERES_LIBRARIES}
+            ${PYLON_LIBRARIES}
+            ${OpenCV_LIBS}
+            #opengl32
+            )
+
+else()
+
+    target_link_libraries(${CMAKE_PROJECT_NAME}
         "singleeyefitter"
         Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport #Qt5::OpenGL
         ${Boost_LIBRARIES}
         TBB::tbb
-        ${spii_LIBRARIES}
+        spii
+        meschach
         ${CERES_LIBRARIES}
         ${PYLON_LIBRARIES}
         ${OpenCV_LIBS}
         #opengl32
-        )
+    )
+
+endif()
 
 # add_definitions(-DQCUSTOMPLOT_USE_OPENGL)
 
