@@ -22,9 +22,22 @@ project(PupilEXT)
 
 #set(CMAKE_CXX_STANDARD 17)
 
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# CUSTOM SETTINGS - PLEASE SPECIFY ACCORDING TO YOUR SYSTEM
+
 # Build the spii lib manually or automatically by add_subdirectory()
 # Please adjust with TRUE for automatic or FALSE for manually
 set(SPII_BUILD_MODE_VAR TRUE)
+
+set(QT_VERSION 5.15.2)
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -50,16 +63,16 @@ if(APPLE)
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake) # The find pylon file is in the cmake folder
 
     set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/papillon/Qt/5.15.2/clang_64")
-    set(Qt5_DIR "/Users/papillon/Qt/5.15.2/clang_64/lib/cmake/Qt5")
+    set(Qt5_DIR "/Users/papillon/Qt/${QT_VERSION}/clang_64/lib/cmake/Qt5")
 
     set(VCPKG_TARGET_TRIPLET x64-osx CACHE STRING "")
 elseif(MSVC OR WIN32)
 	set(PYLON_HOME "C:/Program Files/Basler/pylon 6/Development")
     set(PYLON_INCLUDE_DIR "C:/Program Files/Basler/pylon 6/Development/include")
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake) # The find pylon file is in the cmake folder
-    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "C:/Qt/5.15.2/msvc2019_64")
+    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "C:/Qt/${QT_VERSION}/msvc2019_64")
 
-    #set(VCPKG_TARGET_TRIPLET x64-windows-static-md CACHE STRING "")
+    set(VCPKG_TARGET_TRIPLET x64-windows-static-md CACHE STRING "")
 endif()
 # ----------------------------------------------------------------------------------------------
 
@@ -85,7 +98,7 @@ find_package(glog CONFIG REQUIRED)
 find_package(Qt5 COMPONENTS Widgets Concurrent SerialPort Charts Svg PrintSupport REQUIRED) # OpenGL
 find_package(Pylon REQUIRED) # The "FindPylon.cmake" is in the project folder in cmake/
 
-#find_package(Boost CONFIG REQUIRED)
+find_package(Boost CONFIG REQUIRED)
 
 # Check if everthing was found correctly for each used package
 if(OPENCV_FOUND)
@@ -116,6 +129,12 @@ if(Ceres_FOUND)
 message(STATUS "----- Ceres was found -----")
 else()
 message(STATUS "----- Ceres packageconfig was not found ! -----")
+endif()
+
+if(Boost_FOUND)
+message(STATUS "----- Boost was found -----")
+else()
+message(STATUS "----- Boost packageconfig was not found ! -----")
 endif()
 
 if(${Qt5Core_FOUND})
@@ -195,6 +214,12 @@ message(STATUS "--------------------------------------------------------" )
 # ------------------------------------------------------------------------
 
 include_directories(${Qt5Core_INCLUDE_DIRS}
+        ${Qt5Widgets_INCLUDE_DIRS}
+        ${Qt5Concurrent_INCLUDE_DIRS}
+        ${Qt5SerialPort_INCLUDE_DIRS}
+        ${Qt5Charts_INCLUDE_DIRS}
+        ${Qt5Svg_INCLUDE_DIRS}
+        ${Qt5PrintSupport_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIR}
         ${TBB_INCLUDE_DIR}
@@ -213,6 +238,12 @@ add_subdirectory(singleeyefitter)
 message(STATUS "")
 message(STATUS "--- Include directories ---" )
 message(STATUS " QT5Core_INCLUDE_DIRS: ${Qt5Core_INCLUDE_DIRS}")
+message(STATUS " Qt5Concurrent_INCLUDES: ${Qt5Concurrent_INCLUDE_DIRS}")
+message(STATUS " Qt5SerialPort_INCLUDES: ${Qt5SerialPort_INCLUDE_DIRS}")
+message(STATUS " Qt5Charts_INCLUDES: ${Qt5Charts_INCLUDE_DIRS}")
+message(STATUS " Qt5Svg_INCLUDES: ${Qt5Svg_INCLUDE_DIRS}")
+message(STATUS " Qt5PrintSupport_INCLUDES: ${Qt5PrintSupport_INCLUDE_DIRS}")
+
 message(STATUS " OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}")
 message(STATUS " Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIR}")
 message(STATUS " tbb_INCLUDE_DIRS: ${TBB_INCLUDE_DIR}")
