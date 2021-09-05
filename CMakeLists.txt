@@ -32,7 +32,13 @@ project(PupilEXT)
 # Please adjust with TRUE for automatic or FALSE for manually
 set(SPII_BUILD_MODE_VAR TRUE)
 
+# Provide the user name for your system, which is used to find the Qt5_DIR on Mac and Win
 set(QT_VERSION 5.15.2)
+
+# Provide the user name for your system, which is used to find the Qt5_DIR on mac
+# Windows users can ignore this line
+set(USER_NAME_MAC papillon)
+
 # ------------------------------------------------------------------------
 # ------------------------------------------------------------------------
 # ------------------------------------------------------------------------
@@ -62,8 +68,8 @@ if(APPLE)
     set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Library/Frameworks/pylon.framework")
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake) # The find pylon file is in the cmake folder
 
-    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/papillon/Qt/5.15.2/clang_64")
-    set(Qt5_DIR "/Users/papillon/Qt/${QT_VERSION}/clang_64/lib/cmake/Qt5")
+    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/${USER_NAME_MAC}/Qt/5.15.2/clang_64")
+    set(Qt5_DIR "/Users/${USER_NAME_MAC}/Qt/${QT_VERSION}/clang_64/lib/cmake/Qt5")
 
     set(VCPKG_TARGET_TRIPLET x64-osx CACHE STRING "")
 elseif(MSVC OR WIN32)
@@ -253,6 +259,11 @@ message(STATUS " CERES_INCLUDE_DIRS: ${CERES_INCLUDE_DIRS}")
 message(STATUS " Pylon_INCLUDE_DIRS: ${PYLON_INCLUDE_DIR}")
 message(STATUS "---------------------------" )
 message(STATUS "")
+
+# Code snippet from https://stackoverflow.com/questions/43697154/detect-current-cmake-version-using-cmake
+if(${CMAKE_VERSION} VERSION_LESS "3.21.0")
+    message("Please consider to switch to CMake 3.21.0")
+endif()
 
 #get_cmake_property(_variableNames VARIABLES)
 #list (SORT _variableNames)
