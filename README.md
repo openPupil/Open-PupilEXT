@@ -447,17 +447,27 @@ Note that `x64-osx` must be changed to `x64-windows-static-md`, if you are on a 
 Open your terminal and type the following commands if you are on a Mac:
 
 ```shell
-cd Open-PupilEXT-main
+cd Open-PupilEXT
+
 mkdir build
+
+cd build
+
 cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DVCPKG_TARGET_TRIPLET=x64-osx -DCMAKE_TOOLCHAIN_FILE=3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake
 cmake --build . --config Release
+
+./src/PupilEXT
 ```
 
 If you are on Windows 10  use these commands (not tested, but should be similar):
 
 ```shell
-cd Open-PupilEXT-main
+cd Open-PupilEXT
+
 mkdir build
+
+cd build
+
 cmake .. -DCMAKE_BUILD_TYPE=Release -DVCPKG_TARGET_TRIPLET=x64-windows-static-md -DCMAKE_TOOLCHAIN_FILE=3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake
 cmake --build . --config Release
 ```
