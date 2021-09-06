@@ -104,7 +104,7 @@ find_package(glog CONFIG REQUIRED)
 find_package(Qt5 COMPONENTS Widgets Concurrent SerialPort Charts Svg PrintSupport REQUIRED) # OpenGL
 find_package(Pylon REQUIRED) # The "FindPylon.cmake" is in the project folder in cmake/
 
-find_package(Boost CONFIG REQUIRED)
+#find_package(Boost CONFIG REQUIRED)
 
 # Check if everthing was found correctly for each used package
 if(OPENCV_FOUND)
@@ -263,6 +263,7 @@ message(STATUS "")
 # Code snippet from https://stackoverflow.com/questions/43697154/detect-current-cmake-version-using-cmake
 if(${CMAKE_VERSION} VERSION_LESS "3.21.0")
     message("Please consider to switch to CMake 3.21.0")
+    message("CMAKE_VERSION: ${CMAKE_VERSION}")
 endif()
 
 #get_cmake_property(_variableNames VARIABLES)

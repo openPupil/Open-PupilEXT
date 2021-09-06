@@ -363,19 +363,107 @@ Three videos are provided to illustrate the handling and the features of the *Pu
 **Video Tutorial 3 – Offline analysis:** https://vimeo.com/564778587
 
 ## 3. Build PupilEXT from source: The advanced way
-If you want to extend PupilEXT with your own features or if the provided installations cannot be opened on your machine, building PupilEXT on your own computer is a good alternative. We recommend using CLion for this: https://www.jetbrains.com/clion/
+
+If you would like to contribute to this project, extend PupilEXT with custom functions, or the provided binaries do not work on your machine, building PupilEXT on your machine is necessary. The annoying part of compiling C++ projects is the integration of third-party libraries into a project. For this, you have three options: (i) use a system package manager like brew to download and build third-party libraries; (ii) download the libraries without a package manager and build it; (iii) integrating the libraries directly into the project. 
+
+If you want to stick with option (ii) you are a professional C++ developer and do not need this tutorial. Option (i) is preferable if you have several C++ projects on your machine and want to share the libraries between the projects, saving disc space (see section 3.1 and section 3.2). However, we highly recommend option (iii), which has the advatange that the integration of thirdparty libraries is fully automated(see section 3.0). You should have intermediate knowledge of C++ programming and CMake before you follow this tutorial, as we provide no warranty. 
 
 PupilEXT need the following libraries: Boost 1.75-0_2, Ceres 2.0.0, Eigen 3.3.9, OpenCV 4.5.1_3, QT 5.15.0, [spii](https://github.com/PetterS/spii), tbb, pylon 6.
 
-**Important Note:** When using Boost@1.76 or higher you will run into compiling issues, as boost::math::sign will not work, which is used by one of the pupil detection methods.
+**Important Note 1:** When using Boost@1.76 or higher, you will run into compiling issues, as boost::math::sign will not work, which is used by one of the pupil detection methods.
 
-We are changing the build pipline to vcpkg manifest files, so before following the below listed tutorial, you need to remove the 'vcpkg.json' file and the '.vscode' folder. 
+**Important Note 2:** If you want to follow option (i) or (ii)  you need to remove the 'vcpkg.json' file and the '.vscode' folder. 
 
-### 3.0 Build PupilEXT with vcpkg manifest (under construction)
+### 3.0 Build PupilEXT with vcpkg manifest (recommended)
+
+The PupilEXT project contains a vcpkg.json file in which all the required C++ libraries are defined. To download and build the libraries, we use the package management software vcpkg (https://vcpkg.io/en/index.html). We have placed the vcpkg GitHub repository as a submodule under ``[3rdparty/vcpkg](3rdparty/vcpkg)``, meaning that the required libraries will be downloaded automatically to the PupilEXT project folder, regardless of your system. This has the advantage that the PupilEXT folder can be easily deleted when the C++ libraries are no longer needed. However, as the libraries are downloaded and built, care must be taken to ensure that at least 6 GB are available on the disc for the PupilEXT folder. However, the QT library and the Pylon drivers for the cameras will not be managed via vcpkg, so they have to be downloaded and installed manually (see step 1 and 2).
+
+**Step 1: Download and install the newest Pylon Camera Softwware**
+
+Download the Pylon Camera Software Suite (*.dmg-File) from the Basler Website:
+https://www.baslerweb.com/de/vertrieb-support/downloads/downloads-software/
+
+**Step 2: Download and install QT**
+
+Download the QT from the website. Please install QT 5.15:
+https://www.qt.io/download-open-source?hsCtaTracking=9f6a2170-a938-42df-a8e2-a9f0b1d6cdce%7C6cb0de4f-9bb5-4778-ab02-bfb62735f3e5
+
+QT 6 or higher is currently not supported.
+
+**Step 2: Clone this repository**
+
+Type into your terminal the following command
 
 ```shell
 git clone --recurse-submodules https://github.com/openPupil/Open-PupilEXT.git
 ```
+
+The ``--recurse-submodules`` option is important, as vcpkg is a submodule. Without this option, the 3rdparty folder will not contain vcpkg packet manager. 
+
+Open the ``CMakeLists.tx`` file in the PupilEXT root and change the following line, according to your installed QT and user name
+
+```Cmake
+set(QT_VERSION 5.15.2) # Change the version according to your installation
+set(USER_NAME_MAC papillon) # Only necessary for macOS users, skip if you are on WIN
+```
+
+**Step 3: Decide which Editor to use**
+
+Depending on which editor is used, the procedure is slightly different. We have created a summary of how to proceed if you want to use [VisualStudio Code](https://code.visualstudio.com), [CLion](https://www.jetbrains.com/clion/promo/?source=google&medium=cpc&campaign=11964013627&gclid=Cj0KCQjw-NaJBhDsARIsAAja6dPFpHIXmFeKhVv0qheHTki-WmG5DepDCzR0iWuYQqAXEM1eEAELpy4aApLsEALw_wcB) or [QT Creator](https://www.qt.io/product/development-tools) to start PupilEXT. 
+
+**Step 3.0: Build with Visual Studio Vode**
+
+First, the following extensions must be downloaded in the editor for the procedure to work:
+
+(1) C++ extension: https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools
+
+(2) Cmake extension: https://marketplace.visualstudio.com/items?itemName=twxs.cmake
+
+(3) Cmake Tools extension: https://code.visualstudio.com/docs/cpp/cmake-linux
+
+Then open the ``.vscode/settings.json`` file in the cloned PupilEXT folder with a text editor. The entry ``"VCPKG_TARGET_TRIPLET": "x64-osx"`` must be changed to ``"VCPKG_TARGET_TRIPLET": "x64-windows-static-md"`` if you have a Windows operating system. If you are on a Mac, leave the entry as it is. Open the project folder with Visual Studio Code and build the project. If you press build for the first time, it may take a little longer, as the required libraries are downloaded and will build automatically. Make sure that you have enough disc space on your machine.
+
+**Step 3.1: Build with CLion**
+
+Open the project folder with CLion. Then some settings have to be made. For this, go to ``CLion > Preferences > Build, Execution, Deployment`` in the toolbar. Choose Debug and type in the Cmake options the following command:
+
+```shell
+-DVCPKG_TARGET_TRIPLET=x64-osx -DCMAKE_TOOLCHAIN_FILE=3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake
+```
+Note that `x64-osx` must be changed to `x64-windows-static-md`, if you are on a Windows machine. Next, choose for the build directory, the following folder: ``build``. This is very important, as the CMakeLists.txt is adjusted to find the libraries in a folder called ``build``. By default, CLion will build the project in a folder called ``cmake-build-debug``, which will not work with the current CMakeLists.txt. Press okay and build the project. The C++ libraries will be downloaded and build automatically for you. The first run will take some time. Make sure that you have enough disc space. 
+
+**Step 3.2: Build with QTCreator**
+
+QTCreator also supports CMake, which means that PupilEXT can also be opened there. As with CLion, only the following options need to be added: 
+
+```shell
+-DVCPKG_TARGET_TRIPLET=x64-osx -DCMAKE_TOOLCHAIN_FILE=3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake
+```
+
+Note that `x64-osx` must be changed to `x64-windows-static-md`, if you are on a Windows machine. Next, choose for the build directory, the following folder: ``build``.
+
+**Step 3.3: Build from terminal**
+
+Open your terminal and type the following commands if you are on a Mac:
+
+```shell
+cd Open-PupilEXT-main
+mkdir build
+cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DVCPKG_TARGET_TRIPLET=x64-osx -DCMAKE_TOOLCHAIN_FILE=3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake
+cmake --build . --config Release
+```
+
+If you are on Windows 10  use these commands (not tested, but should be similar):
+
+```shell
+cd Open-PupilEXT-main
+mkdir build
+cmake .. -DCMAKE_BUILD_TYPE=Release -DVCPKG_TARGET_TRIPLET=x64-windows-static-md -DCMAKE_TOOLCHAIN_FILE=3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake
+cmake --build . --config Release
+```
+Then, the executable will be available here ``/Open-PupilEXT-main/build/src/PupilEXT``.
+
+Note, the option ``-DCMAKE_TOOLCHAIN_FILE=3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmak`` makes sure to use the submodule as package manager and download the C++ libraries defined in the vcpkg.json file. The ``-DVCPKG_TARGET_TRIPLET=x64-os`` option is necessary to let vcpkg know which triplet your need. On Windows you need to change the tripplet to ``-DVCPKG_TARGET_TRIPLET=x64-windows-static-md``
 
 ### 3.1 How to build from source on MacOS
 

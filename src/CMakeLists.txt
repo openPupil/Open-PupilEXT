@@ -68,7 +68,7 @@ if(SPII_BUILD_FOUND)
             Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport #Qt5::OpenGL
             ${Boost_LIBRARIES}
             TBB::tbb
-            Boost::boost
+            #Boost::boost
             ${spii_LIBRARIES}
             ${CERES_LIBRARIES}
             ${PYLON_LIBRARIES}
@@ -83,7 +83,7 @@ else()
         Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport #Qt5::OpenGL
         ${Boost_LIBRARIES}
         TBB::tbb
-        Boost::boost
+        #Boost::boost
         spii
         meschach
         ${CERES_LIBRARIES}
