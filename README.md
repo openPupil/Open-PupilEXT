@@ -902,5 +902,5 @@ The embedded code for the STM32 Nucleo is licensed under the [MIT](https://opens
 
 The software PupilEXT is licensed under [GNU General Public License v.3.0.](https://github.com/openPupil/Open-PupilEXT/blob/main/Misc/LICENSE), Copyright (c) 2021 Technical University of Darmstadt. The pupil detection functionalities of PupilEXT are for academic and **non-commercial** use only. Please note that third-party libraries used in PupilEXT may be distributed under other open-source licenses. Please read the above section 8: Open source projects inside PupilEXT.
   
-This program is distributed in the hope that it will be useful, but without any warranty, without even the implied warranty of merchantability or fitness for a particular purpose.
+This program is distributed in the hope that it will be useful, but without any warranty, without even the implied warranty of fitness for a particular purpose.
 
