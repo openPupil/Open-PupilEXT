@@ -382,10 +382,12 @@ PupilEXT need the following libraries: Boost 1.75-0_2, Ceres 2.0.0, Eigen 3.3.9,
 
 The PupilEXT project contains a vcpkg.json file in which all the required C++ libraries are defined. To download and build the libraries, we use the package management software vcpkg (https://vcpkg.io/en/index.html). We have placed the vcpkg GitHub repository as a submodule under [``3rdparty/vcpkg``](3rdparty/vcpkg), meaning that the required libraries will be downloaded automatically to the PupilEXT project folder, regardless of your system. This has the advantage that the PupilEXT folder can be easily deleted when the C++ libraries are no longer needed. However, as the libraries are downloaded and built, care must be taken to ensure that at least 6 GB are available on the disc for the PupilEXT folder (on windows ~13 GB). However, the QT library and the Pylon drivers for the cameras will not be managed via vcpkg, so they have to be downloaded and installed manually (see step 1 and 2).
 
-**Step 1: Download and install the newest Pylon Camera Softwware**
+**Step 1: Download and install the latest Pylon Camera Softwware**
 
 Download the Pylon Camera Software Suite (*.dmg-File) from the Basler Website:
 https://www.baslerweb.com/de/vertrieb-support/downloads/downloads-software/
+
+Important: You need to modify the [`Open-PupilEXT/cmake/FindPylon.cmake`](https://github.com/openPupil/Open-PupilEXT/blob/main/cmake/FindPylon.cmake) file according to the Pylon version before you start to build the project. Please read the latest post in this discussion for more information: https://github.com/openPupil/Open-PupilEXT/discussions/21
 
 **Step 2: Download and install QT**
 
@@ -901,6 +903,6 @@ The work's content (Paper) is licensed under a [Creative Commons Attribution 4.0
 The embedded code for the STM32 Nucleo is licensed under the [MIT](https://opensource.org/licenses/mit-license.php) license.
 
 The software PupilEXT is licensed under [GNU General Public License v.3.0.](https://github.com/openPupil/Open-PupilEXT/blob/main/Misc/LICENSE), Copyright (c) 2021 Technical University of Darmstadt. The pupil detection functionalities of PupilEXT are for academic and **non-commercial** use only. Please note that third-party libraries used in PupilEXT may be distributed under other open-source licenses. Please read the above section 8: Open source projects inside PupilEXT.
-  
+
 This program is distributed in the hope that it will be useful, but without any warranty, without even the implied warranty of fitness for a particular purpose.
 
