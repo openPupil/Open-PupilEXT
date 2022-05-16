@@ -58,7 +58,13 @@ https://github.com/openPupil/Open-PupilEXT/discussions
 
 For special cases, feel free to contact the corresponding author Babak Zandi: zandi@lichttechnik.tu-darmstadt.de 
 
-**!! NEW !! Watch the video tutorials of PupilEXT that walk trough the interface**
+**!! NEW 04/2022 !!: A Python version of PupilEXT is now available.**
+
+Note that the Python package of PupilEXT is currently in the experimental stage.
+
+Link to the GitHub repo of PyPupilEXT: [https://github.com/openPupil/PyPupilEXT](https://github.com/openPupil/PyPupilEXT)
+
+**!! NEW 12/2021 !!: Watch the video tutorials of PupilEXT that walk trough the interface**
 
 **Tutorial 1/3:** Stereo camera recording<br/>
 https://vimeo.com/564556788
