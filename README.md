@@ -22,7 +22,7 @@
 
 # PupilEXT: flexible open-source platform for high resolution pupillometry in vision research
 
-This repository provides the official implementation of a free pupillometry cross-platform (MacOS, Windows, Linux) system called PupilEXT proposed in the article *"PupilEXT: flexible open-source platform for high resolution pupillometry in vision research"* authored by [Babak Zandi](https://www.lichttechnik.tu-darmstadt.de/fachgebiet_lichttechnik_lt/team_lt/mitarbeiter_lt_detail_65600.en.jsp) (Twitter: [@BkZandi](https://twitter.com/bkzandi)), Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh from the Technical University of Darmstadt.<br/>
+This repository provides the official implementation of a free pupillometry cross-platform (MacOS, Windows, Linux) system called PupilEXT proposed in the article *"PupilEXT: flexible open-source platform for high resolution pupillometry in vision research"* authored by Babak Zandi, Moritz Lode, Alexander Herzog, Georgios Sakas and Tran Quoc Khanh from the Technical University of Darmstadt.<br/>
 
 PupilEXT can record eye images using a stereo camera system or a single camera to measure the pupil diameter in real-time. Additionally, it is possible to analyse externally-recorded images without connected cameras through the PupilEXT interface.<br/>
 
@@ -55,8 +55,6 @@ For initial testing, we recommend using the provided demo datasets. See section 
 
 If you have new ideas, questions or want to discuss some extended topics, please use our discussion forum:
 https://github.com/openPupil/Open-PupilEXT/discussions
-
-For special cases, feel free to contact the corresponding author Babak Zandi: zandi@lichttechnik.tu-darmstadt.de 
 
 **!! NEW 04/2022 !!: A Python version of PupilEXT is now available.**
 
