@@ -374,7 +374,7 @@ void StereoCameraSettingsDialog::startHardwareTrigger() {
     double fps = triggerFramerateInputBox->value();
 
     int delay = (int)(((1000.0f/fps)*1000.0f) / 2.0f);
-    int count = (int)(runtime*60000000)/(delay*2);
+    int count = (int)((runtime*60000000)/(delay*2));
 
 
     QString cmd = "<TX"+ QString::number(count) +"X"+ QString::number(delay) +">";
