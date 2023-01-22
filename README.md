@@ -811,19 +811,7 @@ In order to start the programme, the SPII DLL must be added to ``PupilEXT\cmake-
 For debugging porpuses, the Pylon SDK supports emulating camera devices that are then displayed as physical cameras in the PupilExt software. To activate the camera emulation, the system environment variable "PYLON_CAMEMU" needs to be set. The number of available emulator devices can be controlled by exporting the PYLON_CAMEMU environment variable. For example, ``export PYLON_CAMEMU=2``.
 
 ## 5. Known issues
-- **MacOS:** Quick-toolbar icons not visible in dark-mode. ***Solution:*** *Open PupilEXT in light-mode of MacOS.* ***Comment:*** *Need to add positive-constrast icons and make it dependent on the light-mode or dark-mode state.* ***Priority:*** *Low*
-  
-- **MacOS:** PupilEXT crashed when choosing ExCuSe a pupil detection ***Solution:*** *Unknown, as this issue only happens on Mac.* ***Comment:*** *Please do not use the ExCuSe algorithm if you are on a Mac* ***Priority:*** *Low*
-
-- **All Platforms:** When using two cameras (stereo camera mode), the label of the camera #1 jumps back to default after pressing connect. No functional impact, as only the GUI is affected.
-
-- **All Platforms:** When using the hardware trigger, the maximum trigger duration is limited to 35 minutes. To solve this issue, another data type must be selected, as currently the duration is provided in seconds.
-
--  **All Platforms:** When choosing a high fps (e.g. 120 Hz) in stereo mode, the timestamp seems to count backwards. Probably this is related to the way the frames are fetched from the camera's buffer, as the timestamp should be accurate. A current workarround is to re-order the data during pre-processing.
-
-- **All Platforms:** In stereo mode, it is possible that some timestamps occur twice, which can be traced back to rounding issues.
-
-- **Windows:** If the user name of the working system has a space, saving the log files does not work. A current workaround is to save the logfile directly on the hard disk like 'c:/' or similar.
+see here https://github.com/openPupil/Open-PupilEXT/issues
 
 ## 6. Citation
 Please consider to cite our work if you find this repository or our results useful for your research:
