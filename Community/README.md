@@ -10,6 +10,8 @@ New features have already been developed, but they are under testing. We will up
 
 Planned features are going to be published under the issues page, while a public discussion will be maintained to keep track of the development and discuss any new feature suggestions.
 
+Note that this program is distributed in the hope that it will be useful, but without any warranty, without even the implied warranty of fitness for a particular purpose
+
 ---
 ## Contacts: 
 - benyeig@edu.bme.hu 
