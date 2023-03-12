@@ -51,6 +51,17 @@ We aimed to provide a professional open-source pupillometry measurement platform
 
 For initial testing, we recommend using the provided demo datasets. See section 2.4 in this repository. Pay attention to the image playback speed under "preference" (see video tutorial) if you are on a laptop with low computational power.
 
+**IMPORTANT information about the Community Branch of PupilEXT**
+This branch contains the Experimental Community Version of PupilEXT, maintained by Gábor Bényei (kheki4) and Attila Boncsér (sasfog). More information can be found in the readme of the project (Link: https://github.com/openPupil/Open-PupilEXT/tree/Experimental-Community-Version/Community).
+
+Note that this version of PupilEXT is subject of ongoing development to further add new features and might contain bugs or other errors. New features have already been developed, but they are under testing. We will upload the code in the coming month.
+
+Planned features are going to be published under the issues page, while a public discussion will be maintained to keep track of the development and discuss any new feature suggestions. Note that this program is distributed in the hope that it will be useful, but without any warranty, without even the implied warranty of fitness for a particular purpose.
+
+Correspondence for this community version can be adressed to:
+Gábor Bényei (kheki4): benyeig@edu.bme.hu
+Attila Boncsér (sasfog): aboncser@edu.bme.hu
+
 **Questions?**
 
 If you have new ideas, questions or want to discuss some extended topics, please use our discussion forum:
