@@ -1,6 +1,6 @@
 ## PupilEXT Experimental Community Version
 ---
-PupilEXT Experimental Community Version is maintained by Gábor Bényei (kheki4) and Attila Boncsér (sasfog), approved by Babak Zandi (BZandi).
+PupilEXT Experimental Community Version is maintained by Gábor Bényei (kheki4) and Attila Boncsér (sasfog).
 
 The branch has been added to the PupilEXT project GitHub, to add several new features to the program.
 
