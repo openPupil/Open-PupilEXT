@@ -42,6 +42,7 @@ MainWindow::MainWindow():
                           camTempMonitor(nullptr),
                           connPoolCOM(new ConnPoolCOM(this)),
                           dataStreamer(nullptr),
+                          imagePlaybackControlDialog(nullptr),
 
                           /*serialSettingsDialog(new SerialSettingsDialog(connPoolCOM, this)),
                           //remoteCCDialog(new RemoteCCDialog(connPoolUDP, connPoolCOM, this)),
