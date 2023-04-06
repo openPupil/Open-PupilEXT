@@ -13,14 +13,18 @@ static const char* blankString = "N/A";
 
 // Create the serial settings dialog
 // Settings are loaded if existing from the application settings
-SerialSettingsDialog::SerialSettingsDialog(QWidget *parent) :
+SerialSettingsDialog::SerialSettingsDialog(ConnPoolCOM *connPoolCOM, QWidget *parent) :
     QDialog(parent),
     m_intValidator(new QIntValidator(0, 4000000, this)),
-    serialPort(new QSerialPort(this)),
+    //serialPort(new QSerialPort(this)),
+    connPoolCOM(connPoolCOM),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    this->setMinimumSize(600, 330);
-    this->setWindowTitle("Serial Port Settings");
+    // GB begin
+    this->setMinimumSize(520, 380);
+    // GB: renamed to be better descriptive, as now there are other purposes for serial connection too
+    this->setWindowTitle("Camera Serial Connection Settings");
+    // GB end
 
     createForm();
 
@@ -43,24 +47,21 @@ SerialSettingsDialog::SerialSettingsDialog(QWidget *parent) :
 
     loadSettings();
 
-    connect(serialPort, &QSerialPort::readyRead, this, &SerialSettingsDialog::readData);
+    // GB: new solution uses connect later, not here
+    //connect(serialPort, &QSerialPort::readyRead, this, &SerialSettingsDialog::readData);
 }
 
 // Connects the serial port with the configured settings, if successful, displays a connected message to the textfield
 // Sends an onConnect signal on success
+// BG: implemented serial port handling from pool
 void SerialSettingsDialog::connectSerialPort() {
 
     updateSettings();
 
-    const SerialSettingsDialog::Settings p = m_currentSettings;
-    serialPort->setPortName(p.name);
-    serialPort->setBaudRate(p.baudRate);
-    serialPort->setDataBits(p.dataBits);
-    serialPort->setParity(p.parity);
-    serialPort->setStopBits(p.stopBits);
-    serialPort->setFlowControl(p.flowControl);
-
-    if (serialPort->open(QIODevice::ReadWrite)) {
+    const ConnPoolCOMInstanceSettings p = m_currentSettings;
+    
+    int index = connPoolCOM->setupAndOpenConnection(p, ConnPoolPurposeFlag::CAMERA_TRIGGER);
+    if(index >= 0) {
         textField->clear();
 
         connectButton->setEnabled(false);
@@ -69,20 +70,35 @@ void SerialSettingsDialog::connectSerialPort() {
         textField->append(tr("Connected to %1 : %2, %3, %4, %5, %6")
                                   .arg(p.name).arg(p.stringBaudRate).arg(p.stringDataBits)
                                   .arg(p.stringParity).arg(p.stringStopBits).arg(p.stringFlowControl));
+
+        connPoolCOMIndex = index;
+        connPoolCOM->subscribeListener(index, this, SLOT(readData(QString, quint64)));
+
         emit onConnect();
     } else {
-        QMessageBox::critical(this, tr("Error"), serialPort->errorString());
-
+        if(connPoolCOM->getInstance(connPoolCOMIndex) != nullptr) {
+            QString errMsg = connPoolCOM->getInstance(connPoolCOMIndex)->errorString();
+            QMessageBox::critical(this, tr("Error"), connPoolCOM->getInstance(connPoolCOMIndex)->errorString());
+        }
         textField->append((tr("Error while connecting to the serial port.")));
     }
 }
 
 // Disconnects the connected serial port
 // Sends an onDisconnect signal
+// BG: implemented serial port handling from pool
 void SerialSettingsDialog::disconnectSerialPort() {
 
-    if (serialPort->isOpen())
-        serialPort->close();
+    if(connPoolCOMIndex < 0) {
+        qDebug() << "SerialSettingsDialog::disconnectSerialPort(): connPoolCOMIndex value is invalid";
+        return;
+    }
+
+    if(connPoolCOMIndex >= 0 && connPoolCOM->getInstance(connPoolCOMIndex)->isOpen()) {
+        connPoolCOM->unsubscribeListener(connPoolCOMIndex, this, SLOT(readData(QString, quint64)));
+        connPoolCOM->closeConnection(connPoolCOMIndex, ConnPoolPurposeFlag::CAMERA_TRIGGER);
+        //connPoolCOM->getInstance(connPoolCOMIndex)->close();
+    }
 
     connectButton->setEnabled(true);
     disconnectButton->setEnabled(false);
@@ -93,33 +109,37 @@ void SerialSettingsDialog::disconnectSerialPort() {
 
 // Reads data from the serial port line by line
 // Displays the data on the textfield
-void SerialSettingsDialog::readData()
+void SerialSettingsDialog::readData(QString msg, quint64 timestamp)
 {
-    if(serialPort->canReadLine()) {
-        textField->append(QString(serialPort->readLine()));
-    }
+    // GB TODO: this is gotten by readAll, not readLine... is it okay?
+    textField->append(msg);
+
+    /*if(connPoolCOM->getInstance(connPoolCOMIndex)->canReadLine()) {
+        textField->append(QString(connPoolCOM->getInstance(connPoolCOMIndex)->readLine()));
+    }*/
 }
 
 // Slot that is used to send commands over the connected serial port
 // Commands are strings, encoded using utf-8
+// GB modified
 void SerialSettingsDialog::sendCommand(QString cmd) {
 
-    if(!serialPort->isOpen())
+    //if(!serialPort->isOpen())
+    if(connPoolCOMIndex < 0 || !connPoolCOM->getInstance(connPoolCOMIndex)->isOpen())
         return;
-
     QByteArray writeData = cmd.toUtf8();
-
-    const qint64 bytesWritten = serialPort->write(writeData);
+    const qint64 bytesWritten = connPoolCOM->getInstance(connPoolCOMIndex)->write(writeData);
+    //const qint64 bytesWritten = serialPort->write(writeData);
 
     if (bytesWritten == -1) {
         textField->append(QObject::tr("Failed to write the data to port %1, error: %2")
-                .arg(serialPort->portName())
-                .arg(serialPort->errorString()));
+                .arg(connPoolCOM->getInstance(connPoolCOMIndex)->portName())
+                .arg(connPoolCOM->getInstance(connPoolCOMIndex)->errorString()));
 
     } else if (bytesWritten != writeData.size()) {
         textField->append(QObject::tr("Failed to write the data to port %1, error: %2")
-                                  .arg(serialPort->portName())
-                                  .arg(serialPort->errorString()));
+                                  .arg(connPoolCOM->getInstance(connPoolCOMIndex)->portName())
+                                  .arg(connPoolCOM->getInstance(connPoolCOMIndex)->errorString()));
     }
 }
 
@@ -128,7 +148,8 @@ void SerialSettingsDialog::createForm() {
     QGridLayout *mainLayout = new QGridLayout(this);
 
     QGroupBox *paramGroup = new QGroupBox("Parameters");
-    QGridLayout *paramLayout = new QGridLayout;
+    //QGridLayout *paramLayout = new QGridLayout;
+    QFormLayout *paramLayout = new QFormLayout;
 
     QLabel *baudRateLabel = new QLabel(tr("Baudrate"));
     QLabel *dataBitsLabel = new QLabel(tr("Data bits"));
@@ -142,16 +163,20 @@ void SerialSettingsDialog::createForm() {
     parityBox = new QComboBox();
     stopBitsBox = new QComboBox();
 
-    paramLayout->addWidget(baudRateLabel);
-    paramLayout->addWidget(baudRateBox);
-    paramLayout->addWidget(dataBitsLabel);
-    paramLayout->addWidget(dataBitsBox);
-    paramLayout->addWidget(parityLabel);
-    paramLayout->addWidget(parityBox);
-    paramLayout->addWidget(stopBitsLabel);
-    paramLayout->addWidget(stopBitsBox);
-    paramLayout->addWidget(flowControlLabel);
-    paramLayout->addWidget(flowControlBox);
+    // GB modified begin
+    // GB NOTE: using qFormLayout instead of grid, to make things fit on smaller screen area
+    baudRateBox->setFixedWidth(70);
+    dataBitsBox->setFixedWidth(70);
+    flowControlBox->setFixedWidth(70);
+    parityBox->setFixedWidth(70);
+    stopBitsBox->setFixedWidth(70);
+
+    paramLayout->addRow(baudRateLabel, baudRateBox);
+    paramLayout->addRow(dataBitsLabel, dataBitsBox);
+    paramLayout->addRow(parityLabel, parityBox);
+    paramLayout->addRow(stopBitsLabel, stopBitsBox);
+    paramLayout->addRow(flowControlLabel, flowControlBox);
+    // GB modified end
 
     paramGroup->setLayout(paramLayout);
     mainLayout->addWidget(paramGroup, 0, 1);
@@ -162,6 +187,9 @@ void SerialSettingsDialog::createForm() {
     QHBoxLayout *serialPortInfoListLayout = new QHBoxLayout;
 
     serialPortInfoListBox = new QComboBox();
+    // GB: set width to fit better
+    serialPortInfoListBox->setFixedWidth(70);
+    // GB added end
 
     serialPortInfoListLayout->addWidget(serialPortInfoListBox);
 
@@ -228,13 +256,15 @@ void SerialSettingsDialog::createForm() {
     mainLayout->addLayout(buttonsLayout, 4, 0, 1, 2);
 
     setLayout(mainLayout);
+
+    this->resize(600, 370); // GB modified
 }
 
 SerialSettingsDialog::~SerialSettingsDialog() {
     disconnectSerialPort();
 }
 
-SerialSettingsDialog::Settings SerialSettingsDialog::settings() const
+ConnPoolCOMInstanceSettings SerialSettingsDialog::settings() const
 {
     return m_currentSettings;
 }
@@ -338,6 +368,15 @@ void SerialSettingsDialog::fillPortsInfo()
     }
 
     serialPortInfoListBox->addItem(tr("Custom"));
+
+    // GB added begin
+    // NOTE: also add item(s) assigned from our internal COM pool (which can be reused)
+    // later NOTE: no need for this, because qt also seems to show the ports that PupilEXT has already opened
+//    std::vector<QString> poolPortNames = connPoolCOM->getOpenedNames();
+//    for(int i=0; i<poolPortNames.size(); i++) {
+//        serialPortInfoListBox->addItem(poolPortNames[i]);
+//    }
+    // GB added end
 }
 
 
@@ -377,45 +416,32 @@ void SerialSettingsDialog::updateSettings()
 
 // Loads the serial port settings from application settings
 void SerialSettingsDialog::loadSettings() {
-
     serialPortInfoListBox->setCurrentText(applicationSettings->value("SerialSettings.name", serialPortInfoListBox->itemText(0)).toString());
-
     baudRateBox->setCurrentText(applicationSettings->value("SerialSettings.baudRate", baudRateBox->itemText(0)).toString());
-
     dataBitsBox->setCurrentText(applicationSettings->value("SerialSettings.dataBits", dataBitsBox->itemText(0)).toString());
-
     parityBox->setCurrentText(applicationSettings->value("SerialSettings.parity", parityBox->itemText(0)).toString());
-
     stopBitsBox->setCurrentText(applicationSettings->value("SerialSettings.stopBits", stopBitsBox->itemText(0)).toString());
-
     flowControlBox->setCurrentText(applicationSettings->value("SerialSettings.flowControl", flowControlBox->itemText(0)).toString());
-
     localEchoCheckBox->setChecked(applicationSettings->value("SerialSettings.localEchoEnabled", localEchoCheckBox->isChecked()).toBool());
-
     updateSettings();
 }
 
 // Saves serial port settings to application settings
 void SerialSettingsDialog::saveSettings() {
-
     applicationSettings->setValue("SerialSettings.name", serialPortInfoListBox->currentText());
-
     applicationSettings->setValue("SerialSettings.baudRate", baudRateBox->currentText().toInt());
-
     applicationSettings->setValue("SerialSettings.dataBits", dataBitsBox->currentText().toInt());
-
     applicationSettings->setValue("SerialSettings.parity", parityBox->currentText());
-
     applicationSettings->setValue("SerialSettings.stopBits", stopBitsBox->currentText().toFloat());
-
     applicationSettings->setValue("SerialSettings.flowControl", flowControlBox->currentText());
-
     applicationSettings->setValue("SerialSettings.localEchoEnabled", localEchoCheckBox->isChecked());
-
 }
 
 bool SerialSettingsDialog::isConnected() {
-    return serialPort->isOpen();
+    if(connPoolCOMIndex >= 0)
+        return connPoolCOM->getInstance(connPoolCOMIndex)->isOpen();
+    
+    return false;
 }
 
 void SerialSettingsDialog::updateDevices() {

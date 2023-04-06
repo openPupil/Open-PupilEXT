@@ -6,28 +6,29 @@
 #include <iostream>
 #include "dataTable.h"
 
-const QString DataTable::TIME = "time";
-const QString DataTable::FRAME_NUMBER = "frame#";
-const QString DataTable::CAMERA_FPS = "camera fps";
-const QString DataTable::PUPIL_FPS = "pupil tracking fps";
-const QString DataTable::PUPIL_CENTER_X = "pupil center x";
-const QString DataTable::PUPIL_CENTER_Y = "pupil center y";
-const QString DataTable::PUPIL_MAJOR = "pupil major axis";
-const QString DataTable::PUPIL_MINOR = "pupil minor axis";
-const QString DataTable::PUPIL_WIDTH = "pupil width";
-const QString DataTable::PUPIL_HEIGHT = "pupil height";
-const QString DataTable::PUPIL_DIAMETER = "pupil diameter";
-const QString DataTable::PUPIL_UNDIST_DIAMETER = "pupil undistorted diameter";
-const QString DataTable::PUPIL_PHYSICAL_DIAMETER = "pupil physical diameter";
-const QString DataTable::PUPIL_CONFIDENCE = "pupil confidence";
-const QString DataTable::PUPIL_OUTLINE_CONFIDENCE = "pupil outline confidence";
-const QString DataTable::PUPIL_CIRCUMFERENCE = "pupil circumference";
-const QString DataTable::PUPIL_RATIO = "pupil axis ratio";
+// GB: capitalized forst letters, nicer
+const QString DataTable::TIME = "Time";
+const QString DataTable::FRAME_NUMBER = "Frame#";
+const QString DataTable::CAMERA_FPS = "Camera fps";
+const QString DataTable::PUPIL_FPS = "Pupil tracking fps";
+const QString DataTable::PUPIL_CENTER_X = "Pupil center x";
+const QString DataTable::PUPIL_CENTER_Y = "Pupil center y";
+const QString DataTable::PUPIL_MAJOR = "Pupil major axis";
+const QString DataTable::PUPIL_MINOR = "Pupil minor axis";
+const QString DataTable::PUPIL_WIDTH = "Pupil width";
+const QString DataTable::PUPIL_HEIGHT = "Pupil height";
+const QString DataTable::PUPIL_DIAMETER = "Pupil diameter";
+const QString DataTable::PUPIL_UNDIST_DIAMETER = "Pupil undistorted diameter";
+const QString DataTable::PUPIL_PHYSICAL_DIAMETER = "Pupil physical diameter";
+const QString DataTable::PUPIL_CONFIDENCE = "Pupil confidence";
+const QString DataTable::PUPIL_OUTLINE_CONFIDENCE = "Pupil outline confidence";
+const QString DataTable::PUPIL_CIRCUMFERENCE = "Pupil circumference";
+const QString DataTable::PUPIL_RATIO = "Pupil axis ratio";
 
 
 // Create a new DataTable, stereoMode decides wherever two or one column is displayed.
 // The different columns of the Datatable are defined in the header file using the constants.
-DataTable::DataTable(bool stereoMode, QWidget *parent) : QWidget(parent), stereoMode(stereoMode) {
+DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), procMode(procMode) {
 
     setWindowTitle("Data Table");
 
@@ -53,12 +54,44 @@ DataTable::DataTable(bool stereoMode, QWidget *parent) : QWidget(parent), stereo
     tableContextMenu->addAction(new QAction("Plot Value", this));
     connect(tableContextMenu, SIGNAL(triggered(QAction*)), this, SLOT(onContextMenuClick(QAction*)));
 
-    tableModel = new QStandardItemModel(17, stereoMode ? 2 : 1, this);
 
-    tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Main Value"));
+    // GB added/modified begin
+//    tableModel = new QStandardItemModel(17, stereoMode ? 2 : 1, this);
+    //int numCols=1;
+    switch(procMode) {
+        case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
+            numCols=1;
+            break;
+        case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
+        case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        case ProcMode::STEREO_IMAGE_ONE_PUPIL:
+            numCols=2;
+            break;
+        case ProcMode::STEREO_IMAGE_TWO_PUPIL:
+            numCols=4;
+            break;
+    }
+    tableModel = new QStandardItemModel(17, numCols, this);
 
-    if(stereoMode) {
-        tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Secondary Value"));
+
+    switch(procMode) {
+        case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
+            tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Main"));
+            break;
+        case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
+            tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Eye A"));
+            tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Eye B"));
+        case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        case ProcMode::STEREO_IMAGE_ONE_PUPIL:
+            tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Main"));
+            tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Sec."));
+            break;
+        case ProcMode::STEREO_IMAGE_TWO_PUPIL:
+            tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Eye A Main"));
+            tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Eye A Sec."));
+            tableModel->setHeaderData(2, Qt::Horizontal, QObject::tr("Eye B Main"));
+            tableModel->setHeaderData(3, Qt::Horizontal, QObject::tr("Eye B Sec."));
+            break;
     }
 
     tableModel->setHeaderData(0, Qt::Vertical, TIME);
@@ -84,16 +117,35 @@ DataTable::DataTable(bool stereoMode, QWidget *parent) : QWidget(parent), stereo
     tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
 
-    // Color coding the two column header for stereo mode
-    QStandardItem *item1 = tableModel->horizontalHeaderItem(0);
-    item1->setForeground(Qt::blue);
+    // // GB: Marking every second row with different background for better readibility
+    // // GB TODO: somehow it does not work now. Cant access that memory
+    // for(int r=0; r<tableModel->rowCount(); r++)
+    //     if(r%2==0)
+    //         for(int c=0; c<tableModel->columnCount(); c++)
+    //             tableModel->item(r,c)->setBackground(QColor(220, 220, 220, 255));
+                 
 
-    if(stereoMode) {
-        QStandardItem *item2 = tableModel->horizontalHeaderItem(1);
-        item2->setForeground(Qt::green);
+    switch(procMode) {
+        case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
+            tableModel->horizontalHeaderItem(0)->setForeground(Qt::blue);
+            break;
+        case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
+        case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        case ProcMode::STEREO_IMAGE_ONE_PUPIL:
+            tableModel->horizontalHeaderItem(0)->setForeground(Qt::blue);
+            tableModel->horizontalHeaderItem(1)->setForeground(Qt::green);
+            break;
+        case ProcMode::STEREO_IMAGE_TWO_PUPIL:
+            tableModel->horizontalHeaderItem(0)->setForeground(Qt::blue);
+            tableModel->horizontalHeaderItem(1)->setForeground(Qt::green);
+            tableModel->horizontalHeaderItem(2)->setForeground(QColor(144, 55, 212, 255)); // purple
+            tableModel->horizontalHeaderItem(3)->setForeground(QColor(214, 140, 49,255)); // orange
+            break;
     }
 
-    resize(tableView->width(), tableView->height());
+    //resize(tableView->width(), tableView->height());
+    resize(160 + numCols*80, 500);
+    // GB added/modified end
 
     tableView->show();
 
@@ -105,7 +157,11 @@ DataTable::~DataTable() {
 }
 
 QSize DataTable::sizeHint() const {
-    return QSize(330, 500);
+    //return QSize(330, 500);
+    
+    // GB: adapt to num of columns
+    return QSize(160 + numCols*80, 500);
+    // GB end
 }
 
 // On right-click in the table header
@@ -119,9 +175,10 @@ void DataTable::customMenuRequested(QPoint pos){
 
 // Slot handler that receives new pupil data from the pupil detection process
 // New data is only updated in the table at a lower interval defined by updateDelay, to not overload/block the GUI process
-void DataTable::onPupilData(quint64 timestamp, const Pupil &pupil, const QString &filename) {
+void DataTable::onPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename) {
+    // std::cout << "timestamp = " << QString::number(timestamp).toStdString() << "; filename = " << filename.toStdString() << std::endl;
 
-    if(timer.elapsed() > updateDelay && pupil.valid(-2)) {
+    if(timer.elapsed() > updateDelay) {
         timer.restart();
 
         // QDateTime::fromMSecsSinceEpoch converts the UTC timestamp into localtime
@@ -130,34 +187,17 @@ void DataTable::onPupilData(quint64 timestamp, const Pupil &pupil, const QString
         QStandardItem *item = new QStandardItem(QLocale::system().toString(date));
         tableModel->setItem(0, 0, item);
 
-        setPupilData(pupil, 0);
-    }
-}
-
-// Slot handler that receives new stereo pupil data from the pupil detection process
-// New data is only updated in the table at a lower interval defined by updateDelay, to not overload/block the GUI process
-void DataTable::onStereoPupilData(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filename) {
-
-    if(timer.elapsed() > updateDelay && pupil.valid(-2)) {
-        timer.restart();
-
-        // QDateTime::fromMSecsSinceEpoch converts the UTC timestamp into localtime
-        QDateTime date = QDateTime::fromMSecsSinceEpoch(timestamp);
-        // Display the date/time in the system specific locale format
-        QStandardItem *item = new QStandardItem(QLocale::system().toString(date));
-        tableModel->setItem(0, 0, item);
-
-        setPupilData(pupil, 0);
-        setPupilData(pupilSec, 1);
+        // GB: modified to work with new Pupil vector signals
+        for(byte i=0; i<Pupils.size(); i++)
+            if(Pupils[i].valid(-2))
+                setPupilData(Pupils[i], i);
+        // GB NOTE: this only works, because we defined the columns in the exact same order 
+        // as in what pupil vector elements are, when they arrive
     }
 }
 
 // Updates the table column entries given pupil data and a column index (0, 1)
 void DataTable::setPupilData(const Pupil &pupil, int column) {
-
-    if(column > 1) {
-        return;
-    }
 
     QStandardItem *item = new QStandardItem(QString::number(pupil.center.x));
     tableModel->setItem(4, column, item);

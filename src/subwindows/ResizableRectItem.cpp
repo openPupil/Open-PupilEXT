@@ -5,6 +5,11 @@
 #include <QGraphicsScene>
 #include <QCursor>
 
+#include <QtMath>
+#include <iostream>
+
+#include <QApplication>
+
 static ResizeDirections resizeDirections;
 
 // Horizontal and vertical distance from the cursor position at the time of
@@ -15,10 +20,18 @@ static ResizeDirections resizeDirections;
 static qreal horizontalDistance;
 static qreal verticalDistance;
 
+
 ResizableRectItem::ResizableRectItem(QRectF rect, QGraphicsItem *parent) : QGraphicsRectItem(parent) {
 
     setRect(rect);
+    setAcceptHoverEvents(true);
+}
 
+ResizableRectItem::ResizableRectItem(QRectF rect, QSizeF aspectRatio, QGraphicsItem *parent) : QGraphicsRectItem(parent) {
+
+    setAspectRatioLock(aspectRatio);
+
+    setRect(rect);
     setAcceptHoverEvents(true);
 }
 
@@ -52,6 +65,31 @@ void ResizableRectItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
         resizeDirections.vertical = resizeDirections.VertNone;
     }
 
+    // GB begin
+    //const QPointF &pos = event->pos();
+    //QPointF pos = event->pos();
+    Qt::KeyboardModifiers key = QApplication::queryKeyboardModifiers();
+    if( ARLock.width()>0 && 
+        ARLock.height()>0 && 
+        key != Qt::AltModifier
+        ) {
+
+        if(resizeDirections.horizontal == resizeDirections.HorzNone && resizeDirections.vertical != resizeDirections.VertNone) {
+            if(pos.x()>rect().center().x())
+                resizeDirections.horizontal = resizeDirections.Right;
+            else
+                resizeDirections.horizontal = resizeDirections.Left;
+        }
+
+        if(resizeDirections.vertical == resizeDirections.VertNone && resizeDirections.horizontal != resizeDirections.HorzNone) {
+            if(pos.y()>rect().center().y())
+                resizeDirections.vertical = resizeDirections.Bottom;
+            else
+                resizeDirections.vertical = resizeDirections.Top;
+        }
+    }
+    // GB end
+
     if(resizeDirections.horizontal != resizeDirections.HorzNone && resizeDirections.vertical != resizeDirections.VertNone) {
         if((pos.x() > rect().center().x() && pos.y() > rect().center().y()) || (pos.x() < rect().center().x() && pos.y() < rect().center().y()))
             setCursor(QCursor(Qt::SizeFDiagCursor));
@@ -73,6 +111,7 @@ void ResizableRectItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     // If not a resize event, pass it to base class so move event can be implemented.
     if (!resizeDirections.any()) {
         setCursor(QCursor(Qt::SizeAllCursor));
+
         QGraphicsRectItem::mouseMoveEvent(event);
         emit onChange();
     } else {
@@ -159,15 +198,6 @@ QRectF ResizableRectItem::getRect() const
 
 void ResizableRectItem::resizeRect(QGraphicsSceneMouseEvent *event)
 {
-
-    //setCursor(QCursor(Qt::ArrowCursor));
-//    SizeVerCursor,
-//    SizeHorCursor,
-//    SizeBDiagCursor,
-//    SizeFDiagCursor,
-//    SizeAllCursor,
-
-
     // I don't use QRectF because its members can't be manipulated
     // directly.
     qreal left = rect().left();
@@ -175,16 +205,85 @@ void ResizableRectItem::resizeRect(QGraphicsSceneMouseEvent *event)
     qreal right = left + rect().width();
     qreal bottom = top + rect().height();
 
+    // GB begin   
+    //const QPointF &pos = event->pos();
+    QPointF pos = event->pos();
+    Qt::KeyboardModifiers key = QApplication::queryKeyboardModifiers();
+    if(ARLock.width()>0 && ARLock.height()>0 && key != Qt::AltModifier) {
+
+        float originalDeltaX;
+        float originalDeltaY;
+        if(resizeDirections.horizontal == resizeDirections.Right && resizeDirections.vertical == resizeDirections.Bottom) {
+            originalDeltaX = pos.x() - rect().topLeft().x();
+            originalDeltaY = pos.y() - rect().topLeft().y();
+        } else if(resizeDirections.horizontal == resizeDirections.Left && resizeDirections.vertical == resizeDirections.Bottom) {
+            originalDeltaX = rect().topRight().x() - pos.x();
+            originalDeltaY = pos.y() - rect().topRight().y();
+        } else if(resizeDirections.horizontal == resizeDirections.Right && resizeDirections.vertical == resizeDirections.Top) {
+            originalDeltaX = pos.x() - rect().bottomLeft().x();
+            originalDeltaY = rect().bottomLeft().y() - pos.y();
+        } else if(resizeDirections.horizontal == resizeDirections.Left && resizeDirections.vertical == resizeDirections.Top) {
+            originalDeltaX = rect().bottomRight().x() - pos.x();
+            originalDeltaY = rect().bottomRight().y() - pos.y();
+        }
+
+        float modifiedDeltaX;
+        float modifiedDeltaY;
+        if(originalDeltaX > originalDeltaY) {
+            modifiedDeltaX = originalDeltaX;
+            modifiedDeltaY = ARLock.height()/ARLock.width() * originalDeltaX;
+        }
+        if(originalDeltaX <= originalDeltaY) {
+            modifiedDeltaX = ARLock.width()/ARLock.height() * originalDeltaY;
+            modifiedDeltaY = originalDeltaY;
+        }
+
+        if(resizeDirections.horizontal == resizeDirections.Right && resizeDirections.vertical == resizeDirections.Bottom) {
+            pos = QPointF(rect().topLeft().x() + modifiedDeltaX, rect().topLeft().y() + modifiedDeltaY);
+        } else if(resizeDirections.horizontal == resizeDirections.Left && resizeDirections.vertical == resizeDirections.Bottom) {
+            pos = QPointF(rect().topRight().x() - modifiedDeltaX, rect().topRight().y() + modifiedDeltaY);
+        } else if(resizeDirections.horizontal == resizeDirections.Right && resizeDirections.vertical == resizeDirections.Top) {
+            pos = QPointF(rect().bottomLeft().x() + modifiedDeltaX, rect().bottomLeft().y() - modifiedDeltaY);
+        } else if(resizeDirections.horizontal == resizeDirections.Left && resizeDirections.vertical == resizeDirections.Top) {
+            pos = QPointF(rect().bottomRight().x() - modifiedDeltaX, rect().bottomRight().y() - modifiedDeltaY);
+        }
+
+        keepingAspectRatio = true;
+    } else if(key==Qt::AltModifier) {
+        keepingAspectRatio = false;
+    }
+
+    if( resizeDirections.horizontal == resizeDirections.Right && (pos.x() - rect().left()) < minSize.width() ) {
+        //std::cout << "Too small to the left" << std::endl;
+        return;
+    }
+    if( resizeDirections.horizontal == resizeDirections.Left && (rect().right() - pos.x()) < minSize.width() ) {
+        //std::cout << "Too small to the right" << std::endl;
+        return;
+    }
+
+    if( resizeDirections.vertical == resizeDirections.Bottom && (pos.y() - rect().top()) < minSize.height() ) {
+        //std::cout << "Too small to the top" << std::endl;
+        return;
+    }
+    if( resizeDirections.vertical == resizeDirections.Top && (rect().bottom() - pos.y()) < minSize.height() ) {
+        //std::cout << "Too small to the bottom" << std::endl;
+        return;
+    }
+    // GB end
+
     if (resizeDirections.horizontal == resizeDirections.Left) {
-        left = event->pos().x() + horizontalDistance;
-    } else if (resizeDirections.horizontal == resizeDirections.Right) {
-        right = event->pos().x() + horizontalDistance;
+        left = pos.x() + horizontalDistance;
+    } //else if (resizeDirections.horizontal == resizeDirections.Right) {
+    if (resizeDirections.horizontal == resizeDirections.Right) {
+        right = pos.x() + horizontalDistance;
     }
 
     if (resizeDirections.vertical == resizeDirections.Top) {
-        top = event->pos().y() + verticalDistance;
-    } else if (resizeDirections.vertical == resizeDirections.Bottom) {
-        bottom = event->pos().y() + verticalDistance;
+        top = pos.y() + verticalDistance;
+    } //else if (resizeDirections.vertical == resizeDirections.Bottom) {
+    if (resizeDirections.vertical == resizeDirections.Bottom) {
+        bottom = pos.y() + verticalDistance;
     }
 
     QRectF newRect(left, top, right-left, bottom-top);
@@ -210,4 +309,12 @@ void ResizableRectItem::resizeRect(QGraphicsSceneMouseEvent *event)
         setRect(newRect);
         emit onChange();
     }
+}
+
+
+void ResizableRectItem::setMinSize(QSizeF size) {
+
+    //if(size.x() >= 1)
+
+    minSize = size;
 }

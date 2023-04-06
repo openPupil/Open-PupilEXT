@@ -14,6 +14,9 @@ FileCamera::FileCamera(const QString &directory, int playbackSpeed, bool playbac
     connect(imageReader, SIGNAL(onNewImage(CameraImage)), frameCounter, SLOT(count()));
     connect(imageReader, SIGNAL(finished()), this, SIGNAL(finished()));
 
+    // GB: added this line
+    connect(imageReader, SIGNAL(endReached()), this, SIGNAL(endReached()));
+
     connect(frameCounter, SIGNAL(fps(double)), this, SIGNAL(fps(double)));
     connect(frameCounter, SIGNAL(framecount(int)), this, SIGNAL(framecount(int)));
 
@@ -73,4 +76,17 @@ CameraCalibration *FileCamera::getCameraCalibration() {
 
 StereoCameraCalibration *FileCamera::getStereoCameraCalibration() {
     return stereoCameraCalibration;
+}
+
+
+void FileCamera::step1frameNext() {
+    if(imageReader->isPlaying())
+        imageReader->pause();
+    imageReader->step1frame(true);
+}
+
+void FileCamera::step1framePrev() {
+    if(imageReader->isPlaying())
+        imageReader->pause();
+    imageReader->step1frame(false);
 }

@@ -15,8 +15,6 @@
 
 using namespace Pylon;
 
-Q_DECLARE_METATYPE(cv::Mat)
-
 /**
     Image event handler, gets called at each new image received from a single camera (Basler camera)
 

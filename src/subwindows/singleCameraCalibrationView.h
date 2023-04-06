@@ -22,6 +22,7 @@
     Custom widget for conducting camera calibration on a given single camera using a calibration pattern
 
     Different pattern are supported. See OpenCVs calibration documentation on the different supported pattern.
+    
 
  signals:
     onNewImage(): Signal send to distribute images showing camera calibration results
@@ -88,6 +89,5 @@ signals:
     void onNewImage(const CameraImage &img);
 
 };
-
 
 #endif //PUPILEXT_SINGLECAMERACALIBRATIONVIEW_H

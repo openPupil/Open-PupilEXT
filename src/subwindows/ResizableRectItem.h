@@ -4,7 +4,7 @@
 
 /**
     Source https://github.com/sashoalm/ResizableRectItem
-    @author Alexander Almaleh, Moritz Lode (Updated 2020)
+    @author Alexander Almaleh, Moritz Lode (Updated 2020), Gábor Bényei (Updated 2023)
 */
 
 #include <QtWidgets/qgraphicsitem.h>
@@ -28,10 +28,24 @@ Q_OBJECT
 public:
 
     explicit ResizableRectItem(QRectF rect, QGraphicsItem *parent=0);
+    explicit ResizableRectItem(QRectF rect, QSizeF aspectRatio, QGraphicsItem *parent=0);
 
     QRectF getRect() const;
 
+    // GB begin
+    void setMinSize(QSizeF size);
+    void setAspectRatioLock(QSizeF aspectRatio) {
+        ARLock = aspectRatio;
+    }
+    // GB end
+
 private:
+
+    // GB begin
+    QSizeF minSize = QSizeF(0,0);
+    QSizeF ARLock = QSizeF(0,0);
+    bool keepingAspectRatio = true;
+    // GB end
 
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;

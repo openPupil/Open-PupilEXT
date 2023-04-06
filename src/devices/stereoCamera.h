@@ -3,7 +3,7 @@
 #define PUPILEXT_STEREOCAMERA_H
 
 /**
-    @author Moritz Lode
+    @authors Moritz Lode, Bényei Gábor
 */
 
 
@@ -22,7 +22,12 @@ using namespace Basler_UniversalCameraParams;
 /**
     StereoCamera represents a stereo camera (two Basler cameras), main camera and secondary camera
 
-    The camer settings of the main camera are used for the secondary camera
+    The camera settings of the main camera are used for the secondary camera
+
+    NOTE: Modified by Gábor Bényei, 2023 jan
+    BG NOTE: 
+        Added getters/setters for changing image acquisition ROI size and offset,
+        binning, as well as camera coreboard temperature
 
     getFriendlyNames(): return the Basler device names for both cameras in a vector list
     attachCameras(): defines the two camera devices by device names
@@ -89,6 +94,17 @@ public:
     void saveMainToFile(const String_t &filename);
     //void saveSecondaryToFile(const String_t &filename);
 
+    // BG added begin
+    int getImageROIwidth(); 
+    int getImageROIheight(); 
+    int getImageROIoffsetX(); 
+    int getImageROIoffsetY();  
+    int getImageROIwidthMax(); // both setImageROI and setImageResize depends on this
+    int getImageROIheightMax(); // both setImageROI and setImageResize depends on this
+    int getBinningVal();
+    std::vector<double> getTemperatures();
+    // BG added end
+
 private:
 
     QDir settingsDirectory;
@@ -119,6 +135,14 @@ public slots:
     void enableAcquisitionFrameRate(bool enabled);
     void setAcquisitionFPSValue(int value);
     void resynchronizeTime();
+
+    // BG added begin
+    bool setBinningVal(int value);
+    bool setImageROIwidth(int width);
+    bool setImageROIheight(int height);
+    bool setImageROIoffsetX(int offsetX);
+    bool setImageROIoffsetY(int offsetY);
+    // BG added end
 
 signals:
 

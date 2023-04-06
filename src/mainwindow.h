@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 /**
-    @author Moritz Lode
+    @authors Moritz Lode, Gábor Bényei
 */
 
 #include "subwindows/serialSettingsDialog.h"
@@ -23,6 +23,22 @@
 #include <QSettings>
 #include <pylon/TlFactory.h>
 
+// GB added begin
+#include "supportFunctions.h"
+#include "metaSnapshotOrganizer.h"
+#include "dataStreamer.h"
+#include "camTempMonitor.h"
+#include "subwindows/imagePlaybackControlDialog.h"
+#include "subwindows/remoteCCDialog.h"
+#include "subwindows/streamingSettingsDialog.h"
+#include "connPoolCOM.h"
+#include "devices/singleWebcam.h"
+#include "subwindows/singleWebcamSettingsDialog.h"
+#include "subwindows/singleWebcamCalibrationView.h"
+//#include <QCameraInfo> // Qt 5.3 would be necessary. For OpenCV device enumeration
+#include "recEventTracker.h"
+// GB added end
+
 
 /**
     Main interface of the software
@@ -30,6 +46,20 @@
     Creates all GUI and processing objects and handles/connects their signal-slot connections
 
     Creates threads for concurrent processing for i.e. calibration and pupil detection
+
+    NOTE: Modified by Gábor Bényei, 2023 jan
+    GB NOTE:
+        Moved image playback button functionality into a new dialog called ImagePlaybackSettingsDialog.
+            Thus, onPlayImageDirectoryClick(), onPlayImageDirectoryFinished(), 
+            and onStopImageDirectoryClick() were removed.
+        Added trial counter label in statusbar, which can only be seen if a physical camera device is opened.
+        Added manual forced reset and manual increment buttons for trial counter using Settings menu.
+        Added streaming settings action and its dialog, accessible when a device is opened. Streaming can be 
+            started if a streaming connection is alive, and GUI is kept enabled accordingly.
+        Recording now necessitates pupil detection tracking to be going on, this way it is safer to handle
+            (e.g. new procMode functionality allows pupilDetection output to change, and this should not happen 
+        while data is being written. Each line should keep consistency to the hearder of the csv instead).
+        Many minor changes were made, not mentioned here, but commented on the spot.
 */
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -44,7 +74,7 @@ protected:
     void closeEvent(QCloseEvent *event) override;
 
 private:
-
+ 
     SignalPubSubHandler *signalPubSubHandler;
 
     QSettings *applicationSettings;
@@ -61,17 +91,16 @@ private:
     QString logFileName;
     QString outputDirectory;
     QString imageDirectory;
-    QString recentPath;
+    QString recentPath; 
 
     QMdiArea *mdiArea;
     QToolBar *toolBar;
 
-    RestorableQMdiSubWindow *calibrationWindow;
+    RestorableQMdiSubWindow *calibrationWindow; 
     RestorableQMdiSubWindow *cameraViewWindow;
 
-
     QMenu *windowMenu;
-    QMenu *singleCameraDevicesMenu;
+    QMenu *singleCameraDevicesMenu; // GB: refactored name
 
     QAction *cameraAct;
     QAction *cameraSettingsAct;
@@ -79,12 +108,9 @@ private:
     QAction *trackAct;
     QAction *recordAct;
     QAction *calibrateAct;
-    //QAction *focusAct;
     QAction *logFileAct;
     QAction *outputDirectoryAct;
     QAction *recordImagesAct;
-    QAction *stopImageDirectoryAct;
-
 
     QAction *closeAct;
     QAction *closeAllAct;
@@ -95,7 +121,6 @@ private:
     QAction *nextAct;
     QAction *previousAct;
     QAction *windowMenuSeparatorAct;
-    QAction *playImageDirectoryAct;
     QAction *subjectsAct;
     QAction *sharpnessAct;
 
@@ -104,11 +129,12 @@ private:
     QLabel *calibrationStatusIcon;
     QLabel *subjectConfigurationLabel;
     QLabel *currentDirectoryLabel;
-
-    bool trackingOn = false;
+    
+    // GB: TODO: Move trackingOn into class instance, and get rid of others, use nullptr check instead. better like that I think. Also 
+    bool trackingOn = false; // GB: also accessible in pupildetection now
     bool recordOn = false;
     bool recordImagesOn = false;
-    bool playImagesOn = false;
+    //bool playImagesOn = false; // GB: from now can be checked via ImagePlaybackControlDialog
     bool hwTriggerOn = false;
 
     void createActions();
@@ -128,6 +154,43 @@ private:
     DataWriter *dataWriter;
     ImageWriter *imageWriter;
 
+    // GB added begin
+    bool streamOn = false;
+    bool remoteOn = false;
+
+    RemoteCCDialog *remoteCCDialog;
+    StreamingSettingsDialog *streamingSettingsDialog;
+    ImagePlaybackControlDialog *imagePlaybackControlDialog;
+
+    // GB NOTE: made these two global to be able to pass singlecameraview instance pointer to ...CameraSettingsDialog constructors:
+    SingleCameraView *singleCameraChildWidget; 
+    StereoCameraView *stereoCameraChildWidget;
+    
+    SingleWebcamSettingsDialog *singleWebcamSettingsDialog;
+
+    //QThread *tempMonitorThread;
+    CamTempMonitor *camTempMonitor;
+    RecEventTracker *recEventTracker;
+    quint64 imageRecStartTimestamp;
+
+    ConnPoolCOM *connPoolCOM;
+
+    QSpinBox *webcamDeviceBox;
+
+    QAction *fileOpenAct; // GB: made global to let it disable when image directory is already open
+    QAction *streamingSettingsAct;
+    QAction *streamAct;
+
+    QAction *forceResetTrialAct;
+    QAction *manualIncTrialAct;
+
+    QWidget *trialWidget;
+    QLabel *currentTrialLabel;
+    QLabel *remoteStatusIcon;
+
+    DataStreamer *dataStreamer;
+    // GB added end
+
 private slots:
 
     void onSerialConnect();
@@ -140,9 +203,6 @@ private slots:
     void onCameraCalibrationDisabled();
 
     void onOpenImageDirectory();
-    void onPlayImageDirectoryClick();
-    void onPlayImageDirectoryFinished();
-    void onStopImageDirectoryClick();
 
     void onCameraClick();
     void onCameraDisconnectClick();
@@ -182,6 +242,79 @@ private slots:
     void onSharpnessClick();
 
     void onGettingsStartedWizardFinish();
+
+    // GB added begin
+    void singleWebcamSelected();
+    void onSingleWebcamSettingsClick();
+
+    void onStreamClick();
+    void onStreamingSettingsClick();
+
+    void onRemoteEnable();
+    void onRemoteDisable();
+
+    void onPlaybackSafelyStarted();
+    void onPlaybackSafelyPaused();
+    void onPlaybackSafelyStopped();
+
+    void onRemoteConnStateChanged();
+    //void onStreamingConnStateChanged();
+
+    void updateCurrentTrialLabel();
+    void safelyResetTrialCounter();
+    void safelyResetTrialCounter(const quint64 &timestamp);
+    void forceResetTrialCounter();
+    void forceResetTrialCounter(const quint64 &timestamp);
+    void incrementTrialCounter();
+    void incrementTrialCounter(const quint64 &timestamp);
+
+    void onStreamingUDPConnect();
+    void onStreamingUDPDisconnect();
+    void onStreamingCOMConnect();
+    void onStreamingCOMDisconnect();
+    // GB added end
+
+public slots:
+
+    // GB added begin
+    // GB NOTE: definitions of functions for programmatic control of GUI elements (their names beginning with PRG...)
+    // are stored in PRGmainwindow.cpp, to keep mainwindow.cpp cleaner
+    void PRGopenSingleCamera(const QString &camName);
+    void PRGopenStereoCamera(const QString &camName1, const QString &camName2);
+    void PRGopenSingleWebcam(int deviceID);
+    void PRGcloseCamera();
+    void PRGtrackStart();
+    void PRGtrackStop();
+    void PRGrecordStart();
+    void PRGrecordStop();
+    void PRGrecordImageStart();
+    void PRGrecordImageStop();
+    void PRGstreamStart();
+    void PRGstreamStop();
+    void PRGincrementTrialCounter(const quint64 &timestamp);
+    void PRGforceResetTrialCounter(const quint64 &timestamp);
+    void PRGsetOutPath(const QString &str);
+    void PRGsetCsvPathAndName(const QString &str);
+    
+    void PRGsetGlobalDelimiter(const QString &str);
+    void PRGsetImageOutputFormat(QString format);
+    void PRGsetPupilDetectionAlgorithm(const QString &alg);
+    void PRGsetPupilDetectionUsingROI(const QString &state);
+    void PRGsetPupilDetectionCompOutlineConf(const QString &state);
+    void PRGconnectRemoteUDP(QString conf);
+    void PRGconnectRemoteCOM(QString conf);
+    void PRGconnectStreamUDP(QString conf);
+    void PRGconnectStreamCOM(QString conf);
+    void PRGdisconnectRemoteUDP();
+    void PRGdisconnectRemoteCOM();
+    void PRGdisconnectStreamUDP();
+    void PRGdisconnectStreamCOM();
+    // GB added end
+
+signals:
+    void commitTrialCounterIncrement(quint64 timestamp);
+    void commitTrialCounterReset(quint64 timestamp);
+
 };
 
 #endif // MAINWINDOW_H

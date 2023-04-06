@@ -3,7 +3,7 @@
 #define PUPILEXT_PUPILDETECTIONSETTINGSDIALOG_H
 
 /**
-    @author Moritz Lode
+    @author Moritz Lode, Gábor Bényei
 */
 
 #include <QDialog>
@@ -48,12 +48,26 @@ private:
     QPushButton *applyButton;
     QPushButton *cancelButton;
     QPushButton *applyCloseButton;
-
+    
     QComboBox *algorithmBox;
     QCheckBox *outlineConfidenceBox;
     QCheckBox *roiPreprocessingBox;
     QCheckBox *pupilUndistortionBox;
     QCheckBox *imageUndistortionBox;
+
+    // GB begin
+    QPixmap procModePixmap_undetermined;
+    QPixmap procModePixmap_1cam1pup;
+    QPixmap procModePixmap_1cam2pup;
+    QPixmap procModePixmap_1Mcam1pup;
+    QPixmap procModePixmap_2cam1pup;
+    QPixmap procModePixmap_2cam2pup;
+    //QFormLayout *procModeBoxLayout;
+    QLabel *iLabel;
+    QGroupBox *procModeGroup;
+    QLabel *procModeInfoLabel;
+    QComboBox *procModeBox;
+    // GB end
 
     void createForm();
     void updateForm();
@@ -71,9 +85,19 @@ private slots:
     void onPupilUndistortionClick(int state);
     void onImageUndistortionClick(int state);
 
+    // GB begin
+    void onProcModeSelection(int idx);
+    void updateProcModeEnabled();
+    void updateProcModeCompatibility();
+    // GB end
+
 public slots:
 
     void onSettingsChange();
+
+signals: 
+    // GB added
+    void pupilDetectionProcModeChanged(int val);
 
 };
 

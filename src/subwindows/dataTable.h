@@ -3,7 +3,7 @@
 #define PUPILEXT_DATATABLE_H
 
 /**
-    @author Moritz Lode
+    @author Moritz Lode, Gábor Bényei
 */
 
 #include <QtWidgets/QWidget>
@@ -11,11 +11,21 @@
 #include "../pupil-detection-methods/Pupil.h"
 #include "../devices/camera.h"
 
+#include "../pupilDetection.h"
+
 
 /**
     Table widget as part of the main GUI showing the live data of the pupil measurements, upon click on a row entry, the option for visualization of the data is given.
 
     Upon visualization, a signal is send (createGraphPlot), which is received in the main window and used to create a new graphplot window.
+
+    NOTE: Modified by Gábor Bényei, 2023 jan
+    GB NOTE:
+        Reorganized code to let it handle an std::vector of Pupils, in order to comply with new signal-slot strategy, which
+        I introduced to manage different pupil detection processing modes (procModes).
+        Also, now the width of dataTable window varies depending on how many columns it is showing,
+        thus in mainwindow.cpp code I modified code to let their size be stored separately, by distinguishing instances of different columns by other titles.
+        Columns are now colored in unison with ROI selection colors.
 
 slots:
     onPupilData(): slot to receive pupil measurement data from the pupil detection
@@ -47,14 +57,12 @@ public:
     static const QString PUPIL_CIRCUMFERENCE;
     static const QString PUPIL_RATIO;
 
-    explicit DataTable(bool stereoMode=false, QWidget *parent=0);
+    explicit DataTable(ProcMode procMode = ProcMode::SINGLE_IMAGE_ONE_PUPIL, QWidget *parent=0);
     ~DataTable() override;
 
     QSize sizeHint() const override;
 
 private:
-
-    bool stereoMode;
 
     QTableView *tableView;
     QStandardItemModel *tableModel;
@@ -64,12 +72,16 @@ private:
 
     QMenu *tableContextMenu;
 
+    // GB added begin
+    ProcMode procMode;
+    int numCols = 1;
+    // GB added end
+
     void setPupilData(const Pupil &pupil, int column=0);
 
 public slots:
 
-    void onPupilData(quint64 timestamp, const Pupil &pupil, const QString &filename);
-    void onStereoPupilData(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filename);
+    void onPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename); // GB modified for vector of pupils
 
     void onCameraFPS(double fps);
     void onCameraFramecount(int framecount);

@@ -1,6 +1,8 @@
 
 #include "singleCameraImageEventHandler.h"
 
+#include <QDebug>
+
 
 SingleCameraImageEventHandler::SingleCameraImageEventHandler(QObject* parent) : QObject(parent), cameraTime(0), systemTime(0) {
     // Set the image mode to 8 bit grayscale
@@ -34,6 +36,15 @@ void SingleCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
         uint64 timeStamp = ptrGrabResult->GetTimeStamp();
         // cameraTime describes the acquisition start in camera time, systemTime the acquisition start in system time
         timeStamp = ((timeStamp-cameraTime) / 1000000) + systemTime;
+
+        quint64 chrono_time  = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+        /*
+        qDebug() <<
+            QString("chrono time = ") << QString::number(chrono_time) << 
+            QString("; acq timestamp = ") << QString::number(timeStamp) << 
+            QString("; diff = ") << QString::number((int64)chrono_time-(int64)timeStamp) ; // túlcsordul ha másikból vonunk ki.. nagyobból kell
+        */
 
         formatConverter.Convert(pylonImage, ptrGrabResult);
         cv::Mat img = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(), CV_8UC1, (uint8_t *) pylonImage.GetBuffer());

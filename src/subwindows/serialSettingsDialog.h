@@ -16,6 +16,8 @@
 #include <QtWidgets/qtextedit.h>
 #include <QtCore/QSettings>
 
+#include "../connPoolCOM.h"
+
 QT_BEGIN_NAMESPACE
 
 /**
@@ -33,7 +35,7 @@ class SerialSettingsDialog : public QDialog {
 
 public:
 
-    struct Settings {
+    /*struct Settings {
         QString name;
         qint32 baudRate;
         QString stringBaudRate;
@@ -46,20 +48,25 @@ public:
         QSerialPort::FlowControl flowControl;
         QString stringFlowControl;
         bool localEchoEnabled;
-    };
+    };*/
 
-    explicit SerialSettingsDialog(QWidget *parent = nullptr);
+    explicit SerialSettingsDialog(ConnPoolCOM *connPoolCOM, QWidget *parent = nullptr);
     ~SerialSettingsDialog() override;
 
-    Settings settings() const;
+    ConnPoolCOMInstanceSettings settings() const;
 
     bool isConnected();
 
 private:
 
-    QSerialPort *serialPort;
+    //QSerialPort *serialPort;
 
-    Settings m_currentSettings;
+    // GB begin
+    ConnPoolCOM *connPoolCOM;
+    int connPoolCOMIndex = -1;
+    // GB end
+
+    ConnPoolCOMInstanceSettings m_currentSettings;
     QIntValidator *m_intValidator = nullptr;
 
     QSettings *applicationSettings;
@@ -103,7 +110,7 @@ private slots:
     void cancel();
     void checkCustomBaudRatePolicy(int idx);
     void checkCustomDevicePathPolicy(int idx);
-    void readData();
+    void readData(QString msg, quint64 timestamp); // GB modified
     void updateDevices();
 
 

@@ -2,7 +2,7 @@
 #define PUPILEXT_SINGLECAMERASETTINGSDIALOG_H
 
 /**
-    @author Moritz Lode
+    @author Moritz Lode, Gábor Bényei
 */
 
 
@@ -17,6 +17,9 @@
 #include <QtWidgets/QtWidgets>
 #include "../devices/singleCamera.h"
 #include "serialSettingsDialog.h"
+
+// BG added
+#include "../devices/singleWebcam.h"
 
 using namespace Pylon;
 
@@ -73,6 +76,42 @@ private:
     void loadSettings();
     void saveSettings();
 
+    // BG added (+made global) begin
+    QGroupBox *hwTriggerGroup;
+    QGroupBox *analogGroup;
+    QGroupBox *acquisitionGroup;
+
+    QHBoxLayout *framerateInputLayout; 
+    QLabel *frameRateLabel;
+    QLabel *exposureLabel;
+
+    QLabel *imageROIwidthLabel;
+    QLabel *imageROIheightLabel;
+    QLabel *imageROIoffsetXLabel;
+    QLabel *imageROIoffsetYLabel;
+    QLabel *binningLabel;
+
+    QLabel *imageROIwidthMaxLabel;
+    QLabel *imageROIheightMaxLabel;
+    QLabel *imageROIoffsetXMaxLabel;
+    QLabel *imageROIoffsetYMaxLabel;
+
+    QSpinBox *imageROIwidthInputBox;
+    QSpinBox *imageROIheightInputBox;
+    QSpinBox *imageROIoffsetXInputBox;
+    QSpinBox *imageROIoffsetYInputBox;
+    QComboBox *binningBox;
+
+    int lastUsedBinningVal = 0;
+    //when binning value is 1. Must be divisible by 4 (camera dependent). 4*16
+    const int minImageSize = 64; 
+    //when binning value is 1. Must be divisible by 4 (camera dependent). 4*16
+    const int imageSizeChangeSingleStep = 32;
+    // BG added end
+
+public slots:
+    void setLimitationsWhileTracking(bool state); // GÁBOR
+
 private slots:
 
     void saveButtonClick();
@@ -93,6 +132,18 @@ private slots:
 
     void onSettingsChange();
 
+    // BG added begin
+    void onSetImageROIwidth(int val);
+    void onSetImageROIheight(int val);
+    void onSetImageROIoffsetX(int val);
+    void onSetImageROIoffsetY(int val);
+    void onBinningModeChange(int index);
+
+    void updateImageROISettingsMin(int binningVal);
+    void updateImageROISettingsMax();
+    void updateImageROISettingsValues();
+    // BG added end
+
 signals:
 
     void onSerialConfig();
@@ -103,6 +154,5 @@ signals:
     void onHardwareTriggerDisable();
 
 };
-
 
 #endif //PUPILEXT_SINGLECAMERASETTINGSDIALOG_H

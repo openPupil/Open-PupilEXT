@@ -3,7 +3,7 @@
 #define PUPILEXT_EXCUSESETTINGS_H
 
 /**
-    @author Moritz Lode
+    @authors Moritz Lode, Gábor Bényei
 */
 
 #include "PupilMethodSetting.h"
@@ -25,7 +25,13 @@ class ExCuSeSettings : public PupilMethodSetting {
 
 public:
 
-    explicit ExCuSeSettings(ExCuSe *m_excuse, QWidget *parent=0) : PupilMethodSetting(parent), p_excuse(m_excuse), configParameters(defaultParameters)  {
+    // GB: added pupilDetection instance to get the actual ROIs for Autometric Parametrization calculations
+    explicit ExCuSeSettings(PupilDetection * pupilDetection, ExCuSe *m_excuse, QWidget *parent=0) : 
+        PupilMethodSetting(parent), 
+        p_excuse(m_excuse), 
+        pupilDetection(pupilDetection),
+        configParameters(defaultParameters)  {
+        
         configParameters = applicationSettings->value("ExCuSeSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
 
         configIndex = applicationSettings->value("ExCuSeSettings.configIndex", "Default").toString();
@@ -38,6 +44,14 @@ public:
         } else {
             parameterConfigs->setCurrentText(configIndex);
         }
+
+        // GB added begin
+        if(parameterConfigs->currentText()=="Automatic Parametrization") {
+            maxRadiBox->setEnabled(false);
+        } else {
+            maxRadiBox->setEnabled(true);
+        }
+        // GB added end
 
         QGridLayout *infoLayout = new QGridLayout(infoBox);
 
@@ -53,31 +67,40 @@ public:
         pLabel->setText("Wolfgang Fuhl, Thomas Kübler, Katrin Sippel, Wolfgang Rosenstiel, Enkelejda Kasneci, \"ExCuSe: Robust Pupil Detection in Real-World Scenarios.\", 2015<br/>Part of the <a href=\"https://www-ti.informatik.uni-tuebingen.de/santini/EyeRecToo\">EyeRecToo</a> software. Copyright (c) 2018, Thiago Santini / University of Tübingen");
         infoLayout->addWidget(pLabel, 1, 0);
 
+        // GB modified begin
+        // GB NOTE: removed \n to let it fit more efficiently
         QLabel *confLabel;
         if(p_excuse->hasConfidence())
-            confLabel = new QLabel("Info:\nThis method does provide its own confidence.");
+            confLabel = new QLabel("Info: This method does provide its own confidence.");
         else
-            confLabel = new QLabel("Info:\nThis method does not provide its own confidence, use the outline confidence.");
+            confLabel = new QLabel("Info: This method does not provide its own confidence, use the outline confidence.");
         confLabel->setWordWrap(true);
         infoLayout->addWidget(confLabel, 2, 0);
 
-        QLabel *infoLabel = new QLabel("CAUTION:\nProcessing using this algorithm may be very slow, reduce the camera acquiring fps accordingly.");
+        QLabel *infoLabel = new QLabel("CAUTION: Processing using this algorithm may be very slow, reduce the camera acquiring fps accordingly.");
         infoLabel->setWordWrap(true);
         infoLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
         infoLayout->addWidget(infoLabel, 3, 0);
 #if _DEBUG
-        QLabel *warnLabel = new QLabel("CAUTION:\nDebug build may perform very slow.\nUse release build or adjust processing speed to not risk memory overflow.");
+        QLabel *warnLabel = new QLabel("CAUTION: Debug build may perform very slow. Use release build or adjust processing speed to not risk memory overflow.");
         warnLabel->setWordWrap(true);
         warnLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
         infoLayout->addWidget(warnLabel, 4, 0);
 #endif
         infoBox->setLayout(infoLayout);
+        // GB modified end
     }
 
     ~ExCuSeSettings() override = default;
 
-    void addSecondary(ExCuSe *s_excuse) {
-        secondaryExcuse = s_excuse;
+    void add2(ExCuSe *s_excuse) {
+        excuse2 = s_excuse;
+    }
+    void add3(ExCuSe *s_excuse) {
+        excuse3 = s_excuse;
+    }
+    void add4(ExCuSe *s_excuse) {
+        excuse4 = s_excuse;
     }
 
     QMap<QString, QList<float>> getParameter() {
@@ -93,6 +116,12 @@ public:
         configParameters = defaultParameters;
     }
 
+    // GB modified begin
+    bool isAutoParamEnabled() override {
+        return (parameterConfigs->currentText()=="Automatic Parametrization");
+    }
+    // GB modified end
+
 public slots:
 
     void loadSettings() override {
@@ -106,6 +135,20 @@ public slots:
             parameterConfigs->setCurrentText(configIndex);
         }
 
+        // GB added begin
+        if(parameterConfigs->currentText()=="Automatic Parametrization") {
+            float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
+            pupilDetection->setAutoParamEnabled(true);
+            pupilDetection->setAutoParamPupSizePercent(autoParamPupSizePercent);
+            pupilDetection->setAutoParamScheduled(true);
+
+            maxRadiBox->setEnabled(false);
+        } else {
+            pupilDetection->setAutoParamEnabled(false);
+            maxRadiBox->setEnabled(true);
+        } 
+        // GB added end
+
 //        QList<float> selectedParameter = configParameters.value(configIndex);
 //
 //        maxRadiBox->setValue(selectedParameter[0]);
@@ -115,22 +158,60 @@ public slots:
     }
 
     void updateSettings() override {
-        int max_ellipse_radi = p_excuse->max_ellipse_radi;
+
+        // GB modified begin
+
+        // First come the parameters roughly independent from ROI size and relative pupil size 
         int good_ellipse_threshold = p_excuse->good_ellipse_threshold;
 
-        max_ellipse_radi = maxRadiBox->value();
         good_ellipse_threshold = ellipseThresholdBox->value();
 
-        p_excuse->max_ellipse_radi = max_ellipse_radi;
         p_excuse->good_ellipse_threshold = good_ellipse_threshold;
 
-        configParameters[parameterConfigs->currentText()][0] = max_ellipse_radi;
         configParameters[parameterConfigs->currentText()][1] = good_ellipse_threshold;
 
-        if(secondaryExcuse) {
-            secondaryExcuse->max_ellipse_radi = max_ellipse_radi;
-            secondaryExcuse->good_ellipse_threshold = good_ellipse_threshold;
+        if(excuse2) {
+            excuse2->good_ellipse_threshold = good_ellipse_threshold;
         }
+        if(excuse3) {
+            excuse3->good_ellipse_threshold = good_ellipse_threshold;
+        }
+        if(excuse4) {
+            excuse4->good_ellipse_threshold = good_ellipse_threshold;
+        }
+
+
+        // Then the specific ones that are set by autoParam
+        int procMode = pupilDetection->getCurrentProcMode();
+        if(parameterConfigs->currentText()=="Automatic Parametrization") {
+            float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
+            pupilDetection->setAutoParamPupSizePercent(autoParamPupSizePercent);
+            pupilDetection->setAutoParamScheduled(true);
+            
+        } else {
+            int max_ellipse_radi = p_excuse->max_ellipse_radi;
+            
+            max_ellipse_radi = maxRadiBox->value();
+            
+            p_excuse->max_ellipse_radi = max_ellipse_radi;
+
+            configParameters[parameterConfigs->currentText()][0] = max_ellipse_radi;
+
+            if(excuse2) {
+                excuse2->max_ellipse_radi = max_ellipse_radi;
+            }
+            if(excuse3) {
+                excuse3->max_ellipse_radi = max_ellipse_radi;
+            }
+            if(excuse4) {
+                excuse4->max_ellipse_radi = max_ellipse_radi;
+            }
+            
+        }
+        // GB modified end
+
+
+        
 
         emit onConfigChange(parameterConfigs->currentText());
 
@@ -141,7 +222,14 @@ public slots:
 private:
 
     ExCuSe *p_excuse;
-    ExCuSe *secondaryExcuse = nullptr;
+    //ExCuSe *secondaryExcuse = nullptr; // GB refactored
+    // GB added begin
+    ExCuSe *excuse2 = nullptr;
+    ExCuSe *excuse3 = nullptr;
+    ExCuSe *excuse4 = nullptr;
+
+    PupilDetection *pupilDetection;
+    // GB added end
 
     QSpinBox *maxRadiBox;
     QSpinBox *ellipseThresholdBox;
@@ -163,6 +251,11 @@ private:
         QHBoxLayout *configsLayout = new QHBoxLayout();
 
         parameterConfigs = new QComboBox();
+        // GB modified begin
+        QLabel *parameterConfigsLabel = new QLabel(tr("Parameter configuration:"));
+        parameterConfigs->setFixedWidth(250);
+        configsLayout->addWidget(parameterConfigsLabel);
+        // GB modified end
         configsLayout->addWidget(parameterConfigs);
 
         QMapIterator<QString, QList<float>> i(configParameters);
@@ -177,7 +270,7 @@ private:
         mainLayout->addSpacerItem(new QSpacerItem(40, 5, QSizePolicy::Fixed));
 
 
-        QGroupBox *sizeGroup = new QGroupBox("Ellipse Fit");
+        QGroupBox *sizeGroup = new QGroupBox("Algorithm specific: Ellipse Fit"); // GB: "Algorithm specific: "
 
         QFormLayout *sizeLayout = new QFormLayout();
 
@@ -185,12 +278,14 @@ private:
         maxRadiBox = new QSpinBox();
         maxRadiBox->setMaximum(5000);
         maxRadiBox->setValue(max_ellipse_radi);
+        maxRadiBox->setFixedWidth(50); // GB
         sizeLayout->addRow(maxRadiLabel, maxRadiBox);
 
         QLabel *ellipseThresholdLabel = new QLabel(tr("Ellipse Goodness Threshold:"));
         ellipseThresholdBox = new QSpinBox();
         ellipseThresholdBox->setMaximum(100);
         ellipseThresholdBox->setValue(good_ellipse_threshold);
+        ellipseThresholdBox->setFixedWidth(50); // GB
         sizeLayout->addRow(ellipseThresholdLabel, ellipseThresholdBox);
 
         sizeGroup->setLayout(sizeLayout);
@@ -199,8 +294,8 @@ private:
 
         QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
-        resetButton = new QPushButton("Reset");
-        fileButton = new QPushButton("Load File");
+        resetButton = new QPushButton("Reset algorithm parameters"); // GB: clarified text
+        fileButton = new QPushButton("Load config file"); // GB: clarified text
 
         buttonsLayout->addWidget(resetButton);
         connect(resetButton, SIGNAL(clicked()), this, SLOT(onResetClick()));
@@ -240,7 +335,8 @@ private:
             { "Default", {50, 15} },
             { "ROI 0.3 Optimized", {146, 7} },
             { "ROI 0.6 Optimized", {216, 34} },
-            { "Full Image Optimized", {39, 0} }
+            { "Full Image Optimized", {39, 0} },
+            { "Automatic Parametrization", {-1, 15} } // GB added
     };
 
 
@@ -252,8 +348,17 @@ private slots:
     void onParameterConfigSelection(QString configKey) {
         QList<float> selectedParameter = configParameters.value(configKey);
 
-        maxRadiBox->setValue(selectedParameter[0]);
+        // GB modified begin
         ellipseThresholdBox->setValue(selectedParameter[1]);
+
+        if(parameterConfigs->currentText()=="Automatic Parametrization") {
+            maxRadiBox->setEnabled(false);
+            // TODO: hide value text too
+        } else {
+            maxRadiBox->setEnabled(true);
+            maxRadiBox->setValue(selectedParameter[0]);
+        }
+        // GB modified end
 
         //updateSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
     }

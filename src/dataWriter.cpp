@@ -1,22 +1,40 @@
 #include <iostream>
 #include <QtCore/qfileinfo.h>
 #include "dataWriter.h"
+#include "supportFunctions.h"
 
 // TODO datawriter is receiving pupil signal at the full rate, slowing down the gui thread? move to other thread?
+DataWriter::DataWriter(
+    const QString& fileName, 
+    ProcMode procMode,  
+    RecEventTracker *recEventTracker,
+    QObject *parent
+    ) : 
+    QObject(parent),
+    recEventTracker(recEventTracker),
+    writerReady(false),
+    applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-DataWriter::DataWriter(const QString& fileName, int mode, QObject *parent) : QObject(parent) {
+    // GB modified begin
+    delim = applicationSettings->value("delimiterToUse", ",").toString()[0];
+    //delim = applicationSettings->value("delimiterToUse", ',').toChar(); // somehow this just doesnt work
+
+    //delim = delimToUse; // only used if dataFormat=='P'
+    std::cout << "New DataWriter object created." << std::endl;
 
     // Header definitions of the output file, this must fit the output format in the pupilToRow functions
-    header = "filename,timestamp_ms,algorithm,diameter_px,undistortedDiameter_px,physicalDiameter_mm,width_px,height_px,axisRatio,center_x,center_y,angle_deg,circumference_px,confidence,outlineConfidence";
-    stereoHeader = "filename,timestamp_ms,algorithm,diameterMain_px,diameterSec_px,undistortedDiameterMain_px,undistortedDiameterSec_px,physicalDiameter_mm,widthMain_px,heightMain_px,axisRatioMain,widthSec_px,heightSec_px,axisRatioSec,centerMain_x,centerMain_y,centerSec_x,centerSec_y,angleMain_deg,angleSec_deg,circumferenceMain_px,circumferenceSec_px,confidenceMain,outlineConfidenceMain,confidenceSec,outlineConfidenceSec";
+    header = EyeDataSerializer::getHeaderCSV(procMode, delim);
 
     std::cout<<fileName.toStdString()<<std::endl;
 
-    dataFile = new QFile(fileName);
+    SupportFunctions::preparePath(fileName); // GB added
 
+    dataFile = new QFile(fileName);
     bool exists = dataFile->exists();
 
     // Open the file in append mode
+    // GB: needed to double check, in case of writing to e.g. C:/ or other admin-only folder, 
+    // if the exe was started without admin rights, open would fail, and the null-ed dataFile can cause exception later on
     if (!dataFile->open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
         std::cout << "Recording failure. Could not open: " << fileName.toStdString() << std::endl;
         delete dataFile;
@@ -25,23 +43,22 @@ DataWriter::DataWriter(const QString& fileName, int mode, QObject *parent) : QOb
 
     textStream = new QTextStream(dataFile);
 
+    if(dataFile && textStream) // GB: extra safety
+        writerReady=true;
+    // GB modified end
+
     // To not write again a header line to the file when it already existed (appending), check it
-    if(!exists) {
-        if(mode==WriteMode::SINGLE) {
-            *textStream << header << Qt::endl;
-        } else if(mode==WriteMode::STEREO) {
-            *textStream << stereoHeader << Qt::endl;
-        }
-    }
+    if(!exists)
+        *textStream << header << Qt::endl;
+    
 }
 
 DataWriter::~DataWriter() {
     close();
 }
 
-// Close the file and fielstreams
+// Close the file and filestreams
 void DataWriter::close() {
-
     if (dataFile){
         dataFile->close();
         dataFile->deleteLater();
@@ -52,89 +69,50 @@ void DataWriter::close() {
     textStream = nullptr;
 }
 
+// GB: replacing previous methods for single pupil detection from single or stereo cameras, 
+// as well as adding new capability to write data of other processing modes
 // On new pupil data, write the pupil detection to file in a new row
-void DataWriter::newPupilData(quint64 timestamp, const Pupil &pupil, const QString &filename) {
-
+void DataWriter::newPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename) {
     if (!textStream)
         return;
 
+    // GB: serialization is moved to EyeDataSerializer as yet the method is used by dataStreamer too
     if (textStream->status() == QTextStream::Ok) {
-        *textStream<<pupilToRow(timestamp, pupil, filename) << Qt::endl;
+        uint trialNumber = 1;
+        std::vector<double> d = {0,0};
+        if(recEventTracker) {
+            trialNumber = recEventTracker->getTrialIncrement(timestamp).trialNumber;
+            d = recEventTracker->getTemperatureCheck(timestamp).temperatures;
+        }
+        *textStream << EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, trialNumber, delim, d) << Qt::endl;
     }
 }
 
-// Upon a new stereo pupil detection, write it to file in a new row (stereo format)
-void DataWriter::newStereoPupilData(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filename) {
 
-    if (!textStream)
-        return;
 
-    if (textStream->status() == QTextStream::Ok) {
-        *textStream<<pupilToStereoRow(timestamp, pupil, pupilSec, filename) << Qt::endl;
-    }
-}
-
-// Converts a pupil detection to a string row that is written to file
-// CAUTION: This must exactly reproduce the format defined by the header fields
-QString DataWriter::pupilToRow(quint64 timestamp, const Pupil &pupil, const QString &filepath) {
-
-    QString filename = "-1";
-    if(!filepath.isEmpty())
-        filename = QFileInfo(filepath).fileName();
-
-    //"filename,timestamp[ms],algorithm,diameter[px],physicaldiameter[mm],width[px],height[px],axis_ratio,center_x,center_y,angle[deg],circumference[px],confidence,outline_confidence";
-
-    return filename + ',' + QString::number(timestamp) + ',' + QString::fromStdString(pupil.algorithmName) + ',' + QString::number(pupil.diameter()) + ',' + QString::number(pupil.undistortedDiameter)  + ',' + QString::number(pupil.physicalDiameter)
-        + ',' + QString::number(pupil.width()) + ',' + QString::number(pupil.height()) + ',' + QString::number((double)pupil.width() / pupil.height())
-        + ',' + QString::number(pupil.center.x) + ',' + QString::number(pupil.center.y) + ',' + QString::number(pupil.angle)
-        + ',' + QString::number(pupil.circumference()) + ',' + QString::number(pupil.confidence) + ',' + QString::number(pupil.outline_confidence);
-}
-
-// Converts a pupil detection to a string row that is written to file
-// CAUTION: This must exactly reproduce the format defined by the header fields
-QString DataWriter::pupilToStereoRow(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filepath) {
-
-    QString filename = "-1";
-    if(!filepath.isEmpty())
-        filename = QFileInfo(filepath).fileName();
-
-    //"filename,timestamp[ms],algorithm,diameter[px],diameterSec[px],physicaldiameter[mm],width[px],height[px],axis_ratio,widthSec[px],heightSec[px],axis_ratioSec,center_x,center_y,center_xSec,center_ySec,angle[deg],angleSec[deg],circumference[px],circumferenceSec[px],confidence,outline_confidence,confidenceSec,outline_confidenceSec";
-
-    return filename + ',' + QString::number(timestamp) + ',' + QString::fromStdString(pupil.algorithmName) + ',' + QString::number(pupil.diameter()) + ',' + QString::number(pupilSec.diameter())
-           + ',' + QString::number(pupil.undistortedDiameter) + ',' + QString::number(pupilSec.undistortedDiameter)
-           + ',' + QString::number(pupil.physicalDiameter) + ',' + QString::number(pupil.width()) + ',' + QString::number(pupil.height()) + ',' + QString::number((double)pupil.width() / pupil.height())
-           + ',' + QString::number(pupilSec.width()) + ',' + QString::number(pupilSec.height()) + ',' + QString::number((double)pupilSec.width() / pupilSec.height())
-           + ',' + QString::number(pupil.center.x) + ',' + QString::number(pupil.center.y) + ',' + QString::number(pupilSec.center.x) + ',' + QString::number(pupilSec.center.y)
-           + ',' + QString::number(pupil.angle) + ',' + QString::number(pupilSec.angle)
-           + ',' + QString::number(pupil.circumference()) + ',' + QString::number(pupilSec.circumference()) + ',' + QString::number(pupil.confidence) + ',' + QString::number(pupil.outline_confidence)
-           + ',' + QString::number(pupilSec.confidence) + ',' + QString::number(pupilSec.outline_confidence);
-}
+// GB NOTE: I found two unreferenced functions here, called writePupilData() and writeStereoPupilData().
+// I tried to actualize their functionality, now manifested in a single function. This however needs different arguments now
 
 // Given a set of pupil detections, the functions writes the complete set to file
-void DataWriter::writePupilData(const std::vector<Pupil>& pupilData) {
+void DataWriter::writePupilData(std::vector<quint64> timestamps, int procMode, const std::vector<std::vector<Pupil>>& pupilData) {
 
     if (textStream == nullptr)
         return;
 
     int framePos = 0;
-    for(const auto& pupil: pupilData) {
+    for(int i=0; i<pupilData.size(); i++) {
         if (textStream->status() == QTextStream::Ok) {
-            *textStream << pupilToRow(static_cast<quint64>(framePos), pupil, "") << Qt::endl;
+            uint trialNumber = 1;
+            std::vector<double> d = {0,0};
+            if(recEventTracker) {
+                recEventTracker->getTrialIncrement(timestamps[i]).trialNumber;
+                d = recEventTracker->getTemperatureCheck(timestamps[i]).temperatures;
+            }
+            *textStream << EyeDataSerializer::pupilToRowCSV(static_cast<quint64>(framePos), procMode, pupilData[i], "", trialNumber, delim, d) << Qt::endl;
         }
         ++framePos;
     }
 }
-// Given a set of pupil detections, the functions writes the complete set to file
-void DataWriter::writeStereoPupilData(const std::vector<std::tuple<Pupil, Pupil>>& pupilData) {
 
-    if (textStream == nullptr)
-        return;
 
-    int framePos = 0;
-    for(const auto& pupil_tup: pupilData) {
-        if (textStream->status() == QTextStream::Ok) {
-            *textStream<<pupilToStereoRow(static_cast<quint64>(framePos), std::get<0>(pupil_tup), std::get<1>(pupil_tup), "") << Qt::endl;
-        }
-        ++framePos;
-    }
-}
+

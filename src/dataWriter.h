@@ -2,7 +2,7 @@
 #define PUPILALGOSIMPLE_DATAWRITER_H
 
 /**
-    @author Moritz Lode
+    @authors Moritz Lode, Gábor Bényei
 */
 
 #include <QtCore/QObject>
@@ -10,14 +10,25 @@
 #include <QtCore/QTextStream>
 #include "pupil-detection-methods/Pupil.h"
 
+#include "recEventTracker.h"
+#include <QSettings>
+#include <QCoreApplication>
 
-enum WriteMode {SINGLE = 0, STEREO = 1};
+#include "pupilDetection.h"
+#include "eyeDataSerializer.h"
 
 
 /**
     Class to persist the pupil detection information on disk, in a CSV, comma-separated format
 
     File is created and opened upon construction, and closed upon destruction
+
+    NOTE: Modified by Gábor Bényei, 2023 jan
+    GB NOTE:
+        Reorganized code to let it handle an std::vector of Pupils, in order to comply with new signal-slot strategy, which
+        I introduced to manage different pupil detection processing modes (procModes).
+        WriteMode enum is not used anymore to distinguish between different headers or working mode, but procMode is used instead.
+        Also now it uses EyeDataSerializer class to process every pupil detection output.
 
     newPupilData(): called for each new pupil data, writes the pupil data to the file stream (which is flushes its content to disk occasionally)
 
@@ -28,31 +39,49 @@ class DataWriter : public QObject {
 
 public:
 
-    explicit DataWriter(const QString& fileName, int mode=WriteMode::SINGLE, QObject *parent = 0);
+    explicit DataWriter(
+        const QString& fileName, 
+        ProcMode procMode = ProcMode::SINGLE_IMAGE_ONE_PUPIL, // necessary for writing the proper header
+        RecEventTracker *recEventTracker = nullptr, 
+        QObject *parent = 0
+        );
     ~DataWriter() override;
     void close();
 
-    void writePupilData(const std::vector<Pupil>& pupilData);
-    void writeStereoPupilData(const std::vector<std::tuple<Pupil, Pupil>> &pupilData);
+    // GB: found these unreferenced functions. I updated the functionality, now available in a new function under the name writePupilData()
+    //void writePupilData(const std::vector<Pupil>& pupilData);
+    //void writeStereoPupilData(const std::vector<std::tuple<Pupil, Pupil>> &pupilData);
+
+    // GB: added begin
+    void writePupilData(std::vector<quint64> timestamps, int procMode, const std::vector<std::vector<Pupil>>& pupilData);
+
+    QString getDataFileName() {
+        return dataFile->fileName();
+    };
+    bool isReady() {
+        return writerReady;
+    };
+    // GB end
 
 private:
 
-    QString method;
+    QSettings *applicationSettings;
+    QChar delim;
+    RecEventTracker *recEventTracker;
+
     QString header;
-    QString stereoHeader;
 
     QFile *dataFile;
     QTextStream *textStream;
 
-    static QString pupilToRow(quint64 timestamp, const Pupil &pupil, const QString &filepath);
-    static QString pupilToStereoRow(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filepath);
+    // GB added begin
+    bool writerReady;
+    // GB added end
 
 public slots:
 
-    void newPupilData(quint64 timestamp, const Pupil &pupil, const QString &filename);
-    void newStereoPupilData(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filename);
-
+    // GB: changed to work with vector of pupils due to different procModes
+    void newPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename);
 };
-
 
 #endif //PUPILALGOSIMPLE_DATAWRITER_H

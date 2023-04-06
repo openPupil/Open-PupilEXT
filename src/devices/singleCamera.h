@@ -3,7 +3,7 @@
 #define PUPILEXT_SINGLECAMERA_H
 
 /**
-    @author Moritz Lode
+    @authors Moritz Lode, Gábor Bényei
 */
 
 
@@ -16,12 +16,20 @@
 #include "../cameraCalibration.h"
 #include "../cameraFrameRateCounter.h"
 
+
 using namespace Pylon;
 using namespace Basler_UniversalCameraParams;
 
 
+
+
 /**
     SingleCamera represents a single camera (Basler camera)
+
+    NOTE: Modified by Gábor Bényei, 2023 jan
+    BG NOTE: 
+        Added getters/setters for changing image acquisition ROI size and offset,
+        binning, as well as camera coreboard temperature
 
     getFriendlyName(): return the Basler device name in a friendly formatting
     getFullName(): return the full Basler device name
@@ -82,6 +90,17 @@ public:
     void loadFromFile(const String_t &filename);
     void saveToFile(const String_t &filename);
 
+    // GB added begin
+    int getImageROIwidth(); 
+    int getImageROIheight(); 
+    int getImageROIoffsetX(); 
+    int getImageROIoffsetY(); 
+    int getImageROIwidthMax(); // both setImageROI and setImageResize depends on this
+    int getImageROIheightMax(); // both setImageROI and setImageResize depends on this
+    int getBinningVal();
+    double getTemperature();
+    // GB added end
+
 private:
 
     QDir settingsDirectory;
@@ -113,12 +132,19 @@ public slots:
     void setAcquisitionFPSValue(int value);
     void enableHardwareTrigger(bool enabled);
 
+    // GB added begin
+    bool setBinningVal(int value);
+    bool setImageROIwidth(int width);
+    bool setImageROIheight(int height);
+    bool setImageROIoffsetX(int offsetX);
+    bool setImageROIoffsetY(int offsetY);
+    // GB added end
+
 signals:
 
     void fps(double fps);
     void framecount(int framecount);
 
 };
-
 
 #endif //PUPILEXT_SINGLECAMERA_H

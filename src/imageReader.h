@@ -3,16 +3,20 @@
 #define PUPILEXT_IMAGEREADER_H
 
 /**
-    @author Moritz Lode
+    @author Moritz Lode, Gábor Bényei
 */
 
 #include <QtCore/QObject>
 #include <QtGui/QtGui>
 #include "devices/camera.h"
 
+// GB added begin
+#include <vector>
+#include <algorithm>
+// GB added end
+
 
 enum PlaybackState { STOPPED=0, PAUSED=1, PLAYING=2 };
-
 
 /**
     Class to read images from disk
@@ -30,6 +34,36 @@ enum PlaybackState { STOPPED=0, PAUSED=1, PLAYING=2 };
     Depending on the disk read speed, high replay framerates may not be possible due to disk read speed and filesize
 
     TODO Improvement: Speed could be improved by pre-loading images of the directory into memory, disk read speed is limiting the playback speed
+
+    NOTE: Modified by Gábor Bényei, 2023 jan
+    IMPORTANT:
+        Read images now have their CameraImage.timestamp property set to their filename (marking the timestamp of acquisition) 
+        instead of the image read operation timestamp. This is I think more clear, and the previous implementation could give rise to mistakes 
+        when analyzing csv output. (Analytic codes had to treat csv recordings of live camera input and fileCamera input differently.)
+
+    GB NOTE:
+        Added a feature that the code now enumerates the content of the image directory, looks for the most common file extension (which has to be the one 
+        that is used for image), and automatically ignores any other file in the folder (whose extension does not match with the most frequent one).
+        Timestamps are stored in acqTimestamps vector.
+
+        Added several functions and code to work with the newly updated fileCamera (which is changed in order) to work with ImagePlaybackControlDialog.
+            - added public functions:
+                getStillImageSingle(int frameNumber)
+                getStillImageStereo(int frameNumber)
+                getImageDirectoryName()
+                getImageWidth()
+                getImageHeight()
+                getTimestampForFrameNumber(int frameNumber)
+                getLastCommissionedTimestamp()
+                getNumImagesTotal()
+                getRecordingDuration()
+                seekToFrame(int frameNumber)
+            - added private function:
+                purgeFilenamesVector(std::vector<cv::String> &filenames)
+            - added public slot:
+                step1frame(bool next)
+            - addded signal:
+                endReached()
 
 */
 class ImageReader : public QObject {
@@ -72,6 +106,66 @@ public:
         playbackLoop = loop;
     }
 
+    // GB added begin
+    cv::Mat getStillImageSingle(int frameNumber);
+    std::vector<cv::Mat> getStillImageStereo(int frameNumber);
+
+    QString getImageDirectoryName() {
+        return imageDirectory.absolutePath();
+    }
+    int getImageWidth() {
+        return foundImageWidth;
+    }
+    int getImageHeight() {
+        return foundImageHeight;
+    }
+    
+    // int getFrameNumberForTimestamp(uint64_t &timestamp) {
+    //     // Global private var and indexing back from currentImageIndex, this is the fastest I guess.
+    //     // However, there is a conversion from uint64_t to quint64 every time the comparison happens..
+    //     // I could not get around this, as CameraImage employs uint64_t 
+    //     // (I guess because in case of real cameras, it gets the value from Pylon, which uses uint64_t)
+    //     for(imgNumSeekerIdx = currentImageIndex; imgNumSeekerIdx>0; imgNumSeekerIdx--) {
+    //         if(acqTimestamps[imgNumSeekerIdx] == timestamp) 
+    //             return imgNumSeekerIdx;
+    //     }
+    //     return currentImageIndex; 
+    // };
+    
+    uint64_t getTimestampForFrameNumber(int frameNumber) {
+        if(acqTimestamps.size() > frameNumber)
+            return acqTimestamps[frameNumber];
+        else
+            return 0;
+    }
+
+    /*uint64_t getLastCommissionedTimestamp() {
+        if(lastCommissionedFrameNumber>0)
+            return acqTimestamps[lastCommissionedFrameNumber];
+        else 
+            return 0;
+    }*/
+    int getLastCommissionedFrameNumber() {
+        if(lastCommissionedFrameNumber>0)
+            return lastCommissionedFrameNumber;
+        else 
+            return 0;
+    }
+
+    int getNumImagesTotal() {
+        return (int)acqTimestamps.size();
+    };
+
+    uint64_t getRecordingDuration() {
+        return acqTimestamps[acqTimestamps.size()-1] - acqTimestamps[0];
+    }
+    void seekToFrame(int frameNumber) {
+        if(frameNumber<0)
+            frameNumber=0;
+        currentImageIndex = frameNumber;
+    }
+    // GB added end
+
 private:
 
     QFuture<void> playbackProcess;
@@ -93,8 +187,20 @@ private:
     bool noDelay;
     bool playbackLoop;
 
+    // GB added begin
+    std::vector<quint64> acqTimestamps;
+    int imgNumSeekerIdx = 0;
+    int lastCommissionedFrameNumber = -1; 
+
+    int foundImageWidth = 0;
+    int foundImageHeight = 0;
+
+    void purgeFilenamesVector(std::vector<cv::String> &filenames); 
+    // GB added end
+
     void run();
     void runStereo();
+
 
 public slots:
 
@@ -102,11 +208,21 @@ public slots:
     void stop();
     void pause();
 
+    // GB added begin
+    void step1frame(bool next);
+    // GB added end
+
 signals:
 
     void onNewImage(const CameraImage &image);
     void finished();
 
+    // GB added begin
+    // GB NOTE: we need this specific signal, to let imagePlaybackControlDialog know 
+    // that the playback finished automatically. The dialog alonw only knows about 
+    // playback changes that were caused by GUI interactions. Without this signal, it would be clueless
+    void endReached();
+    // GB added end
 };
 
 

@@ -9,11 +9,23 @@
 // Actual playback process is performed using Qts concurrent thread execution, to no block the GUI thread
 // First it is checked wherever a stereo directory structure exists or not, which
 ImageReader::ImageReader(QString directory, int playbackSpeed, bool playbackLoop, QObject *parent) :
-    QObject(parent), imageDirectory(directory), startTimestamp(0), playbackSpeed(playbackSpeed), noDelay(false), stereoMode(false), playbackLoop(playbackLoop), state(PlaybackState::STOPPED), currentImageIndex(0) {
+    QObject(parent), 
+    imageDirectory(directory), 
+    startTimestamp(0), 
+    playbackSpeed(playbackSpeed), 
+    noDelay(false), 
+    stereoMode(false), 
+    playbackLoop(playbackLoop), 
+    state(PlaybackState::STOPPED), 
+    currentImageIndex(0) {
 
     if(!imageDirectory.exists()) {
-        throw std::invalid_argument( "Image Directory does not exists." );
+        throw std::invalid_argument( "Image Directory does not exist." );
     }
+
+    // qDebug() << imageDirectory << Qt::endl;
+    // qDebug() << imageDirectory.exists("0") << Qt::endl;
+    // qDebug() << imageDirectory.exists("1") << Qt::endl;
 
     // Check if in directory, a stereo structure with directories 0 and 1 for main and secondary camera are present
     if(imageDirectory.exists("0") && imageDirectory.exists("1")) {
@@ -27,6 +39,12 @@ ImageReader::ImageReader(QString directory, int playbackSpeed, bool playbackLoop
         cv::glob(imageDirectory.filePath("0").toStdString(), filenames, false);
         cv::glob(imageDirectory.filePath("1").toStdString(), filenamesSecondary, false);
 
+        // GB added begin
+        purgeFilenamesVector(filenames);
+        purgeFilenamesVector(filenamesSecondary);
+        // TODO: add check to ensure the same timestamp has images in both directories
+        // GB added end
+
         assert(filenames.size() == filenamesSecondary.size());
     } else {
 
@@ -35,9 +53,30 @@ ImageReader::ImageReader(QString directory, int playbackSpeed, bool playbackLoop
         // Read directory files into list
         // glob sorts the names alphabetically, so filenames without zeros like _19 come after _189
         cv::glob(imageDirectory.path().toStdString(), filenames, false);
+
+        // GB added begin
+        purgeFilenamesVector(filenames);
+        // GB added end
     }
 
     std::cout<<"ImageReader: found " << filenames.size() << " images. Ready." << std::endl;
+
+    // GB added begin
+    bool ok;
+    for(size_t u = 0; u < filenames.size(); u++) {
+        acqTimestamps.push_back( QFileInfo(QString::fromStdString(filenames[u])).baseName().toULongLong(&ok, 0) );
+    }
+
+    // GB added begin
+    // GB: measure found images px size, for documenting in meta-snapshot
+    int b=0;
+    cv::Mat checkImg;
+    while(b < filenames.size() && (foundImageWidth<=0 || foundImageHeight<=0)) {
+        checkImg = cv::imread(filenames[b], cv::IMREAD_GRAYSCALE);
+        foundImageWidth = checkImg.cols;
+        foundImageHeight = checkImg.rows;
+    }
+    // GB added end
 
     setPlaybackSpeed(playbackSpeed);
 }
@@ -98,7 +137,9 @@ void ImageReader::run() {
         CameraImage cimg;
         cimg.type = CameraImageType::SINGLE_IMAGE_FILE;
         cimg.img = img.clone();
-        cimg.timestamp = startTimestamp;
+        //cimg.timestamp = startTimestamp; // GB corrected /commented out
+        cimg.timestamp = acqTimestamps[currentImageIndex]; // GB: using the file name, not the time of image reading operation
+        cimg.frameNumber = currentImageIndex; // GB: added here too, as playbackControlDialog needs it
         cimg.filename = filenames[currentImageIndex];
         img.release();
 
@@ -108,14 +149,26 @@ void ImageReader::run() {
                 QThread::msleep(playbackDelay-durProcess);
             }
         }
+
+        // GB added begin
+        lastCommissionedFrameNumber = currentImageIndex;
+        // GB adde end
         emit onNewImage(cimg);
     }
 
     // Playback loop finished, either due to end of files, or pause/stop action
     if(state != PlaybackState::PAUSED) {
         state = PlaybackState::STOPPED;
+        // GB added begin
+        // GB: to signal when we automatically reached the end
+        if(currentImageIndex == filenames.size()){
+            emit endReached();
+            lastCommissionedFrameNumber = -1; // corner case
+        }
+        // GB added end
         currentImageIndex = 0;
     }
+    //qDebug() << "finished()";
     emit finished();
 }
 
@@ -161,7 +214,8 @@ void ImageReader::runStereo() {
         cimg.type = CameraImageType::STEREO_IMAGE_FILE;
         cimg.img = img.clone();
         cimg.imgSecondary = imgSecondary.clone();
-        cimg.timestamp = startTimestamp;
+        //cimg.timestamp = startTimestamp; // GB corrected /commented out
+        cimg.timestamp = acqTimestamps[currentImageIndex]; // GB: using the file name, not the time of image reading operation
         cimg.frameNumber = currentImageIndex;
         cimg.filename = filenames[currentImageIndex];
         img.release();
@@ -173,12 +227,23 @@ void ImageReader::runStereo() {
                 QThread::msleep(playbackDelay-durProcess);
             }
         }
+
+        // GB added begin
+        lastCommissionedFrameNumber = currentImageIndex;
+        // GB adde end
         emit onNewImage(cimg);
     }
 
     // Playback loop finished, either due to end of files, or pause/stop action
     if(state != PlaybackState::PAUSED) {
         state = PlaybackState::STOPPED;
+        // GB added begin
+        // GB: to signal when we automatically reached the end
+        if(currentImageIndex == filenames.size()) {
+            emit endReached();
+            lastCommissionedFrameNumber = -1; // corner case
+        }
+        // GB added end
         currentImageIndex = 0;
     }
     emit finished();
@@ -208,7 +273,7 @@ void ImageReader::pause() {
     if(state != PlaybackState::PLAYING)
         return;
 
-    std::cout<<"Image Reader: Pausing ImageReader thread."<<std::endl;
+    std::cout<<"-----------------------------------------------------------Image Reader: Pausing ImageReader thread."<<std::endl;
     QMutexLocker locker(&mutex);
     state = PlaybackState::PAUSED;
 
@@ -227,3 +292,148 @@ void ImageReader::stop() {
 
     playbackProcess.waitForFinished();
 }
+
+
+void ImageReader::purgeFilenamesVector(std::vector<cv::String> &filenames) {
+
+    if(filenames.empty())
+        return;
+
+    // we find the most frequent extension in the folder (which must be the image extension we use)
+    std::vector<cv::String> fileExtensions;
+    std::vector<int> fileExtensionFreqencies; 
+    size_t dotPos = cv::String::npos;
+    cv::String currExt;
+    //
+    for(int c=0; c<filenames.size(); c++) {
+        dotPos = filenames[c].find_last_of('.');
+        if(dotPos != cv::String::npos) {
+            currExt = filenames[c].substr(dotPos, filenames[c].length()-(dotPos));
+
+            auto whereInVector = std::find(fileExtensions.begin(), fileExtensions.end(), currExt);
+            if(whereInVector == fileExtensions.end()) { // if the extension can NOT be found in the vector, add it
+                fileExtensions.push_back(currExt);
+                fileExtensionFreqencies.push_back(1);
+                //std::cout << "Found files in the folder with the following extension = " << currExt << std::endl;
+            } else {
+                fileExtensionFreqencies[(int)(whereInVector-fileExtensions.begin())]++;
+            }
+        } else {
+            // töröljük simán a listából
+        }
+    }
+    int mostFreqIndex = std::max_element(fileExtensionFreqencies.begin(), fileExtensionFreqencies.end())-fileExtensionFreqencies.begin();
+    //std::cout << "Freq of the most frequent extension = " << fileExtensionFreqencies[mostFreqIndex] << std::endl;
+    //std::cout << "The most frequent extension = " << fileExtensions[mostFreqIndex] << std::endl;
+
+
+    size_t iterUntil = filenames.size()-1;
+    size_t iterIndex = 0;
+    bool flaggedForDeletion = false;
+    while(iterIndex <= iterUntil) {
+        //filenames[iter_index].find(s2) != std::string::npos
+        flaggedForDeletion = false;
+
+        dotPos = filenames[iterIndex].find_last_of('.');
+        if(dotPos != cv::String::npos) {
+            currExt = filenames[iterIndex].substr(dotPos, filenames[iterIndex].length()-(dotPos)); //also handles if the filename ends with dot but there are no characters afterwards
+            
+            if(currExt != fileExtensions[mostFreqIndex]) {
+                flaggedForDeletion = true;
+            }
+        } else {
+            flaggedForDeletion = true;
+        }
+
+        if(flaggedForDeletion) {
+            std::cout << "Deleting unusual filename from detected filenames vector = " << filenames[iterIndex] << std::endl;
+            filenames.erase(filenames.begin()+iterIndex); //no index increment, because element was deleted, but iter_until needs to decrease
+            iterUntil--;
+        } else {
+            iterIndex++;
+        }
+    }
+    
+}
+
+cv::Mat ImageReader::getStillImageSingle(int frameNumber) {
+    if(filenames.size() > frameNumber)
+        return cv::imread(filenames[frameNumber], cv::IMREAD_GRAYSCALE);
+    else
+        return cv::Mat();
+}
+
+std::vector<cv::Mat> ImageReader::getStillImageStereo(int frameNumber) {
+    if(filenames.size() >= frameNumber && filenamesSecondary.size() > frameNumber) {
+        std::vector<cv::Mat> vec = {cv::imread(filenames[frameNumber], cv::IMREAD_GRAYSCALE), cv::imread(filenamesSecondary[frameNumber], cv::IMREAD_GRAYSCALE)};
+        return vec;
+    } else
+        return std::vector<cv::Mat>{cv::Mat(), cv::Mat()};
+}
+
+// This is not computationally expensive, so currently run on the main thread
+void ImageReader::step1frame(bool next) {
+    if(state == PlaybackState::PLAYING)
+        return;
+    
+    state = PlaybackState::PAUSED;
+
+    // GB NOTE: at this point, currentImageIndex is marking the NEXT (yet unplayed) frame for the run() method, so we keep that in respect
+
+    if(next)
+        currentImageIndex+=1;
+    else
+        currentImageIndex-=1;
+
+    if(currentImageIndex < 0)
+        currentImageIndex+=(int)filenames.size();
+    if(currentImageIndex > filenames.size()-1)
+        currentImageIndex%=(int)filenames.size();
+
+    //qDebug() << currentImageIndex;
+
+    if(stereoMode) {
+        QFutureSynchronizer<cv::Mat> synchronizer;
+        // Read images from disk asynchronous to save time
+        synchronizer.addFuture(QtConcurrent::run(cv::imread, filenames[currentImageIndex], cv::IMREAD_GRAYSCALE));
+        synchronizer.addFuture(QtConcurrent::run(cv::imread, filenamesSecondary[currentImageIndex], cv::IMREAD_GRAYSCALE));
+        synchronizer.waitForFinished();
+        cv::Mat img = synchronizer.futures().at(0).result();
+        cv::Mat imgSecondary = synchronizer.futures().at(1).result();
+
+        if(!img.data || !imgSecondary.data) {
+            std::cerr << "Image Reader: StereoImage could not be read, skipping: " << filenames[currentImageIndex] << " and " << filenamesSecondary[currentImageIndex] << std::endl;
+        }
+
+        CameraImage cimg;
+        cimg.type = CameraImageType::STEREO_IMAGE_FILE;
+        cimg.img = img.clone();
+        cimg.imgSecondary = imgSecondary.clone();
+        //cimg.timestamp = startTimestamp; // GB corrected /commented out
+        cimg.timestamp = acqTimestamps[currentImageIndex]; // GB: using the file name, not the time of image reading operation
+        cimg.frameNumber = currentImageIndex;
+        cimg.filename = filenames[currentImageIndex];
+        img.release();
+        imgSecondary.release();
+
+        emit onNewImage(cimg);
+    } else {
+        cv::Mat img = cv::imread(filenames[currentImageIndex], cv::IMREAD_GRAYSCALE);
+
+        if(!img.data) {
+            std::cerr << "Image Reader: Image could not be read, skipping: " << filenames[currentImageIndex] << std::endl;
+        }
+
+        CameraImage cimg;
+        cimg.type = CameraImageType::SINGLE_IMAGE_FILE;
+        cimg.img = img.clone();
+        //cimg.timestamp = startTimestamp; // GB corrected /commented out
+        cimg.timestamp = acqTimestamps[currentImageIndex]; // GB: using the file name, not the time of image reading operation
+        cimg.frameNumber = currentImageIndex;
+        cimg.filename = filenames[currentImageIndex];
+        img.release();
+
+        emit onNewImage(cimg);
+    }
+}
+

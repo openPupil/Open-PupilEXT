@@ -3,7 +3,7 @@
 #define PUPILEXT_PUPILMETHODSETTING_H
 
 /**
-    @author Moritz Lode
+    @authors Moritz Lode, Gábor Bényei
 */
 
 #include <QtWidgets/QWidget>
@@ -19,6 +19,7 @@ public:
     QWidget *infoBox;
     QSettings *applicationSettings;
 
+    // GB: a
     explicit PupilMethodSetting(QWidget *parent=0) : QWidget(parent),
              applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
@@ -26,6 +27,12 @@ public:
     }
 
     //virtual void addSecondary(PupilDetectionMethod *method) = 0;
+
+    // GB added begin
+    virtual bool isAutoParamEnabled() {
+        return false;
+    }
+    // GB added end
 
 public slots:
 

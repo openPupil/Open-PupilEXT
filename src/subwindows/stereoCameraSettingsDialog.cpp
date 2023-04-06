@@ -10,7 +10,9 @@
 // For the hardware trigger a connection to a microcontroller is necessary which is handled through the SerialSettings object
 // This is ensured in this form by disabling the start hardware trigger buttons until the cameras are opened
 StereoCameraSettingsDialog::StereoCameraSettingsDialog(StereoCamera *camera, SerialSettingsDialog *serialSettings, QWidget *parent) :
-        QDialog(parent), camera(camera), serialSettings(serialSettings),
+        QDialog(parent), 
+        camera(camera), 
+        serialSettings(serialSettings),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     settingsDirectory = QDir(applicationSettings->value("StereoCameraSettingsDialog.settingsDirectory", QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).toString());
@@ -19,28 +21,14 @@ StereoCameraSettingsDialog::StereoCameraSettingsDialog(StereoCamera *camera, Ser
         settingsDirectory.mkdir(".");
     }
 
-    setMinimumSize(600, 450);
+    setMinimumSize(420, 630);
+    //setMinimumSize(600, 450); // BG
 
     setWindowTitle(QString("Stereo Camera Settings"));
 
     createForm();
 
-    connect(gainInputBox, SIGNAL(valueChanged(double)), camera, SLOT(setGainValue(double)));
-    connect(exposureInputBox, SIGNAL(valueChanged(int)), camera, SLOT(setExposureTimeValue(int)));
-    connect(framerateEnabled, SIGNAL(toggled(bool)), camera, SLOT(enableAcquisitionFrameRate(bool)));
-    connect(framerateInputBox, SIGNAL(valueChanged(int)), camera, SLOT(setAcquisitionFPSValue(int)));
-
-    connect(saveButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::saveButtonClick);
-    connect(loadButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::loadButtonClick);
-
-    connect(startHWButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::startHardwareTrigger);
-    connect(stopHWButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::stopHardwareTrigger);
-
-
-    connect(gainAutoOnceButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::autoGainOnce);
-    connect(exposureAutoOnceButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::autoExposureOnce);
-
-    connect(serialConfigButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::onSerialConfig);
+    // BG: moved all connect() calls to the end of createForm() for clarity
 
     // Update the device list from which main and secondary camera are chosen
     updateDevicesBox();
@@ -56,18 +44,6 @@ void StereoCameraSettingsDialog::createForm() {
     QGroupBox *cameraGroup = new QGroupBox("Camera Selection");
     QFormLayout *cameraLayout = new QFormLayout();
 
-    QLabel *lineSourceLabel = new QLabel(tr("Trigger Source:"));
-    lineSourceBox = new QComboBox();
-
-    lineSourceBox->addItem(QString("Select Line Source"));
-    for(int i=1; i<7;i++) {
-        lineSourceBox->addItem(QString("Line") + QString::number(i));
-    }
-
-    connect(lineSourceBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onLineSourceChange(int)));
-
-    cameraLayout->addRow(lineSourceLabel, lineSourceBox);
-
     QLabel *mainCameraLabel = new QLabel(tr("Main:"));
     mainCameraBox = new QComboBox();
     QLabel *secondaryCameraLabel = new QLabel(tr("Secondary:"));
@@ -75,23 +51,22 @@ void StereoCameraSettingsDialog::createForm() {
 
     cameraLayout->addRow(mainCameraLabel, mainCameraBox);
     cameraLayout->addRow(secondaryCameraLabel, secondaryCameraBox);
-
-    updateDevicesButton = new QPushButton(tr("Refresh Devices"));
-    connect(updateDevicesButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::updateDevicesBox);
-    cameraLayout->addRow(updateDevicesButton);
-
+    
+    // BG modified begin
+    // BG NOTE: modified to fit on smaller screens
     QWidget *tmp = new QWidget();
     QHBoxLayout *cameraButtonLayout = new QHBoxLayout();
+    updateDevicesButton = new QPushButton(tr("Refresh Devices"));
+    cameraButtonLayout->addWidget(updateDevicesButton);
     openButton = new QPushButton(tr("Open"));
-    connect(openButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::openStereoCamera);
     cameraButtonLayout->addWidget(openButton);
-    openButton->setDisabled(true);
+    //openButton->setDisabled(true); // BG
     closeButton = new QPushButton(tr("Close"));
-    connect(closeButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::closeStereoCamera);
     cameraButtonLayout->addWidget(closeButton);
-    closeButton->setDisabled(true);
+    //closeButton->setDisabled(true); // BG
     tmp->setLayout(cameraButtonLayout);
     cameraLayout->addWidget(tmp);
+    // BG modified end
 
     updateDevicesBox();
 
@@ -102,9 +77,25 @@ void StereoCameraSettingsDialog::createForm() {
     hwTriggerGroup = new QGroupBox("Hardware Trigger");
     QFormLayout *hwTriggerGroupLayout = new QFormLayout();
 
+    // BG modified begin
+    // BG NOTE: modified to fit in less rows, so can fit better on smaller screens. Also moved a few lines here for clarity
+
+    // // BG moved begin
+    QLabel *lineSourceLabel = new QLabel(tr("Trigger Source:"));
+    lineSourceBox = new QComboBox();
+
+    // BG: shortened from text "Select line source" to fit better
+    lineSourceBox->addItem(QString("Select"));
+    for(int i=1; i<7;i++) {
+        lineSourceBox->addItem(QString("Line") + QString::number(i));
+    }
     serialConfigButton = new QPushButton("Serial Connection");
 
-    hwTriggerGroupLayout->addWidget(serialConfigButton);
+    QHBoxLayout *trigConfigRow1 = new QHBoxLayout;
+    trigConfigRow1->addWidget(lineSourceBox);
+    trigConfigRow1->addWidget(serialConfigButton);
+    hwTriggerGroupLayout->addRow(lineSourceLabel, trigConfigRow1); 
+    // // BG moved end
 
     QLabel *triggerFramerateLabel = new QLabel(tr("Trigger FPS:"));
     triggerFramerateInputBox = new QSpinBox();
@@ -112,18 +103,23 @@ void StereoCameraSettingsDialog::createForm() {
     triggerFramerateInputBox->setMaximum(999);
     triggerFramerateInputBox->setSingleStep(1);
     triggerFramerateInputBox->setEnabled(false);
-
-    hwTriggerGroupLayout->addRow(triggerFramerateLabel, triggerFramerateInputBox);
+    triggerFramerateInputBox->setFixedWidth(50); // BG
 
     QLabel *triggerTimeSpanLabel = new QLabel(tr("Trigger Runtime [min]:"));
     triggerTimeSpanInputBox = new QDoubleSpinBox();
     triggerTimeSpanInputBox->setMinimum(0);
     triggerTimeSpanInputBox->setMaximum(std::numeric_limits<double>::max());
     triggerTimeSpanInputBox->setSingleStep(0.1);
-    triggerTimeSpanInputBox->setValue(1);
     triggerTimeSpanInputBox->setEnabled(false);
+    triggerTimeSpanInputBox->setFixedWidth(50); // BG
 
-    hwTriggerGroupLayout->addRow(triggerTimeSpanLabel, triggerTimeSpanInputBox);
+    QHBoxLayout *trigConfigRow2 = new QHBoxLayout;
+    trigConfigRow2->addWidget(triggerFramerateInputBox);
+    QSpacerItem *sp1 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum); 
+    trigConfigRow2->addSpacerItem(sp1);
+    trigConfigRow2->addWidget(triggerTimeSpanLabel);
+    trigConfigRow2->addWidget(triggerTimeSpanInputBox);
+    hwTriggerGroupLayout->addRow(triggerFramerateLabel, trigConfigRow2);
 
     QWidget *hwTmp = new QWidget();
     QHBoxLayout *hwButtonLayout = new QHBoxLayout();
@@ -137,10 +133,11 @@ void StereoCameraSettingsDialog::createForm() {
 
     hwTmp->setLayout(hwButtonLayout);
     hwTriggerGroupLayout->addWidget(hwTmp);
+    // BG modified end
 
     hwTriggerGroup->setLayout(hwTriggerGroupLayout);
     mainLayout->addWidget(hwTriggerGroup);
-    hwTriggerGroup->setDisabled(true);
+    //hwTriggerGroup->setDisabled(true); // BG
 
 
     analogGroup = new QGroupBox("Analog Control");
@@ -150,6 +147,8 @@ void StereoCameraSettingsDialog::createForm() {
     QLabel *gainLabel = new QLabel(tr("Gain [dB]:"));
     gainLabel->setMinimumWidth(50);
 
+    // BG modified begin
+    // BG NOTE: Modified to fit on smaller screens too
     // We do not set its value yet, because the camera may not have a valid value yet (not opened)
     gainInputBox = new QDoubleSpinBox();
     gainInputBox->setMinimum(0.0);
@@ -157,66 +156,118 @@ void StereoCameraSettingsDialog::createForm() {
     gainInputBox->setSingleStep(0.01);
     //gainInputBox->setValue(camera->getGainValue());
 
-    gainInputLayout->addWidget(gainInputBox);
-    //gainInputLayout->addWidget(gainSlider);
-    analogLayout->addRow(gainLabel, gainInputLayout);
-
     gainAutoOnceButton = new QPushButton("Auto Gain (Once)");
-    analogLayout->addRow(gainAutoOnceButton);
+    gainInputLayout->addWidget(gainInputBox);
+    gainInputLayout->addWidget(gainAutoOnceButton);
+    analogLayout->addRow(gainLabel, gainInputLayout);
+    // BG modified end
 
     analogGroup->setLayout(analogLayout);
-    analogGroup->setDisabled(true);
+    //analogGroup->setDisabled(true); // BG
     mainLayout->addWidget(analogGroup);
 
 
     acquisitionGroup = new QGroupBox("Acquisition Control");
     QFormLayout *acquisitionLayout = new QFormLayout;
+    
+    // BG modified begin
+    // BG NOTE: Modified to fit on smaller screens too
     QHBoxLayout *exposureInputLayout = new QHBoxLayout;
-    QLabel *exposureLabel = new QLabel(tr("Exposure [us]:"));
+    // BG: we are in unicode, so can use greek mu sign. Previously it was written as "Exposure [us]"
+    exposureLabel = new QLabel(tr("Exposure [µs]:")); 
     exposureLabel->setMinimumWidth(50);
     exposureInputBox = new QSpinBox();
     exposureInputBox->setMinimum(1);
     exposureInputBox->setMaximum(10000000);
     exposureInputBox->setSingleStep(100);
     //exposureInputBox->setValue(camera->getExposureTimeValue());
-
-    exposureInputLayout->addWidget(exposureInputBox);
-    acquisitionLayout->addRow(exposureLabel, exposureInputLayout);
+    exposureInputBox->setFixedWidth(50);
 
     exposureAutoOnceButton = new QPushButton("Auto Exposure (Once)");
-    acquisitionLayout->addRow(exposureAutoOnceButton);
+    exposureInputLayout->addWidget(exposureInputBox);
+    exposureInputLayout->addWidget(exposureAutoOnceButton);
+    acquisitionLayout->addRow(exposureLabel, exposureInputLayout);
+    // BG modified end
 
-    QLabel *frameRateLabel = new QLabel("Resulting Framerate:");
+    // BG added begin
+//    QSpacerItem *sp2 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum); 
+//    imageROIlayoutRow2->addSpacerItem(sp2);
+    QHBoxLayout *imageROIlayoutRow1 = new QHBoxLayout;
+    imageROIwidthLabel = new QLabel(tr("Image ROI width [px]:"));
+    imageROIwidthLabel->setMinimumWidth(50);
+    imageROIwidthInputBox = new QSpinBox();
+    imageROIwidthInputBox->setFixedWidth(50);
+    imageROIwidthMaxLabel = new QLabel(tr("/ 0"));
+    imageROIlayoutRow1->addWidget(imageROIwidthInputBox);
+    imageROIlayoutRow1->addWidget(imageROIwidthMaxLabel);
+    acquisitionLayout->addRow(imageROIwidthLabel, imageROIlayoutRow1);
+
+    QHBoxLayout *imageROIlayoutRow2 = new QHBoxLayout;
+    imageROIheightLabel = new QLabel(tr("Image ROI height [px]:"));
+    imageROIheightLabel->setMinimumWidth(50);
+    imageROIheightInputBox = new QSpinBox();
+    imageROIheightInputBox->setFixedWidth(50);
+    imageROIheightMaxLabel = new QLabel(tr("/ 0"));
+    imageROIlayoutRow2->addWidget(imageROIheightInputBox);
+    imageROIlayoutRow2->addWidget(imageROIheightMaxLabel);
+    acquisitionLayout->addRow(imageROIheightLabel, imageROIlayoutRow2);
+
+    QHBoxLayout *imageROIlayoutRow3 = new QHBoxLayout;
+    imageROIoffsetXLabel = new QLabel(tr("Image ROI offsetX [px]:"));
+    imageROIoffsetXLabel->setMinimumWidth(50);
+    imageROIoffsetXInputBox = new QSpinBox();
+    imageROIoffsetXInputBox->setFixedWidth(50);
+    imageROIoffsetXMaxLabel = new QLabel(tr("/ 0"));
+    imageROIlayoutRow3->addWidget(imageROIoffsetXInputBox);
+    imageROIlayoutRow3->addWidget(imageROIoffsetXMaxLabel);
+    acquisitionLayout->addRow(imageROIoffsetXLabel, imageROIlayoutRow3);
+
+    QHBoxLayout *imageROIlayoutRow4 = new QHBoxLayout;
+    QHBoxLayout *imageROIoffsetYInputLayout = new QHBoxLayout;
+    imageROIoffsetYLabel = new QLabel(tr("Image ROI offsetY [px]:"));
+    imageROIoffsetYLabel->setMinimumWidth(50);
+    imageROIoffsetYInputBox = new QSpinBox();
+    imageROIoffsetYInputBox->setFixedWidth(50);
+    imageROIoffsetYMaxLabel = new QLabel(tr("/ 0"));
+    imageROIlayoutRow4->addWidget(imageROIoffsetYInputBox);
+    imageROIlayoutRow4->addWidget(imageROIoffsetYMaxLabel);
+    acquisitionLayout->addRow(imageROIoffsetYLabel, imageROIlayoutRow4);
+
+    binningLabel = new QLabel(tr("Binning:"));
+    binningLabel->setMinimumWidth(50);
+    binningBox = new QComboBox();
+    binningBox->addItem(QString("1 (no binning)"));
+    binningBox->addItem(QString("2"));
+    binningBox->addItem(QString("4"));
+    binningBox->setFixedWidth(100);
+    acquisitionLayout->addRow(binningLabel, binningBox);
+    // BG added end
+
+    // BG modified begin
+    frameRateLabel = new QLabel("Resulting Framerate:");
     frameRateValueLabel = new QLabel(QString::number(0));
-
-    connect(exposureInputBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameRateValue()));
-    connect(gainInputBox, SIGNAL(valueChanged(double)), this, SLOT(updateFrameRateValue()));
 
     acquisitionLayout->addRow(frameRateLabel, frameRateValueLabel);
 
-    framerateEnabled = new QCheckBox("Limit acquisition framerate");
+    // BG NOTE: migrated the checkbox and spinbox into a single line to fit better on small screens
+    framerateEnabled = new QCheckBox("Limit framerate to:");
     framerateEnabled->setChecked(camera->isEnabledAcquisitionFrameRate());
-
-    acquisitionGroup->setDisabled(true);
-    acquisitionLayout->addRow(framerateEnabled);
-
-
-    QHBoxLayout *framerateInputLayout = new QHBoxLayout;
-    QLabel *framerateLabel = new QLabel(tr("Framerate:"));
-    framerateLabel->setMinimumWidth(50);
     framerateInputBox = new QSpinBox();
-    QSpacerItem *sp = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+    framerateInputLayout = new QHBoxLayout;
+    framerateInputLayout->addWidget(frameRateValueLabel);
+    QSpacerItem *sp4 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum); 
+    framerateInputLayout->addSpacerItem(sp4);
+    framerateInputLayout->addWidget(framerateEnabled);
     framerateInputLayout->addWidget(framerateInputBox);
-    framerateInputLayout->addSpacerItem(sp);
+   // framerateInputLayout->addSpacerItem(sp);
     framerateInputBox->setMinimum(1);
     framerateInputBox->setMaximum(999);
     framerateInputBox->setSingleStep(1);
     //framerateInputBox->setValue(camera->getAcquisitionFPSValue());
     //framerateInputBox->setEnabled(camera->isEnabledAcquisitionFrameRate());
-
-    acquisitionLayout->addRow(framerateLabel, framerateInputLayout);
-
-    connect(framerateEnabled, SIGNAL(toggled(bool)), framerateInputBox, SLOT(setEnabled(bool)));
+    framerateInputBox->setFixedWidth(50); // BG
+    //acquisitionGroup->setDisabled(true); // BG
+    // BG modified end
 
     acquisitionGroup->setLayout(acquisitionLayout);
     mainLayout->addWidget(acquisitionGroup);
@@ -233,9 +284,53 @@ void StereoCameraSettingsDialog::createForm() {
     buttonsLayout->addWidget(loadButton);
     buttonsLayout->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding));
 
+    // BG: added this label to warn user that a new image acq ROI or binning setting needs new calibration
+    QLabel *imageROIWarningLabel = new QLabel(tr("Warning: If image acquisition ROI or Binning is altered,\na new camera calibration is necessary for proper undistortion."));
+    mainLayout->addWidget(imageROIWarningLabel);
+
     mainLayout->addLayout(buttonsLayout);
 
     setLayout(mainLayout);
+
+
+    // GB modified/added begin
+
+    // BG: only reveal settings when the cameras are connected
+    setLimitationsWhileUnconnected(true);
+
+    // GB: merged here below all connect() calls of createDialog() as well as new ones, for clearer code
+    connect(lineSourceBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onLineSourceChange(int)));
+    connect(binningBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onBinningModeChange(int)));
+    connect(exposureInputBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameRateValue()));
+    connect(gainInputBox, SIGNAL(valueChanged(double)), this, SLOT(updateFrameRateValue()));
+
+    connect(imageROIwidthInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIwidth(int)));
+    connect(imageROIheightInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIheight(int)));
+    connect(imageROIoffsetXInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIoffsetX(int)));
+    connect(imageROIoffsetYInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIoffsetY(int)));
+
+    connect(framerateEnabled, SIGNAL(toggled(bool)), framerateInputBox, SLOT(setEnabled(bool)));
+
+    connect(gainInputBox, SIGNAL(valueChanged(double)), camera, SLOT(setGainValue(double)));
+    connect(exposureInputBox, SIGNAL(valueChanged(int)), camera, SLOT(setExposureTimeValue(int)));
+    connect(framerateEnabled, SIGNAL(toggled(bool)), camera, SLOT(enableAcquisitionFrameRate(bool)));
+    connect(framerateInputBox, SIGNAL(valueChanged(int)), camera, SLOT(setAcquisitionFPSValue(int)));
+
+    connect(saveButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::saveButtonClick);
+    connect(loadButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::loadButtonClick);
+
+    connect(startHWButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::startHardwareTrigger);
+    connect(stopHWButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::stopHardwareTrigger);
+
+    connect(gainAutoOnceButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::autoGainOnce);
+    connect(exposureAutoOnceButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::autoExposureOnce);
+
+    connect(serialConfigButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::onSerialConfig);
+
+    connect(updateDevicesButton, SIGNAL(clicked()), this, SLOT(updateDevicesBox()));
+    connect(openButton, SIGNAL(clicked()), this, SLOT(openStereoCamera()));
+    connect(closeButton, SIGNAL(clicked()), this, SLOT(closeStereoCamera()));
+    // GB modified/added end
 }
 
 // Called when the window is closed
@@ -284,21 +379,25 @@ void StereoCameraSettingsDialog::updateDevicesBox() {
 
 void StereoCameraSettingsDialog::updateForms() {
 
-    if(camera->isOpen()) {
+    if(!camera->isOpen()) // BG: Little nicer like this
+        return;
 
-        framerateEnabled->setChecked(camera->isEnabledAcquisitionFrameRate());
-        framerateInputBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin()));
-        framerateInputBox->setMaximum(camera->getAcquisitionFPSMax());
-        framerateInputBox->setValue(camera->getAcquisitionFPSValue());
+    framerateEnabled->setChecked(camera->isEnabledAcquisitionFrameRate());
+    framerateInputBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin()));
+    framerateInputBox->setMaximum(camera->getAcquisitionFPSMax());
+    framerateInputBox->setValue(camera->getAcquisitionFPSValue());
 
-        gainInputBox->setMinimum(floor(camera->getGainMin()));
-        gainInputBox->setMaximum(floor(camera->getGainMax()));
-        gainInputBox->setValue(camera->getGainValue());
+    gainInputBox->setMinimum(floor(camera->getGainMin()));
+    gainInputBox->setMaximum(floor(camera->getGainMax()));
+    gainInputBox->setValue(camera->getGainValue());
 
-        exposureInputBox->setMinimum(camera->getExposureTimeMin());
-        exposureInputBox->setMaximum(camera->getExposureTimeMax());
-        exposureInputBox->setValue(camera->getExposureTimeValue());
-    }
+    exposureInputBox->setMinimum(camera->getExposureTimeMin());
+    exposureInputBox->setMaximum(camera->getExposureTimeMax());
+    exposureInputBox->setValue(camera->getExposureTimeValue());
+    
+    // BG: track in a global variable
+    lastUsedBinningVal = camera->getBinningVal(); 
+
 }
 
 // Saves the main camera settings to file
@@ -374,7 +473,7 @@ void StereoCameraSettingsDialog::startHardwareTrigger() {
     double fps = triggerFramerateInputBox->value();
 
     int delay = (int)(((1000.0f/fps)*1000.0f) / 2.0f);
-    int count = (int)((runtime*60000000)/(delay*2));
+    int count = (int)((runtime*60000000)/(delay*2)); // corrected by SBelgers in previous commit
 
 
     QString cmd = "<TX"+ QString::number(count) +"X"+ QString::number(delay) +">";
@@ -395,6 +494,31 @@ void StereoCameraSettingsDialog::stopHardwareTrigger() {
 
     stopHWButton->setEnabled(false);
     startHWButton->setEnabled(true);
+}
+
+// This method is to be used for camera warmup connection upon program start (argument command), 
+// or for remote control connection invoked camera connection
+// GB IMPORTANT TODO: TO BE TESTED
+void StereoCameraSettingsDialog::openStereoCamera(const QString &camName1, const QString &camName2) {
+    int idx1 = -1;
+    for(int i=0; i<mainCameraBox->count(); i++)
+        if(mainCameraBox->itemText(i) == camName1) {
+            idx1 = i;
+            break;
+        }
+    int idx2 = -1;
+    for(int i=0; i<secondaryCameraBox->count(); i++)
+        if(secondaryCameraBox->itemText(i) == camName1) {
+            idx2 = i;
+            break;
+        }
+    if(idx1==idx2 || idx1<0 || idx2<0)
+        return;
+
+    mainCameraBox->setCurrentIndex(idx1);
+    secondaryCameraBox->setCurrentIndex(idx2);
+
+    openStereoCamera();
 }
 
 // Opens the stereo camera system, which means that both selected cameras are attached to the stereo camera object and opened, started to fetch images
@@ -418,11 +542,7 @@ void StereoCameraSettingsDialog::openStereoCamera() {
             return;
         }
 
-        // Activate all settings groups underneath
-        analogGroup->setDisabled(false);
-        acquisitionGroup->setDisabled(false);
-        saveButton->setDisabled(false);
-        loadButton->setDisabled(false);
+        // BG: moved widget group disabling from here
 
         // Its important to open the camera here not earlier, as loading config overrides the config in open
         camera->open();
@@ -431,7 +551,17 @@ void StereoCameraSettingsDialog::openStereoCamera() {
 
         updateForms();
 
-        hwTriggerGroup->setDisabled(false);
+        // BG added begin
+        updateImageROISettingsMax();
+        updateImageROISettingsMin(camera->getBinningVal());
+        updateImageROISettingsValues();
+
+        // BG: migrated enabling/disabling widget groups into a separate function
+        // Activate all settings groups underneath
+        setLimitationsWhileUnconnected(false);
+        // BG added end
+
+        //hwTriggerGroup->setDisabled(false); 
     } else {
         std::cout<<"Error cant use same camera with stereo system."<<std::endl;
     }
@@ -444,9 +574,8 @@ void StereoCameraSettingsDialog::closeStereoCamera() {
     // Also stop the HW trigger signals
     stopHardwareTrigger();
     // Disable all camera settings groups underneath
-    analogGroup->setDisabled(true);
-    acquisitionGroup->setDisabled(true);
-    hwTriggerGroup->setDisabled(true);
+    // BG: migrated into a separate function
+    setLimitationsWhileUnconnected(true);
 }
 
 // Slot receiving a signal from the serialsettings that a serial port is now connected
@@ -487,6 +616,22 @@ void StereoCameraSettingsDialog::loadSettings() {
     exposureInputBox->setValue(applicationSettings->value("StereoCameraSettingsDialog.analogExposure", camera->getExposureTimeValue()).toInt());
     camera->setExposureTimeValue(exposureInputBox->value());
 
+    // BG added begin
+    int lastUsedBinningVal = applicationSettings->value("StereoCameraSettingsDialog.binningVal", camera->getBinningVal()).toInt();
+    camera->setBinningVal(lastUsedBinningVal);
+    int tempidx = 0;
+    if(lastUsedBinningVal==2 || lastUsedBinningVal==3)
+        tempidx = 1;
+    else if(lastUsedBinningVal==4)
+        tempidx = 2;
+    binningBox->setCurrentIndex(tempidx);
+
+    imageROIwidthInputBox->setValue(applicationSettings->value("StereoCameraSettingsDialog.imageROIwidth", camera->getImageROIwidthMax() ).toInt());
+    imageROIheightInputBox->setValue(applicationSettings->value("StereoCameraSettingsDialog.imageROIheight", camera->getImageROIheightMax()).toInt());
+    imageROIoffsetXInputBox->setValue(applicationSettings->value("StereoCameraSettingsDialog.imageROIoffsetX", 0).toInt()); // DEV
+    imageROIoffsetYInputBox->setValue(applicationSettings->value("StereoCameraSettingsDialog.imageROIoffsetY", 0).toInt()); // DEV
+    // BG added end
+
     framerateEnabled->setChecked(applicationSettings->value("StereoCameraSettingsDialog.framerateEnabled", camera->isEnabledAcquisitionFrameRate()).toBool());
     camera->enableAcquisitionFrameRate(framerateEnabled->isChecked());
 
@@ -511,6 +656,14 @@ void StereoCameraSettingsDialog::saveSettings() {
     applicationSettings->setValue("StereoCameraSettingsDialog.framerateEnabled", framerateEnabled->isChecked());
     applicationSettings->setValue("StereoCameraSettingsDialog.acquisitionFramerate", framerateInputBox->value());
 
+    // BG added begin
+    applicationSettings->setValue("SingleCameraSettingsDialog.binningVal", lastUsedBinningVal);
+    applicationSettings->setValue("SingleCameraSettingsDialog.imageROIwidth", imageROIwidthInputBox->value());
+    applicationSettings->setValue("SingleCameraSettingsDialog.imageROIheight", imageROIheightInputBox->value());
+    applicationSettings->setValue("SingleCameraSettingsDialog.imageROIoffsetX", imageROIoffsetXInputBox->value());
+    applicationSettings->setValue("SingleCameraSettingsDialog.imageROIoffsetY", imageROIoffsetYInputBox->value());
+    // BG added end
+
     applicationSettings->setValue("StereoCameraSettingsDialog.settingsDirectory", settingsDirectory.path());
 
     if(camera->isOpen()) {
@@ -520,4 +673,130 @@ void StereoCameraSettingsDialog::saveSettings() {
         std::cout<<"Saving config to settings directory: "<< configFile.toStdString() <<std::endl;
         camera->saveMainToFile(configFile.toStdString().c_str());
     }
+}
+
+
+void StereoCameraSettingsDialog::onSetImageROIwidth(int val) {
+    camera->setImageROIwidth(val);
+    // NOTE: qt will not consider the programmatic change of the value as a user event to handle
+    updateImageROISettingsMax();
+    updateImageROISettingsValues();
+}
+
+void StereoCameraSettingsDialog::onSetImageROIheight(int val) {
+    camera->setImageROIheight(val);
+    updateImageROISettingsMax();
+    updateImageROISettingsValues();
+}
+
+void StereoCameraSettingsDialog::onSetImageROIoffsetX(int val) {
+    camera->setImageROIoffsetX(val);
+    updateImageROISettingsMax();
+    updateImageROISettingsValues();
+}
+
+void StereoCameraSettingsDialog::onSetImageROIoffsetY(int val) {
+    camera->setImageROIoffsetY(val);
+    updateImageROISettingsMax();
+    updateImageROISettingsValues();
+}
+
+void StereoCameraSettingsDialog::updateImageROISettingsMin(int binningVal) {
+    imageROIwidthInputBox->setMinimum(minImageSize/binningVal);
+    imageROIwidthInputBox->setSingleStep(imageSizeChangeSingleStep/binningVal);
+    imageROIheightInputBox->setMinimum(minImageSize/binningVal);
+    imageROIheightInputBox->setSingleStep(imageSizeChangeSingleStep/binningVal);
+    imageROIoffsetXInputBox->setMinimum(0);
+    imageROIoffsetXInputBox->setSingleStep(imageSizeChangeSingleStep/binningVal);
+    imageROIoffsetYInputBox->setMinimum(0);
+    imageROIoffsetYInputBox->setSingleStep(imageSizeChangeSingleStep/binningVal);
+}
+
+void StereoCameraSettingsDialog::updateImageROISettingsMax() {
+    imageROIwidthInputBox->setMaximum(camera->getImageROIwidthMax());
+    imageROIheightInputBox->setMaximum(camera->getImageROIheightMax());
+    imageROIoffsetXInputBox->setMaximum(camera->getImageROIwidthMax() -camera->getImageROIwidth());
+    imageROIoffsetYInputBox->setMaximum(camera->getImageROIheightMax() -camera->getImageROIheight());
+
+    imageROIwidthMaxLabel->setText(QString("/ ") + QString::number(camera->getImageROIwidthMax()));
+    imageROIheightMaxLabel->setText(QString("/ ") + QString::number(camera->getImageROIheightMax()));
+    imageROIoffsetXMaxLabel->setText(QString("/ ") + QString::number(camera->getImageROIwidthMax() -camera->getImageROIwidth()));
+    imageROIoffsetYMaxLabel->setText(QString("/ ") + QString::number(camera->getImageROIheightMax() -camera->getImageROIheight()));
+}
+
+void StereoCameraSettingsDialog::updateImageROISettingsValues() {
+    imageROIwidthInputBox->setValue(camera->getImageROIwidth());
+    imageROIheightInputBox->setValue(camera->getImageROIheight());
+    imageROIoffsetXInputBox->setValue(camera->getImageROIoffsetX());
+    imageROIoffsetYInputBox->setValue(camera->getImageROIoffsetY());
+}
+
+void StereoCameraSettingsDialog::onBinningModeChange(int index) {
+    int binningVal = 1;
+    if(index==1)
+        binningVal = 2;
+    else if(index==2)
+        binningVal = 4;
+
+    camera->setBinningVal(binningVal);
+
+    if(lastUsedBinningVal > binningVal) {
+        //qDebug() << "Inflating image ROI";
+        // First set minimum and maximum values for the widgets 
+        // (first setting the actual value would take no effect as the maximum does not let it happen)
+        updateImageROISettingsMin(binningVal);
+        updateImageROISettingsMax();
+        // Then set the values on GUI according to the (already automatically changed) camera image ROI parameters 
+        updateImageROISettingsValues();
+    } else { 
+        //qDebug() << "Shrinking image ROI";
+        // First set the values on GUI according to the (already automatically changed) camera image ROI parameters
+        updateImageROISettingsValues();
+        updateImageROISettingsMax();
+        // Then set minimum and maximum values for the widgets (e.g. first setting the maximum 
+        // would auto-reset the value if that was a bigger number... and that would cause strange behaviour of the GUI)
+        updateImageROISettingsMin(binningVal);
+    }
+
+    // GB NOTE: here we could tell cameraview that it should expect different image size. But it is now programmed to be adaptive
+    lastUsedBinningVal = binningVal;
+    updateFrameRateValue(); // only update when camera has updated too
+}
+
+void StereoCameraSettingsDialog::setLimitationsWhileTracking(bool state) {
+    //hwTriggerGroup->setDisabled(state);
+    //analogGroup->setDisabled(state);
+
+    //exposureLabel->setDisabled(state);
+    //exposureInputBox->setDisabled(state);
+    //exposureAutoOnceButton->setDisabled(state);
+
+    imageROIwidthLabel->setDisabled(state);
+    imageROIwidthInputBox->setDisabled(state);
+    imageROIheightLabel->setDisabled(state);
+    imageROIheightInputBox->setDisabled(state);
+    imageROIoffsetXLabel->setDisabled(state);
+    imageROIoffsetXInputBox->setDisabled(state);
+    imageROIoffsetYLabel->setDisabled(state);
+    imageROIoffsetYInputBox->setDisabled(state);
+
+    imageROIwidthMaxLabel->setDisabled(state);
+    imageROIheightMaxLabel->setDisabled(state);
+    imageROIoffsetXMaxLabel->setDisabled(state);
+    imageROIoffsetYMaxLabel->setDisabled(state);
+
+    binningLabel->setDisabled(state);
+    binningBox->setDisabled(state);
+
+    loadButton->setDisabled(state);
+    saveButton->setDisabled(state);
+}
+
+void StereoCameraSettingsDialog::setLimitationsWhileUnconnected(bool state) {
+    hwTriggerGroup->setDisabled(state);
+    analogGroup->setDisabled(state);
+    acquisitionGroup->setDisabled(state);
+    
+    loadButton->setDisabled(state);
+    saveButton->setDisabled(state);
 }

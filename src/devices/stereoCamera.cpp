@@ -683,3 +683,410 @@ void StereoCamera::resynchronizeTime() {
         cameraImageEventHandler->setTimeSynchronization(cameraMainTime, cameraSecondaryTime, systemTime);
     }
 }
+
+
+int StereoCamera::getImageROIwidth() { 
+    if (cameras.GetSize() != 2 || !cameras[0].Width.IsReadable() || !cameras[1].Width.IsReadable()) {
+        return 0;
+    }
+
+    int val0 = (int)cameras[0].Width.GetValue();
+    int val1 = (int)cameras[1].Width.GetValue();
+    if(val0 != val1) {
+        std::cout<<"Image acquisition ROI width of the two cameras are not the same. Now resetting both to the lower value."<<std::endl;
+        if(val0 < val1) 
+            setImageROIwidth(val0);
+        else 
+            setImageROIwidth(val1);
+    }
+    return val0;
+}
+
+int StereoCamera::getImageROIheight() { 
+    if (cameras.GetSize() != 2 || !cameras[0].Height.IsReadable() || !cameras[1].Height.IsReadable()) {
+        return 0;
+    }
+
+    int val0 = (int)cameras[0].Height.GetValue();
+    int val1 = (int)cameras[1].Height.GetValue();
+    if(val0 != val1) {
+        std::cout<<"Image acquisition ROI height of the two cameras are not the same. Now resetting both to the lower value."<<std::endl;
+        if(val0 < val1)
+            setImageROIheight(val0);
+        else
+            setImageROIheight(val1);
+    }
+    return val0;
+}
+
+int StereoCamera::getImageROIoffsetX() { 
+    if (cameras.GetSize() != 2 || !cameras[0].OffsetX.IsReadable() || !cameras[1].OffsetX.IsReadable()) {
+        return 0;
+    }
+
+    int val0 = (int)cameras[0].OffsetX.GetValue();
+    int val1 = (int)cameras[1].OffsetX.GetValue();
+    if(val0 != val1) {
+        std::cout<<"Image acquisition ROI offsetX of the two cameras are not the same. Now resetting both to the lower value."<<std::endl;
+        if(val0 < val1)
+            setImageROIoffsetX(val0);
+        else
+            setImageROIoffsetX(val1);
+    }
+    return val0;
+}
+
+int StereoCamera::getImageROIoffsetY() { 
+    if (cameras.GetSize() != 2 || !cameras[0].OffsetY.IsReadable() || !cameras[1].OffsetY.IsReadable()) {
+        return 0;
+    }
+
+    int val0 = (int)cameras[0].OffsetY.GetValue();
+    int val1 = (int)cameras[1].OffsetY.GetValue();
+    if(val0 != val1) {
+        std::cout<<"Image acquisition ROI offsetY of the two cameras are not the same. Now resetting both to the lower value."<<std::endl;
+        if(val0 < val1)
+            setImageROIoffsetY(val0);
+        else
+            setImageROIoffsetY(val1);
+    }
+    return val0;
+}
+
+// NOTE: Binning affects this
+int StereoCamera::getImageROIwidthMax() {
+    if (cameras.GetSize() != 2 || !cameras[0].WidthMax.IsReadable() || !cameras[1].WidthMax.IsReadable()) {
+        return 0;
+    }
+
+    // Classic/U/L GigE cameras
+  //  int val0 = (int)cameras[0].Width.GetMax();
+  //  int val1 = (int)cameras[1].Width.GetMax();
+    // other cameras
+    int val0 = (int)cameras[0].WidthMax.GetValue();
+    int val1 = (int)cameras[1].WidthMax.GetValue();
+    if(val0 != val1) {
+        std::cout<<"Image acquisition ROI max width of the two cameras are not the same. Now using the lower (safer) value."<<std::endl;
+        if(val0>val1)
+            val0=val1;
+    }
+    return val0;
+}
+
+// NOTE: Binning affects this
+int StereoCamera::getImageROIheightMax() {
+    if (cameras.GetSize() != 2 || !cameras[0].HeightMax.IsReadable() || !cameras[1].HeightMax.IsReadable()) {
+        return 0;
+    }
+
+    // Classic/U/L GigE cameras
+  //  int val0 = (int)cameras[0].Height.GetMax();
+  //  int val1 = (int)cameras[1].Height.GetMax();
+    // other cameras
+    int val0 = (int)cameras[0].HeightMax.GetValue();
+    int val1 = (int)cameras[1].HeightMax.GetValue();
+    if(val0 != val1) {
+        std::cout<<"Image acquisition ROI max height of the two cameras are not the same. Now using the lower (safer) value."<<std::endl;
+        if(val0>val1)
+            val0=val1;
+    }
+    return val0;
+}
+
+int StereoCamera::getBinningVal() {
+    if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || !cameras[1].BinningHorizontal.IsReadable()) {
+        return 1;
+    }
+
+    int b0 = (int)cameras[0].BinningHorizontal.GetValue();
+    int b1 = (int)cameras[1].BinningHorizontal.GetValue();
+    if(b0 != b1) {
+        std::cout<<"Image acquisition horizontal binning of the two cameras are not the same. Now resetting both to the lower value."<<std::endl;
+        setBinningVal(b0);
+    }
+
+    return b0;
+}
+
+std::vector<double> StereoCamera::getTemperatures() {
+    std::vector<double> temperatures = {0.0, 0.0};
+    if(cameras.GetSize() != 2)
+        return temperatures;
+    if(!cameras[0].DeviceTemperature.IsReadable() || !cameras[1].DeviceTemperature.IsReadable())
+        return temperatures;
+
+    // DEV
+    //qDebug() << cameras[0].GetValue(Basler_UniversalCameraParams::PLCamera::DeviceModelName);
+    //qDebug() << cameras[1].GetValue(Basler_UniversalCameraParams::PLCamera::DeviceModelName);
+
+    // this line is only needed in ace 2, boost, and dart IMX Cameras
+    // NOTE: SENSOR TEMP (and maybe others too) CAN NOT BE MEASURED WHILE GRABBING, but coreboard is OK anytime
+    cameras[0].DeviceTemperatureSelector.SetValue(Basler_UniversalCameraParams::DeviceTemperatureSelectorEnums::DeviceTemperatureSelector_Coreboard);
+    cameras[1].DeviceTemperatureSelector.SetValue(Basler_UniversalCameraParams::DeviceTemperatureSelectorEnums::DeviceTemperatureSelector_Coreboard);
+
+    temperatures[0] = cameras[0].DeviceTemperature.GetValue();
+    temperatures[1] = cameras[1].DeviceTemperature.GetValue();
+
+    return temperatures;
+}
+
+// NOTE: grabbing "pause" is necessary for setting binning
+bool StereoCamera::setBinningVal(int value) {
+    if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || cameras[1].BinningHorizontal.IsReadable()) {
+        return false;
+    }
+
+    bool success = false;
+
+    if(cameras[0].IsGrabbing())
+        cameras[0].StopGrabbing();
+    if(cameras[1].IsGrabbing())
+        cameras[1].StopGrabbing();
+
+    // in case of our Basler cameras here, only mode=1,2,4 are only valid values
+    if (cameras[0].BinningHorizontal.IsWritable() && cameras[0].BinningVertical.IsWritable() &&
+        cameras[1].BinningHorizontal.IsWritable() && cameras[1].BinningVertical.IsWritable()) {
+        // "Enable sensor binning"
+        // "Note: Available on selected camera models only"
+       // camera.BinningSelector.SetValue(BinningSelector_Sensor); // NOTE: found in Basler docs, but no trace of it in Pylon::CBaslerUniversalInstantCamera:: when code tries to compile. What is this?
+
+        // Set "binning mode" of camera
+        cameras[0].BinningHorizontalMode.TrySetValue(BinningHorizontalMode_Average);
+        //cameras[0].BinningHorizontalMode.SetValue(BinningHorizontalMode_Sum);
+        cameras[0].BinningVerticalMode.TrySetValue(BinningVerticalMode_Average);
+        //cameras[0].BinningVerticalMode.SetValue(BinningHorizontalMode_Sum);
+        //
+        cameras[1].BinningHorizontalMode.TrySetValue(BinningHorizontalMode_Average);
+        //cameras[1].BinningHorizontalMode.SetValue(BinningHorizontalMode_Sum);
+        cameras[1].BinningVerticalMode.TrySetValue(BinningVerticalMode_Average);
+        //cameras[1].BinningVerticalMode.SetValue(BinningHorizontalMode_Sum);
+
+        if(value==2 || value==3) {
+            cameras[0].BinningHorizontal.TrySetValue(2);
+            cameras[0].BinningVertical.TrySetValue(2);
+            cameras[1].BinningHorizontal.TrySetValue(2);
+            cameras[1].BinningVertical.TrySetValue(2);
+            std::cout << "Setting binning to 2 on both axes"<< std::endl;
+            success = true;
+        } else if(value==4) {
+            cameras[0].BinningHorizontal.TrySetValue(4);
+            cameras[0].BinningVertical.TrySetValue(4);
+            cameras[1].BinningHorizontal.TrySetValue(4);
+            cameras[1].BinningVertical.TrySetValue(4);
+            std::cout << "Setting binning to 4 on both axes"<< std::endl;
+            success = true;
+        } else { //if(value==1) {
+            cameras[0].BinningHorizontal.TrySetValue(1);
+            cameras[0].BinningVertical.TrySetValue(1);
+            cameras[1].BinningHorizontal.TrySetValue(1);
+            cameras[1].BinningVertical.TrySetValue(1);
+            std::cout << "Setting binning to 1 (no binning) on both axes"<< std::endl;
+            success = true;
+        }
+    }
+    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    return success;
+}
+
+// NOTE: grabbing "pause" is necessary for setting image ROI
+bool StereoCamera::setImageROIwidth(int width) {
+    if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || cameras[1].BinningHorizontal.IsReadable()) {
+        return false;
+    }
+
+    //std::cout << "Setting both cameras Image ROI width=" << std::to_string(width) << std::endl;
+    bool success = false;
+
+    if(cameras[0].IsGrabbing())
+        cameras[0].StopGrabbing();
+    if(cameras[1].IsGrabbing())
+        cameras[1].StopGrabbing();
+
+    int b0 = cameras[0].BinningHorizontal.GetValue();
+    int b1 = cameras[1].BinningHorizontal.GetValue();
+    if(b0!=b1) {
+        std::cout << "Binning of the two cameras to not match. Now resetting." << std::endl;
+        setBinningVal(b0);
+    }
+
+    // ace Classic/U/L GigE Cameras
+   // int maxWidth = camera.Width.GetMax();
+   // int maxHeight = camera.Height.GetMax();
+    // other cameras
+    int mw0 = cameras[0].WidthMax.GetValue();
+    int mw1 = cameras[1].WidthMax.GetValue();
+    if(mw0!=mw1) {
+        std::cout << "Max px width size of the two cameras to not match." << std::endl;
+    }
+    int maxWidth = mw0 > mw1 ? mw0 : mw1;
+
+    int offsetX0 = cameras[0].OffsetX.GetValue();
+    int offsetX1 = cameras[1].OffsetX.GetValue();
+
+    if(width < 16)
+        width=16;
+
+    int modVal=width%4;
+    if(modVal != 0)
+        width -= modVal;
+    
+    int wc0, wc1, bestWidth;
+    wc0 = wc1 = bestWidth = 16;
+    
+    if (offsetX0 >= maxWidth-16)
+        wc0 = maxWidth-offsetX0;
+    if (offsetX1 >= maxWidth-16)
+        wc1 = maxWidth-offsetX1;
+    bestWidth = wc0 > wc1 ? wc0 : wc1;
+
+    if (bestWidth + offsetX0 <= maxWidth && cameras[0].Width.IsWritable() && cameras[1].Width.IsWritable() ) {
+        cameras[0].Width.TrySetValue(bestWidth);
+        cameras[1].Width.TrySetValue(bestWidth);
+        success = true;
+    }
+    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    return success;
+}
+
+// NOTE: grabbing "pause" is necessary for setting image ROI
+bool StereoCamera::setImageROIheight(int height) {
+    if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || cameras[1].BinningHorizontal.IsReadable()) {
+        return false;
+    }
+
+    //std::cout << "Setting both cameras Image ROI height=" << std::to_string(height) << std::endl;
+    bool success = false;
+
+    if(cameras[0].IsGrabbing())
+        cameras[0].StopGrabbing();
+    if(cameras[1].IsGrabbing())
+        cameras[1].StopGrabbing();
+
+    int b0 = cameras[0].BinningHorizontal.GetValue();
+    int b1 = cameras[1].BinningHorizontal.GetValue();
+    if(b0!=b1) {
+        std::cout << "Binning of the two cameras to not match. Now resetting." << std::endl;
+        setBinningVal(b0);
+    }
+
+    // ace Classic/U/L GigE Cameras
+   // int maxWidth = camera.Width.GetMax();
+   // int maxHeight = camera.Height.GetMax();
+    // other cameras
+    int mh0 = cameras[0].HeightMax.GetValue();
+    int mh1 = cameras[1].HeightMax.GetValue();
+    if(mh0!=mh1) {
+        std::cout << "Max px height size of the two cameras to not match." << std::endl;
+    }
+    int maxHeight = mh0 > mh1 ? mh0 : mh1;
+
+    int offsetY0 = cameras[0].OffsetY.GetValue();
+    int offsetY1 = cameras[1].OffsetY.GetValue();
+
+    if(height < 16)
+        height=16;
+
+    int modVal=height%4;
+    if(modVal != 0)
+        height -= modVal;
+    
+    int hc0, hc1, bestHeight;
+    hc0 = hc1 = bestHeight = 16;
+    
+    if (offsetY0 >= maxHeight-16)
+        hc0 = maxHeight-offsetY0;
+    if (offsetY1 >= maxHeight-16)
+        hc1 = maxHeight-offsetY1;
+    bestHeight = hc0 > hc1 ? hc0 : hc1;
+
+    if (bestHeight + offsetY0 <= maxHeight && cameras[0].Height.IsWritable() && cameras[1].Height.IsWritable() ) {
+        cameras[0].Height.TrySetValue(bestHeight);
+        cameras[1].Height.TrySetValue(bestHeight);
+        success = true;
+    }
+    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    return success;
+}
+
+// NOTE: grabbing "pause" is necessary for setting image ROI
+bool StereoCamera::setImageROIoffsetX(int offsetX) {
+    if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || cameras[1].BinningHorizontal.IsReadable()) {
+        return false;
+    }
+
+    //std::cout << "Setting Image ROI offsetX=" << std::to_string(offsetX) << std::endl;
+    bool success = false;
+
+    if(cameras[0].IsGrabbing())
+        cameras[0].StopGrabbing();
+    if(cameras[1].IsGrabbing())
+        cameras[1].StopGrabbing();
+
+    // ace Classic/U/L GigE Cameras
+   // int maxWidth = cameras[0].Width.GetMax();
+   // int maxHeight = cameras[0].Height.GetMax();
+    // other cameras
+    int maxWidth = cameras[0].WidthMax.GetValue();
+    int width = cameras[0].Width.GetValue();
+
+    if(maxWidth - offsetX < 16)
+        offsetX = maxWidth - 16;
+    //if(width + offsetX > maxWidth)
+    //    return;
+    
+    int modVal=offsetX%4;
+    if(modVal != 0)
+        offsetX -= modVal;
+
+    if (width + offsetX <= maxWidth && cameras[0].OffsetX.IsWritable() && cameras[1].OffsetX.IsWritable() ) {
+        cameras[0].OffsetX.TrySetValue(offsetX);
+        cameras[1].OffsetX.TrySetValue(offsetX);
+        success = true;
+    }
+    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    return success;
+}
+
+// NOTE: grabbing "pause" is necessary for setting image ROI
+bool StereoCamera::setImageROIoffsetY(int offsetY) {
+    if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || cameras[1].BinningHorizontal.IsReadable()) {
+        return false;
+    }
+    
+    //std::cout << "Setting Image ROI offsetY=" << std::to_string(offsetY) << std::endl;
+    bool success = false;
+
+    if(cameras[0].IsGrabbing())
+        cameras[0].StopGrabbing();
+    if(cameras[1].IsGrabbing())
+        cameras[1].StopGrabbing();
+
+    // ace Classic/U/L GigE Cameras
+   // int maxWidth = cameras[0].Width.GetMax();
+   // int maxHeight = cameras[0].Height.GetMax();
+    // other cameras
+    int maxHeight = cameras[0].HeightMax.GetValue();
+    int height = cameras[0].Height.GetValue();
+
+    if(maxHeight - offsetY < 16)
+        offsetY = maxHeight - 16;
+    //if(height + offsetY > maxHeight)
+    //    return;
+
+    int modVal=offsetY%4;
+    if(modVal != 0)
+        offsetY -= modVal;
+
+    if (height + offsetY <= maxHeight && cameras[0].OffsetY.IsWritable() && cameras[1].OffsetY.IsWritable() ) {
+        cameras[0].OffsetY.TrySetValue(offsetY);
+        cameras[1].OffsetY.TrySetValue(offsetY);
+        success = true;
+    } 
+    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    return success;
+}

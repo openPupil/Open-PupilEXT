@@ -3,7 +3,7 @@
 #define PUPILEXT_SINGLECAMERAVIEW_H
 
 /**
-    @author Moritz Lode
+    @author Moritz Lode, Gábor Bényei
 */
 
 #include <QtCore/qobjectdefs.h>
@@ -13,14 +13,15 @@
 #include "../devices/singleCamera.h"
 #include "../pupilDetection.h"
 
+#include "../devices/fileCamera.h"
+
 /**
     Main view showing the camera images for a single camera, at the same time displays results of the pupil detection rendered on top of the image
 
     setUpdateFPS(): define the rate with which the camera view is updated, not changing the camera framerate or the pupil detection framerate
 
- signals:
-    onShowROI(bool value): Signals when the display of the ROI is selected by the user
-    onShowPupilCenter(bool value): Signals when the display of the pupil center is selected by the user
+    NOTE: Modified by Gábor Bényei, 2023 jan
+    GB NOTE: onShowROI() onShowPupilCenter() and not handled in pupilDetection anymore
 */
 class SingleCameraView : public QWidget {
     Q_OBJECT
@@ -35,6 +36,7 @@ public:
         if(pupilDetection)
             pupilDetection->setUpdateFPS(fps);
     }
+
 
 private:
 
@@ -55,7 +57,7 @@ private:
     QAction *plotCenterAct;
     QAction *plotROIAct;
 
-    QAction *roiMenuAct;
+    //QAction *roiMenuAct;
     QAction *customROIAct;
     QAction *smallROIAct;
     QAction *middleROIAct;
@@ -68,32 +70,50 @@ private:
     QLabel *processingFPSValue;
     QWidget *statusProcessingFPSWidget;
     QLabel *processingConfigLabel;
+    
 
     bool displayPupilView;
     bool plotPupilCenter;
     bool plotROIContour;
     bool initPupilViewSize;
 
-    QSize pupilViewSize;
+    //QSize pupilViewSize;
 
     double currentCameraFPS;
 
     void loadSettings();
 
+    // GB added begin
+    QAction *pupilDetectionMenuAct;
+    QLabel *processingModeLabel;
+
+    ColorFill pupilColorFill = ColorFill::NO_FILL;
+    float pupilColorFillThreshold = 0.0;
+    QSpinBox *autoParamPupSizeBox;
+    QSlider *autoParamSlider;
+
+    std::vector<QSize> pupilViewSize;
+
+    QAction *showAutoParamAct;
+    bool showAutoParamOverlay;
+    
+    void updateProcModeLabel();
+    // GB added end
+
 public slots:
 
     void onPlotMenuClick();
-    void onROIMenuClick();
-
-    void saveROISelection(QRectF roi);
+    //void onROIMenuClick();
 
     void updateView(const CameraImage &img);
     void updateCameraFPS(double fps);
     void updateProcessingFPS(double fps);
-    void updatePupilView(quint64 timestamp, const Pupil &pupil, const QString &filename);
+    //void updatePupilView(quint64 timestamp, const Pupil &pupil, const QString &filename);
+    void updatePupilView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils);
     void updateAlgorithmLabel();
 
     void onFitClick();
+    //void onAcqImageROIchanged(); //added by kheki4 on 2022.10.24, NOTE: to properly re-fit view when image acquisition ROI is changed
     void on100pClick();
     void onZoomPlusClick();
     void onZoomMinusClick();
@@ -111,10 +131,31 @@ public slots:
     void onSettingsChange();
     void updateConfigLabel(QString config);
 
-signals:
+    // GB modified/added begin
+    void onPupilDetectionMenuClick();
 
+    void saveROI1Selection(QRectF roiR); // GB modified and renamed
+    void saveROI2Selection(QRectF roiR);
+
+    void displayFileCameraFrame(int frameNumber);
+
+    void updateForPupilDetectionProcMode();
+    void updateView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils);
+    void onPupilColorFillChanged(int itemIndex);
+    void onPupilColorFillThresholdChanged(double value);
+
+    void onShowAutoParamOverlay(bool state);
+    void onAutoParamPupSize(int value);
+    // GB modified/added end
+
+signals:
+    // GB modified: not handled in pupilDetection anymore
     void onShowROI(bool value);
     void onShowPupilCenter(bool value);
+    void onChangePupilColorFill(int colorFill);
+    void onChangePupilColorFillThreshold(float value);
+    void onChangeShowAutoParamOverlay(bool state);
+    // GB end
 
 };
 

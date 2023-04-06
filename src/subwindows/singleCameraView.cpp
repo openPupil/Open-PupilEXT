@@ -15,7 +15,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
         plotPupilCenter(false),
         plotROIContour(true),
         initPupilViewSize(false),
-        pupilViewSize(0, 0),
+        //pupilViewSize(0, 0),
         currentCameraFPS(0.0),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
@@ -54,45 +54,166 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(plotCenterAct, SIGNAL(toggled(bool)), this, SLOT(onPlotPupilCenterClick(bool)));
 
 
-    plotROIAct = plotMenu->addAction(tr("Visualize ROI Contour"));
+    plotROIAct = plotMenu->addAction(tr("Visualize Pupil Detection ROI Contour"));
     plotROIAct->setCheckable(true);
     plotROIAct->setChecked(plotROIContour);
     plotROIAct->setStatusTip(tr("Display the region of interest applied in detection in the camera image."));
     plotMenu->addAction(plotROIAct);
     connect(plotROIAct, SIGNAL(toggled(bool)), this, SLOT(onPlotROIClick(bool)));
 
+    // GB added/modified begin
+    showAutoParamAct = plotMenu->addAction(tr("Show Automatic Parametrization Overlay"));
+    showAutoParamAct->setCheckable(true);
+    showAutoParamAct->setChecked(showAutoParamOverlay);
+    showAutoParamAct->setStatusTip(tr("Display expected pupil size maximum and minimum values as currently set for Automatic Parametrization."));
+    plotMenu->addAction(showAutoParamAct);
+    connect(showAutoParamAct, SIGNAL(toggled(bool)), this, SLOT(onShowAutoParamOverlay(bool)));
+
+    plotMenu->addSeparator();
+
+
+    QLabel *pupilColorLabel = new QLabel("Show pupil detection confidence:");
+    pupilColorLabel->setContentsMargins(8,0,8,0);
+    QWidgetAction *act0 = new QWidgetAction(plotMenu);
+    act0->setCheckable(false);
+    act0->setDefaultWidget(pupilColorLabel);
+    plotMenu->addAction(act0);
+
+    QWidget *pupilColorFillWidget = new QWidget();
+    QHBoxLayout *pupilColorFillLayout = new QHBoxLayout();
+    pupilColorFillLayout->setContentsMargins(8,0,8,0); 
+
+    QLabel *pupilColorFillLabel = new QLabel("Coloring:");
+    pupilColorFillLabel->setFixedWidth(80);
+
+    QComboBox *pupilColorFillBox = new QComboBox();
+    pupilColorFillBox->addItem(QString("No fill"), QString("NO_FILL"));
+    pupilColorFillBox->addItem(QString("Confidence"), QString("CONFIDENCE"));
+    pupilColorFillBox->addItem(QString("Outline confidence"), QString("OUTLINE_CONFIDENCE"));
+    pupilColorFillBox->setCurrentText("NO_FILL");
+
+    pupilColorFillLayout->addWidget(pupilColorFillLabel);
+    pupilColorFillLayout->addWidget(pupilColorFillBox);
+    pupilColorFillWidget->setLayout(pupilColorFillLayout);
+
+    QWidgetAction *act1 = new QWidgetAction(plotMenu);
+    act1->setCheckable(false);
+    act1->setDefaultWidget(pupilColorFillWidget);
+    plotMenu->addAction(act1);
+
+
+    QWidget *pupilColorFillThresholdWidget = new QWidget();
+    QHBoxLayout *pupilColorFillThresholdLayout = new QHBoxLayout();
+    pupilColorFillThresholdLayout->setContentsMargins(8,0,8,0); 
+
+    QLabel *pupilColorFillThresholdLabel = new QLabel("Low threshold:");
+    pupilColorFillThresholdLabel->setFixedWidth(80);
+
+    QDoubleSpinBox *pupilColorFillThresholdBox = new QDoubleSpinBox();
+    pupilColorFillThresholdBox->setMinimum(0.1);
+    pupilColorFillThresholdBox->setMaximum(0.9);
+    pupilColorFillThresholdBox->setSingleStep(0.1);
+
+    pupilColorFillThresholdLayout->addWidget(pupilColorFillThresholdLabel);
+    pupilColorFillThresholdLayout->addWidget(pupilColorFillThresholdBox);
+    pupilColorFillThresholdWidget->setLayout(pupilColorFillThresholdLayout);
+
+    QWidgetAction *act2 = new QWidgetAction(plotMenu);
+    act2->setCheckable(false);
+    act2->setDefaultWidget(pupilColorFillThresholdWidget);
+    plotMenu->addAction(act2);
+    
+
     toolBar->addAction(plotMenuAct);
     toolBar->addSeparator();
 
 
-    QMenu *roiMenu = new QMenu("ROI");
-    roiMenuAct = roiMenu->menuAction();
-    connect(roiMenuAct, &QAction::triggered, this, &SingleCameraView::onROIMenuClick);
+    QMenu *pupilDetectionMenu = new QMenu("Pupil Detection");
+    pupilDetectionMenuAct = pupilDetectionMenu->menuAction();
+    connect(pupilDetectionMenuAct, &QAction::triggered, this, &SingleCameraView::onPupilDetectionMenuClick);
+
+    // GB: renamed to be pore descriptive (not to be confused with camera image acquisition ROI), also modified tooltips
+    QMenu *roiMenu = pupilDetectionMenu->addMenu(tr("&Pupil Detection ROI"));
 
     customROIAct = roiMenu->addAction(tr("Custom"), this, [this]()
     {
         onSetROIClick(-1.0);
     });
 
-    customROIAct->setStatusTip(tr("Select custom ROI area in the image."));
+    customROIAct->setStatusTip(tr("Select custom Pupil Detection ROI area in the image.")); 
     roiMenu->addAction(customROIAct);
 
     smallROIAct = roiMenu->addAction(tr("30% Image Width"), this, [this]()
     {
-        onSetROIClick(0.3);
+        onSetROIClick(0.3F);
     });
-    smallROIAct->setStatusTip(tr("ROI area with a size of 30% of the image width, preserving image aspect ratio."));
+    smallROIAct->setStatusTip(tr("Pupil Detection ROI area with a size of 30% of the image width, preserving image aspect ratio.")); 
     roiMenu->addAction(smallROIAct);
 
     middleROIAct = roiMenu->addAction(tr("60% Image Width"), this, [this]()
     {
-        onSetROIClick(0.6);
+        onSetROIClick(0.6F);
     });
-    middleROIAct->setStatusTip(tr("ROI area with a size of 60% of the image width, preserving image aspect ratio."));
+    middleROIAct->setStatusTip(tr("Pupil Detection ROI area with a size of 60% of the image width, preserving image aspect ratio.")); 
     roiMenu->addAction(middleROIAct);
+    
 
-    toolBar->addAction(roiMenuAct);
+    QMenu *autoParamMenu = pupilDetectionMenu->addMenu(tr("&Automatic Parametrization"));
+    
+    QWidget *autoParamPupSizeWidget = new QWidget();
+    QHBoxLayout *autoParamPupSizeLayout = new QHBoxLayout();
+    autoParamPupSizeLayout->setContentsMargins(8,0,8,0); 
+
+    QLabel *autoParamPupSizeLabel = new QLabel("Expected max. pupil size [%]:");
+    autoParamPupSizeLabel->setFixedWidth(150);
+
+    autoParamPupSizeBox = new QSpinBox();
+    autoParamPupSizeBox->setMinimum(20);
+    autoParamPupSizeBox->setMaximum(100);
+    autoParamPupSizeBox->setSingleStep(5);
+
+    autoParamPupSizeLayout->addWidget(autoParamPupSizeLabel);
+    autoParamPupSizeLayout->addWidget(autoParamPupSizeBox);
+    autoParamPupSizeWidget->setLayout(autoParamPupSizeLayout);
+
+    QWidgetAction *act3 = new QWidgetAction(autoParamMenu);
+    act3->setCheckable(false);
+    act3->setDefaultWidget(autoParamPupSizeWidget);
+    autoParamMenu->addAction(act3);
+    
+    QWidget *autoParamSliderWidget = new QWidget();
+    QHBoxLayout *autoParamSliderLayout = new QHBoxLayout();
+    autoParamSliderLayout->setContentsMargins(8,0,8,0); 
+
+    autoParamSlider = new QSlider();
+    autoParamSlider->setOrientation(Qt::Horizontal);
+    autoParamSlider->setMinimum(20);
+    autoParamSlider->setMaximum(100);
+    //autoParamSlider->setSingleStep(10);
+    autoParamSlider->setFocusPolicy(Qt::StrongFocus);
+    autoParamSlider->setTickPosition(QSlider::TicksBelow);
+    autoParamSlider->setTickInterval(5);
+    autoParamSlider->setSingleStep(1);
+
+    autoParamSliderLayout->addWidget(autoParamSlider);
+    autoParamSliderWidget->setLayout(autoParamSliderLayout);
+
+    QWidgetAction *act4 = new QWidgetAction(autoParamMenu);
+    act4->setCheckable(false);
+    act4->setDefaultWidget(autoParamSliderWidget);
+    autoParamMenu->addAction(act4);
+
+
+    autoParamPupSizeBox->setValue(50);
+    autoParamSlider->setValue(50);
+    toolBar->addAction(pupilDetectionMenuAct);
     toolBar->addSeparator();
+
+    // NOTE: added this to prevent the toolbar from popping bigger/smaller everytime saveROI and discardROI actions are revealed/hidden
+    toolBar->setFixedHeight(36);
+    
+    // GB added/modified end
+
 
     const QIcon okIcon = QIcon(":/icons/Breeze/actions/22/dialog-ok-apply.svg"); //QIcon::fromTheme("camera-video");
     saveROI = new QAction(okIcon, tr("Set ROI"), this);
@@ -102,10 +223,15 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     discardROI = new QAction(discardIcon, tr("Reset ROI"), this);
     connect(discardROI, &QAction::triggered, this, &SingleCameraView::onDiscardROIClick);
 
+
     toolBar->setAllowedAreas(Qt::TopToolBarArea);
     layout->addWidget(toolBar);
 
+    // GB NOTE: first just create the videoView instance like it is for a single ROI, and then we can change
     videoView = new VideoView();
+    // GB added begin
+    videoView->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
+    // GB added end
     layout->addWidget(videoView);
 
     statusBar = new QStatusBar();
@@ -113,27 +239,63 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     QWidget *statusCameraFPSWidget = new QWidget();
     QHBoxLayout *statusBarLayout = new QHBoxLayout();
     statusBarLayout->setContentsMargins(8,0,8,0);
-    QLabel *cameraFPSLabel = new QLabel("Camera FPS:");
+    // GB modified begin
+    // GB NOTE: made it only appear if camera is not fileCamera. Also added separator
+    QLabel *cameraFPSLabel = new QLabel();
+    if(camera->getType() != SINGLE_IMAGE_FILE)
+        cameraFPSLabel->setText("Camera FPS:");
+    else
+        cameraFPSLabel->setText("Image read FPS:");
     cameraFPSValue = new QLabel();
+    
+    QFrame* cameraFPSSep = new QFrame();
+    cameraFPSSep->setFrameShape(QFrame::HLine);
+    cameraFPSSep->setFrameShadow(QFrame::Sunken);
+    statusBarLayout->addWidget(cameraFPSSep);
 
     statusBarLayout->addWidget(cameraFPSLabel);
     statusBarLayout->addWidget(cameraFPSValue);
+
     statusCameraFPSWidget->setLayout(statusBarLayout);
     statusBar->addPermanentWidget(statusCameraFPSWidget);
+    // GB modified end
 
     statusProcessingFPSWidget = new QWidget();
     QHBoxLayout *statusBarProcessingLayout = new QHBoxLayout();
-    statusBarProcessingLayout->setContentsMargins(8,0,8,0);
+    statusBarProcessingLayout->setContentsMargins(8,0,8,0); 
 
     processingAlgorithmLabel = new QLabel();
     processingConfigLabel = new QLabel();
     QLabel *processingFPSLabel = new QLabel("Processing FPS:");
     processingFPSValue = new QLabel();
 
+    // GB modified/added begin
+    // added separator vertical lines that belong to labels
+    processingModeLabel = new QLabel();
+
+    QFrame* processingAlgorithmSep = new QFrame();
+    processingAlgorithmSep->setFrameShape(QFrame::VLine);
+    processingAlgorithmSep->setFrameShadow(QFrame::Sunken);
+    QFrame* processingConfigSep = new QFrame();
+    processingConfigSep->setFrameShape(QFrame::VLine);
+    processingConfigSep->setFrameShadow(QFrame::Sunken);
+    QFrame* processingModeSep = new QFrame();
+    processingModeSep->setFrameShape(QFrame::VLine);
+    processingModeSep->setFrameShadow(QFrame::Sunken);
+
+    //processingModeLabel->setFrameStyle(QFrame::Box | QFrame::Raised);
+    //processingModeLabel->setStyleSheet("border: 1px solid gray");
+    statusBarProcessingLayout->addWidget(processingModeLabel);
+    statusBarProcessingLayout->addWidget(processingModeSep);
+
     statusBarProcessingLayout->addWidget(processingConfigLabel);
+    statusBarProcessingLayout->addWidget(processingConfigSep);
     statusBarProcessingLayout->addWidget(processingAlgorithmLabel);
+    statusBarProcessingLayout->addWidget(processingAlgorithmSep);
     statusBarProcessingLayout->addWidget(processingFPSLabel);
     statusBarProcessingLayout->addWidget(processingFPSValue);
+    // GB modified/added end
+
     statusProcessingFPSWidget->setLayout(statusBarProcessingLayout);
 
     layout->addWidget(statusBar);
@@ -149,6 +311,8 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(pupilDetection, SIGNAL(processingStarted()), this, SLOT(onPupilDetectionStart()));
     connect(pupilDetection, SIGNAL(processingFinished()), this, SLOT(onPupilDetectionStop()));
     connect(pupilDetection, SIGNAL(fps(double)), this, SLOT(updateProcessingFPS(double)));
+    connect(pupilDetection, SIGNAL (algorithmChanged()), this, SLOT (updateAlgorithmLabel()));
+    connect(pupilDetection, SIGNAL (configChanged(QString)), this, SLOT (updateConfigLabel(QString)));
 
     pupilDetection->setUpdateFPS(1000/updateDelay);
 
@@ -156,27 +320,40 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     // this signal is stopped and images from the detection are displayed
     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateView(CameraImage)));
     connect(camera, SIGNAL(fps(double)), this, SLOT(updateCameraFPS(double)));
+    
 
-    connect(videoView, SIGNAL (onROISelection(QRectF)), pupilDetection, SLOT (setROI(QRectF)));
-    connect(videoView, SIGNAL (onROISelection(QRectF)), this, SLOT (saveROISelection(QRectF)));
+    // GB modified/added begin
+    // GB: onShowROI() and onShowPupilCenter() not handled in pupilDetection anymore. Taken care of in camera view and videoView
+    connect(this, SIGNAL (onShowROI(bool)), videoView, SLOT (onShowROI(bool)));
+    connect(this, SIGNAL (onShowPupilCenter(bool)), videoView, SLOT (onShowPupilCenter(bool)));
+    connect(this, SIGNAL (onChangePupilColorFill(int)), videoView, SLOT (onChangePupilColorFill(int)));
+    connect(this, SIGNAL (onChangePupilColorFillThreshold(float)), videoView, SLOT (onChangePupilColorFillThreshold(float)));
+    connect(this, SIGNAL (onChangeShowAutoParamOverlay(bool)), videoView, SLOT (onChangeShowAutoParamOverlay(bool)));
+    connect(pupilDetection, SIGNAL (onROIPreprocessingChanged(bool)), videoView, SLOT (onChangePupilDetectionUsingROI(bool)));
+    
+    connect(pupilColorFillBox, SIGNAL (currentIndexChanged(int)), this, SLOT (onPupilColorFillChanged(int)));
+    connect(pupilColorFillThresholdBox, SIGNAL (valueChanged(double)), this, SLOT (onPupilColorFillThresholdChanged(double)));
 
-    connect(pupilDetection, SIGNAL (algorithmChanged()), this, SLOT (updateAlgorithmLabel()));
-    connect(pupilDetection, SIGNAL (configChanged(QString)), this, SLOT (updateConfigLabel(QString)));
-
-    connect(this, SIGNAL (onShowROI(bool)), pupilDetection, SLOT (onShowROI(bool)));
-    connect(this, SIGNAL (onShowPupilCenter(bool)), pupilDetection, SLOT (onShowPupilCenter(bool)));
+    connect(autoParamPupSizeBox, SIGNAL(valueChanged(int)), autoParamSlider, SLOT(setValue(int)));
+    connect(autoParamSlider, SIGNAL(valueChanged(int)), autoParamPupSizeBox, SLOT(setValue(int)));
+    connect(autoParamPupSizeBox, SIGNAL(valueChanged(int)), this, SLOT(onAutoParamPupSize(int)));
 
     timer.start();
     pupilViewTimer.start();
 
-    loadSettings();
+    // GB NOTE: currently it loads the settings (for loading ROI settings), so the loadSettings call at the end is not necessary
+    updateForPupilDetectionProcMode();
+    //loadSettings();
+    
+    // GB modified/added end
 }
 
 SingleCameraView::~SingleCameraView() {
+
 }
 
-
 void SingleCameraView::loadSettings() {
+    // GB TODO: surely loads the bools always? Seems to be ok, but I remember to have seen cases in other code when the read value was "false" which was not parsed as 0
 
     displayPupilView = applicationSettings->value("SingleCameraView.displayPupilView", displayPupilView).toBool();
     onDisplayPupilViewClick(displayPupilView);
@@ -190,12 +367,45 @@ void SingleCameraView::loadSettings() {
     plotROIAct->setChecked(plotROIContour);
     onPlotROIClick(plotROIContour);
 
-    QRectF roi = applicationSettings->value("SingleCameraView.roiSelectionRect", QRectF()).toRectF();
+    // GB added/modified begin
+    showAutoParamOverlay = applicationSettings->value("SingleCameraView.showAutoParamOverlay", showAutoParamOverlay).toBool();
+    showAutoParamAct->setChecked(showAutoParamOverlay);
+    onShowAutoParamOverlay(showAutoParamOverlay);
 
-    if(!roi.isEmpty()) {
-        videoView->setROISelection(roi);
-        videoView->saveROISelection();
+    int autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", 50).toInt();
+    //    // GB: workaround to set values for auto param pup. size box and slider, without causing a cascade of events due to value change
+    //    autoParamPupSizeBox->blockSignals(true);
+    //    autoParamSlider->blockSignals(true);
+        autoParamPupSizeBox->setValue(autoParamPupSizePercent);
+        autoParamSlider->setValue(autoParamPupSizePercent);
+    //    autoParamPupSizeBox->blockSignals(false);
+    //    autoParamSlider->blockSignals(false);
+
+    pupilColorFill = (ColorFill)applicationSettings->value("SingleCameraView.pupilColorFill", pupilColorFill).toInt();
+    pupilColorFillThreshold = applicationSettings->value("SingleCameraView.pupilColorFillThreshold", pupilColorFillThreshold).toFloat();;
+
+
+    ProcMode val = pupilDetection->getCurrentProcMode();
+    QRectF roi1;
+    QRectF roi2;
+    if(val == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
+        roi1 = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.rational", QRectF()).toRectF();
+    } else if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
+        roi1 = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilA.rational", QRectF()).toRectF();
+        roi2 = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilB.rational", QRectF()).toRectF();
+    } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+        roi1 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil1.rational", QRectF()).toRectF();
+        roi2 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil2.rational", QRectF()).toRectF();
     }
+
+    if(!roi1.isEmpty()) {
+        videoView->setROI1SelectionR(roi1);
+        //videoView->saveROI1Selection(); // GB: why save just after loading?
+    }
+    if(!roi2.isEmpty()) {
+        videoView->setROI2SelectionR(roi2);
+    }
+    // GB added/modified end
 }
 
 void SingleCameraView::onPlotMenuClick() {
@@ -203,9 +413,9 @@ void SingleCameraView::onPlotMenuClick() {
     plotMenuAct->menu()->exec(QCursor::pos());
 }
 
-void SingleCameraView::onROIMenuClick() {
+void SingleCameraView::onPupilDetectionMenuClick() {
     // Fix to open submenu in the camera menu
-    roiMenuAct->menu()->exec(QCursor::pos());
+    pupilDetectionMenuAct->menu()->exec(QCursor::pos());
 }
 
 // When pupil detection is started, signaled by the pupil detection process, the camera image signals are disconnected from this view
@@ -215,13 +425,16 @@ void SingleCameraView::onPupilDetectionStart() {
     statusBar->insertPermanentWidget(1, statusProcessingFPSWidget);
     statusProcessingFPSWidget->show();
     processingConfigLabel->setText(pupilDetection->getCurrentConfigLabel());
-    processingAlgorithmLabel->setText(QString::fromStdString(pupilDetection->getCurrentMethod()->title()));
+    processingAlgorithmLabel->setText(QString::fromStdString(pupilDetection->getCurrentMethod1()->title())); // GB NOTE: But when do we hide it??
+    
+    // GB added/modified begin
+    updateProcModeLabel();
 
     disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateView(CameraImage)));
     
-    connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
-    connect(pupilDetection, SIGNAL(processedPupilData(quint64, Pupil, QString)), this, SLOT(updatePupilView(quint64, Pupil, QString)));
-
+    connect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updateView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
+    connect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updatePupilView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
+    // GB modified end
 }
 
 // When pupil detection is stopped, signaled by the pupil detection process, the camera image signals are connected again to this view
@@ -230,49 +443,133 @@ void SingleCameraView::onPupilDetectionStop() {
 
     statusBar->removeWidget(statusProcessingFPSWidget);
 
-    disconnect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
-    disconnect(pupilDetection, SIGNAL(processedPupilData(quint64, Pupil, QString)), this, SLOT(updatePupilView(quint64, Pupil, QString)));
+    // GB added/modified begin
+    disconnect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updateView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
+    disconnect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updatePupilView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
 
     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateView(CameraImage)));
+
+    videoView->clearProcessedOverlayMemory();
+    // GB added/modified end
+}
+
+void SingleCameraView::updateView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils) {
+
+    if(timer.elapsed() <= updateDelay || cimg.img.empty()) 
+        return;
+    
+    timer.restart();
+        
+    // GB: NOTE: disabled this feature, as it can occupy big space on smaller screens, 
+    // and is only useful in case of fileCamera, but now that has playbackControlDialog which shows the same already
+    //
+    //      QDateTime::fromMSecsSinceEpoch converts the UTC timestamp into localtime
+    // QDateTime date = QDateTime::fromMSecsSinceEpoch(cimg.timestamp);
+    //      Display the date/time in the system specific locale format
+    // statusBar->showMessage(QLocale::system().toString(date));
+
+    // GB: NOTE:
+    // As we are using a single camera right now, we can just pass the ROIs and Pupils vectors
+    // But in case of stereo cameras, where there are two videoViews, it is necessary to know
+    // which videoView gets which two ROIs and pupils (see stereoCameraView for details)
+    videoView->updateViewProcessed(cimg.img, ROIs, Pupils);
 }
 
 void SingleCameraView::updateView(const CameraImage &cimg) {
 
-    if(timer.elapsed() > updateDelay && !cimg.img.empty()) {
-        timer.restart();
-
-        // QDateTime::fromMSecsSinceEpoch converts the UTC timestamp into localtime
-        QDateTime date = QDateTime::fromMSecsSinceEpoch(cimg.timestamp);
-        // Display the date/time in the system specific locale format
-        statusBar->showMessage(QLocale::system().toString(date));
-        videoView->updateView(cimg.img);
-    }
+    if(timer.elapsed() <= updateDelay || cimg.img.empty())
+        return;
+    
+    timer.restart();
+        
+    // GB: NOTE: disabled this feature, as it can occupy big space on smaller screens, 
+    // and is only useful in case of fileCamera, but now that has playbackControlDialog which shows the same already
+    //
+    //      QDateTime::fromMSecsSinceEpoch converts the UTC timestamp into localtime
+    // QDateTime date = QDateTime::fromMSecsSinceEpoch(cimg.timestamp);
+    //      Display the date/time in the system specific locale format
+    // statusBar->showMessage(QLocale::system().toString(date));
+        
+    videoView->updateView(cimg.img);
 }
 
+
+// GB: adaptively rounded value for better visibility and comparability
 void SingleCameraView::updateCameraFPS(double fps) {
     currentCameraFPS = fps;
-    cameraFPSValue->setText(QString::number(fps));
+    //cameraFPSValue->setText(QString::number(fps));
+
+    // GB begin
+    if(fps == 0)
+        cameraFPSValue->setText("-");
+    else if(fps > 0 && fps < 1)
+        cameraFPSValue->setText(QString::number(fps,'f',4));
+    else
+        cameraFPSValue->setText(QString::number(round(fps)));
+    // GB end
 }
 
 // If the processing fps is sign. slower (10%) than the camera fps, color it red
+// GB: adaptively rounded value for better visibility and comparability. Also it gets hidden if we are watching playback
 void SingleCameraView::updateProcessingFPS(double fps) {
     if(fps < currentCameraFPS*0.9) {
         processingFPSValue->setStyleSheet("color: red;");
     } else {
         processingFPSValue->setStyleSheet("color: black;");
     }
-    processingFPSValue->setText(QString::number(fps));
+    //processingFPSValue->setText(QString::number(fps));
+
+    // GB begin
+    if(fps == 0)
+        processingFPSValue->setText("-");
+    else if(fps > 0 && fps < 1)
+        processingFPSValue->setText(QString::number(fps,'f',4));
+    else
+        processingFPSValue->setText(QString::number(round(fps)));
+    // GB end
 }
 
 void SingleCameraView::updateAlgorithmLabel() {
-    processingAlgorithmLabel->setText(QString::fromStdString(pupilDetection->getCurrentMethod()->title()));
+    processingAlgorithmLabel->setText(QString::fromStdString(pupilDetection->getCurrentMethod1()->title()));
 }
 
 void SingleCameraView::updateConfigLabel(QString config) {
     processingConfigLabel->setText(config);
 }
 
+
 // Updates the position and size of the small pupil view based on the latest pupil detection
+// GB: updated for 2 pupil version, and also reformed to use vector of Pupils
+void SingleCameraView::updatePupilView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils) {
+
+    // If the view is not yet initialized, set a fixed size for it
+    // This is done only once after activation to not switch sizes at each pupil update which makes the pupil view to jitterish
+    if(displayPupilView && !initPupilViewSize) {
+        initPupilViewSize = true;
+        for(byte z=0; z<Pupils.size(); z++)
+            if(Pupils[z].valid(-2))
+                pupilViewSize.push_back(QSize(static_cast<int>(Pupils[z].size.width * 1.6), static_cast<int>(Pupils[z].size.height * 1.6)));
+            else
+                pupilViewSize.push_back(QSize(0,0));
+    }
+
+    // Update the view not too often, ~30fps
+    if(pupilViewTimer.elapsed() > updateDelay && pupilViewSize.size()>0) {
+        pupilViewTimer.restart();
+
+        std::vector<QRect> targets;
+
+        for(byte z=0; z<Pupils.size(); z++)
+            targets.push_back( QRect( QPoint(
+                    static_cast<int>(Pupils[z].center.x - (0.5 * pupilViewSize[z].width())),
+                    static_cast<int>(Pupils[z].center.y - (0.5 * pupilViewSize[z].width()))), pupilViewSize[z]) );
+
+        // Create a ROI around the pupil big enough to make changes visible
+        videoView->updatePupilViews(targets);
+    }
+}
+
+/*
 void SingleCameraView::updatePupilView(quint64 timestamp, const Pupil &pupil, const QString &filename) {
 
     // If the view is not yet initialized, set a fixed size for it
@@ -291,16 +588,27 @@ void SingleCameraView::updatePupilView(quint64 timestamp, const Pupil &pupil, co
         // Create a ROI around the pupil big enough to make changes visible
         QPoint tl = QPoint(static_cast<int>(pupil.center.x - (0.5 * pupilViewSize.width())),
                            static_cast<int>(pupil.center.y - (0.5 * pupilViewSize.width())));
-        videoView->updatePupilView(QRect(tl, pupilViewSize));
+        videoView->updatePupil1View(QRect(tl, pupilViewSize));
     }
 
 }
+*/
 
 // Click event handler
 // Fits the camera view to the size of the window
 void SingleCameraView::onFitClick() {
     videoView->fitView();
 }
+
+// begin edit of kheki4 on 2022.10.24, NOTE: to properly re-fit view when image acquisition ROI is changed
+/*
+void SingleCameraView::onAcqImageROIchanged() {
+    videoView->resetInitialFit();
+    //videoView->fitView();
+    //videoView->drawBlank();
+}
+*/
+// end of edit by kheki4
 
 // Shows the camera view in the original resolution, no scaling
 void SingleCameraView::on100pClick() {
@@ -328,24 +636,51 @@ void SingleCameraView::onDisplayPupilViewClick(bool value) {
 }
 
 void SingleCameraView::onSetROIClick(float roiSize) {
-
     toolBar->addAction(discardROI);
     toolBar->addAction(saveROI);
-    videoView->setROISelection(roiSize);
+    videoView->setROI1SelectionR(roiSize);
+    if(videoView->getDoubleROI()) { // GB
+        videoView->setROI2SelectionR(roiSize);
+    }
+    //videoView->discardROISelection();
     videoView->showROISelection(true);
 }
 
 void SingleCameraView::onSaveROIClick() {
+    // GB: modified
+    bool s1, s2;
+    s1=s2=false;
+    s1 = videoView->saveROI1Selection();
+    if(videoView->getDoubleROI())
+        s2 = videoView->saveROI2Selection();
 
-    if(videoView->saveROISelection()) {
+    if( s1 || s2 ) { 
+        // GB: if any is ok to set, we proceed
         videoView->showROISelection(false);
         toolBar->removeAction(discardROI);
         toolBar->removeAction(saveROI);
     }
 }
 
+// One method for discarding one or both ROIs
 void SingleCameraView::onDiscardROIClick() {
     videoView->discardROISelection();
+}
+
+// Changes pupil color fill of the videoView
+void SingleCameraView::onPupilColorFillChanged(int itemIndex) {
+    pupilColorFill = (ColorFill)itemIndex;
+    applicationSettings->setValue("SingleCameraView.pupilColorFill", pupilColorFill);
+    
+    emit onChangePupilColorFill(pupilColorFill);
+}
+
+// Changes pupil color fill lower-end threshold of the videoView
+void SingleCameraView::onPupilColorFillThresholdChanged(double value) {
+    pupilColorFillThreshold = value;
+    applicationSettings->setValue("SingleCameraView.pupilColorFillThreshold", pupilColorFillThreshold);
+
+    emit onChangePupilColorFillThreshold(pupilColorFillThreshold);
 }
 
 // Plots the pupil center point, plotting is done in the pupil detection thread thus a signal communicates this change
@@ -364,13 +699,148 @@ void SingleCameraView::onPlotROIClick(bool value) {
     emit onShowROI(plotROIContour);
 }
 
-void SingleCameraView::saveROISelection(QRectF roi) {
+void SingleCameraView::saveROI1Selection(QRectF roiR) { 
+    qDebug() << "Saving ROI 1 selection" << Qt::endl;
+    //applicationSettings->setValue("SingleCameraView.roi1SelectionRect", roi);
 
-    std::cout<<"saveing ROI selection"<<std::endl;
+    // GB modified begin
+    QRectF imageSize = videoView->getImageSize();
+    QRectF roiD = QRectF(roiR.x()*imageSize.width(), roiR.y()*imageSize.height(), roiR.width()*imageSize.width(), roiR.height()*imageSize.height());
 
-    applicationSettings->setValue("SingleCameraView.roiSelectionRect", roi);
+    ProcMode val = pupilDetection->getCurrentProcMode();
+    if(val == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
+        applicationSettings->setValue("SingleCameraView.ROIsingleImageOnePupil.rational", roiR);
+        applicationSettings->setValue("SingleCameraView.ROIsingleImageOnePupil.discrete", roiD);
+    } else if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
+        applicationSettings->setValue("SingleCameraView.ROIsingleImageTwoPupilA.rational", roiR);
+        applicationSettings->setValue("SingleCameraView.ROIsingleImageTwoPupilA.discrete", roiD);
+    } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+        applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil1.rational", roiR);
+        applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil1.discrete", roiD);
+    } 
+    // GB modified end
+}
+
+void SingleCameraView::saveROI2Selection(QRectF roiR) {
+    qDebug() << "Saving ROI 2 selection" << Qt::endl;
+
+    QRectF imageSize = videoView->getImageSize();
+    QRectF roiD = QRectF(roiR.x()*imageSize.width(), roiR.y()*imageSize.height(), roiR.width()*imageSize.width(), roiR.height()*imageSize.height());
+
+    ProcMode val = pupilDetection->getCurrentProcMode();
+    if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
+        applicationSettings->setValue("SingleCameraView.ROIsingleImageTwoPupilB.rational", roiR);
+        applicationSettings->setValue("SingleCameraView.ROIsingleImageTwoPupilB.discrete", roiD);
+    } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+        applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil2.rational", roiR);
+        applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil2.discrete", roiD);
+    } 
 }
 
 void SingleCameraView::onSettingsChange() {
     loadSettings();
 }
+
+
+void SingleCameraView::onAutoParamPupSize(int value) {
+
+    videoView->setAutoParamPupSize(value);
+
+    pupilDetection->setAutoParamPupSizePercent((float)value);
+    pupilDetection->setAutoParamScheduled(true);
+
+    applicationSettings->setValue("autoParamPupSizePercent", value); 
+    videoView->drawOverlay();
+}
+
+void SingleCameraView::updateForPupilDetectionProcMode() {
+
+    disconnect(videoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROIsingleImageOnePupil(QRectF)));
+    disconnect(videoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
+    
+    disconnect(videoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROIsingleImageTwoPupilA(QRectF)));
+    disconnect(videoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
+    disconnect(videoView, SIGNAL (onROI2SelectionD(QRectF)), pupilDetection, SLOT (setROIsingleImageTwoPupilB(QRectF)));
+    disconnect(videoView, SIGNAL (onROI2SelectionR(QRectF)), this, SLOT (saveROI2Selection(QRectF)));
+
+    disconnect(videoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROImirrImageOnePupil1(QRectF)));
+    disconnect(videoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
+    disconnect(videoView, SIGNAL (onROI2SelectionD(QRectF)), pupilDetection, SLOT (setROImirrImageOnePupil2(QRectF)));
+    disconnect(videoView, SIGNAL (onROI2SelectionR(QRectF)), this, SLOT (saveROI2Selection(QRectF)));
+
+
+    ProcMode val = pupilDetection->getCurrentProcMode();
+    // BREAKPOINT
+    if(val == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
+        //qDebug() << "SINGLE_IMAGE_ONE_PUPIL" << Qt::endl;
+        videoView->setDoubleROI(false);
+        videoView->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
+
+        connect(videoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROIsingleImageOnePupil(QRectF)));
+        connect(videoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
+        
+    } else if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
+        //qDebug() << "SINGLE_IMAGE_TWO_PUPIL" << Qt::endl;
+        videoView->setDoubleROI(true);
+        videoView->setROI1AllowedArea(VideoView::ROIAllowedArea::LEFT_HALF);
+        videoView->setROI2AllowedArea(VideoView::ROIAllowedArea::RIGHT_HALF);
+
+        connect(videoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROIsingleImageTwoPupilA(QRectF)));
+        connect(videoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
+        connect(videoView, SIGNAL (onROI2SelectionD(QRectF)), pupilDetection, SLOT (setROIsingleImageTwoPupilB(QRectF)));
+        connect(videoView, SIGNAL (onROI2SelectionR(QRectF)), this, SLOT (saveROI2Selection(QRectF)));
+        
+    } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+        //qDebug() << "MIRR_IMAGE_ONE_PUPIL" << Qt::endl;
+        videoView->setDoubleROI(true);
+        videoView->setROI1AllowedArea(VideoView::ROIAllowedArea::LEFT_HALF);
+        videoView->setROI2AllowedArea(VideoView::ROIAllowedArea::RIGHT_HALF);
+
+        connect(videoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROImirrImageOnePupil1(QRectF)));
+        connect(videoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
+        connect(videoView, SIGNAL (onROI2SelectionD(QRectF)), pupilDetection, SLOT (setROImirrImageOnePupil2(QRectF)));
+        connect(videoView, SIGNAL (onROI2SelectionR(QRectF)), this, SLOT (saveROI2Selection(QRectF)));
+        
+    } else {
+        //qDebug() << "Processing mode is undetermined" << Qt::endl;
+    }
+
+    loadSettings(); // same as onSettingsChange()
+
+    updateProcModeLabel();
+
+    // at last, we update the videoView to redraw the ROI overlay
+    videoView->drawOverlay();
+}
+
+void SingleCameraView::onShowAutoParamOverlay(bool state) {
+    showAutoParamOverlay = state;
+    applicationSettings->setValue("SingleCameraView.showAutoParamOverlay", showAutoParamOverlay);
+
+    emit onChangeShowAutoParamOverlay(showAutoParamOverlay);
+}
+
+// GB TODO: STRINGS
+void SingleCameraView::updateProcModeLabel() {
+    ProcMode val = pupilDetection->getCurrentProcMode();
+    if(val == ProcMode::UNDETERMINED) {
+        processingModeLabel->setText("Undetermined");
+    } else if(val == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
+        processingModeLabel->setText("Single image one pupil");
+    } else if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
+        processingModeLabel->setText("Single image two pupil");
+    } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+        processingModeLabel->setText("Mirrored image one pupil");
+    } else {
+        processingModeLabel->setText("Error");
+    }
+}
+
+void SingleCameraView::displayFileCameraFrame(int frameNumber) {
+    if(camera->getType() != CameraImageType::SINGLE_IMAGE_FILE) 
+        return; 
+      
+    cv::Mat temp1 = dynamic_cast<FileCamera*>(camera)->getStillImageSingle(frameNumber);
+    videoView->updateView(temp1);
+}
+

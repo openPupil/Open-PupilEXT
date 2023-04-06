@@ -3,7 +3,7 @@
 #define PUPILEXT_FILECAMERA_H
 
 /**
-    @author Moritz Lode
+    @authors Moritz Lode, Gábor Bényei
 */
 
 #include "camera.h"
@@ -11,8 +11,14 @@
 #include "../imageReader.h"
 #include "../stereoCameraCalibration.h"
 
+//#include "../offlineEventLogReader.h"
+
 /**
     FileCamera represents virtual camera which replays images from disk given a directory of images
+
+    NOTE: Modified by Gábor Bényei, 2023 jan
+    BG NOTE: 
+        Added methods for FileCamera to work nicely with the new PlaybackControlDialog
 
     start(): start file playback
     stop(): stop file playback
@@ -61,6 +67,49 @@ public:
         imageReader->setPlaybackLoop(loop);
     }
 
+    // GB added begin
+    bool isPlaying() {
+        return imageReader->isPlaying();
+    }
+    QString getImageDirectoryName() {
+        return imageReader->getImageDirectoryName();
+    }
+    QString getImageWidth() {
+        return imageReader->getImageWidth();
+    }
+    QString getImageHeight() {
+        return imageReader->getImageHeight();
+    }
+
+    cv::Mat getStillImageSingle(int frameNumber) {
+        return imageReader->getStillImageSingle(frameNumber);
+    }
+    std::vector<cv::Mat> getStillImageStereo(int frameNumber) {
+        return imageReader->getStillImageStereo(frameNumber);
+    }
+    /*int getFrameNumberForTimestamp(uint64_t timestamp) {
+        return imageReader->getFrameNumberForTimestamp(timestamp);
+    }*/
+    uint64_t getTimestampForFrameNumber(int frameNumber) {
+        return imageReader->getTimestampForFrameNumber(frameNumber);
+    }
+    int getNumImagesTotal() {
+        return imageReader->getNumImagesTotal();
+    }
+    uint64_t getRecordingDuration() {
+        return imageReader->getRecordingDuration();
+    }
+    void seekToFrame(int frameNumber) {
+        imageReader->seekToFrame(frameNumber);
+    }
+    /*uint64_t getLastCommissionedTimestamp() {
+        return imageReader->getLastCommissionedTimestamp();
+    }*/
+    int getLastCommissionedFrameNumber() {
+        return imageReader->getLastCommissionedFrameNumber();
+    }
+    // GB added end
+
     CameraCalibration *getCameraCalibration();
     StereoCameraCalibration *getStereoCameraCalibration();
 
@@ -74,12 +123,27 @@ private:
     StereoCameraCalibration *stereoCameraCalibration;
     QThread *calibrationThread;
 
+    // GB added begin
+    //OfflineEventLogReader *offlineEventLogReader;
+    // GB added end
+
 signals:
 
     void fps(double fps);
     void framecount(int framecount);
 
     void finished();
+
+    // GB added begin
+    void endReached();
+    // GB added end
+
+public slots:
+    // GB added begin
+    void step1frameNext();
+    void step1framePrev();
+    // GB added end
+
 };
 
 #endif //PUPILEXT_FILECAMERA_H

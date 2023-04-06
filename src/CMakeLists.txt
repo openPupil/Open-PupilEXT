@@ -16,6 +16,7 @@ set_source_files_properties(${APP_ICON_MACOSX} PROPERTIES MACOSX_PACKAGE_LOCATIO
 # For packaging add the following code - add_executable(PupilEXT MACOSX_BUNDLE main.cpp
 add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} ${APP_ICON_MACOSX}
         mainwindow.cpp
+        supportFunctions.h
         subwindows/serialSettingsDialog.cpp subwindows/serialSettingsDialog.h
         dataWriter.cpp dataWriter.h
         signalPubSubHandler.h
@@ -56,6 +57,16 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         devices/stereoCameraImageEventHandler.cpp devices/stereoCameraImageEventHandler.h
         subwindows/stereoCameraCalibrationView.h subwindows/stereoCameraCalibrationView.cpp
         stereoCameraCalibration.h stereoCameraCalibration.cpp cameraFrameRateCounter.h subwindows/generalSettingsDialog.cpp subwindows/generalSettingsDialog.h subwindows/stereoFileCameraCalibrationView.cpp subwindows/stereoFileCameraCalibrationView.h
+        execArgParser.h execArgParser.cpp eyeDataSerializer.h eyeDataSerializer.cpp camTempMonitor.h camTempMonitor.cpp dataStreamer.h dataStreamer.cpp metaSnapshotOrganizer.h metaSnapshotOrganizer.cpp
+        devices/singleWebcam.h devices/singleWebcam.cpp devices/singleWebcamImageEventHandler.h devices/singleWebcamImageEventHandler.cpp
+        subwindows/singleWebcamSettingsDialog.h subwindows/singleWebcamSettingsDialog.cpp
+        connPoolCOM.h PRGmainwindow.cpp
+        recEventTracker.h recEventTracker.cpp
+        subwindows/streamingSettingsDialog.h subwindows/streamingSettingsDialog.cpp
+        subwindows/singleWebcamCalibrationView.h subwindows/singleWebcamCalibrationView.cpp
+        subwindows/IPCtrl.h subwindows/IPCtrl.cpp
+        subwindows/remoteCCDialog.h subwindows/remoteCCDialog.cpp
+        subwindows/playbackDial.h subwindows/playbackSlider.h subwindows/imagePlaybackControlDialog.h subwindows/imagePlaybackControlDialog.cpp
         subwindows/singleFileCameraCalibrationView.h subwindows/singleFileCameraCalibrationView.cpp subwindows/RestorableQMdiSubWindow.h subwindows/subjectSelectionDialog.cpp subwindows/subjectSelectionDialog.h
         subwindows/singleCameraSharpnessView.h subwindows/singleCameraSharpnessView.cpp sharpnessCalculation.h sharpnessCalculation.cpp
         subwindows/calibrationHelpDialog.h subwindows/calibrationHelpDialog.cpp
@@ -65,7 +76,7 @@ if(SPII_BUILD_FOUND)
 
     target_link_libraries(${CMAKE_PROJECT_NAME}
             "singleeyefitter"
-            Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport #Qt5::OpenGL
+            Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport Qt5::Network Qt5::Xml #Qt5::OpenGL
             ${Boost_LIBRARIES}
             TBB::tbb
             #Boost::boost
@@ -80,7 +91,7 @@ else()
 
     target_link_libraries(${CMAKE_PROJECT_NAME}
         "singleeyefitter"
-        Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport #Qt5::OpenGL
+        Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport Qt5::Network Qt5::Xml #Qt5::OpenGL
         ${Boost_LIBRARIES}
         TBB::tbb
         #Boost::boost
@@ -118,6 +129,8 @@ endif()
 install(PROGRAMS "$<TARGET_FILE:Qt5::QSvgIconPlugin>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/iconengines")
 install(PROGRAMS "$<TARGET_FILE:Qt5::QSvgPlugin>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/imageformats")
 install(PROGRAMS "$<TARGET_FILE:Qt5::PrintSupport>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/printsupport")
+install(PROGRAMS "$<TARGET_FILE:Qt5::Network>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/network")
+install(PROGRAMS "$<TARGET_FILE:Qt5::Xml>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/xml")
 
 install(PROGRAMS "$<TARGET_FILE:Qt5::Gui>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
 install(PROGRAMS "$<TARGET_FILE:Qt5::Core>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
@@ -141,6 +154,8 @@ endif()
 install(PROGRAMS "$<TARGET_FILE:Qt5::QSvgIconPlugin>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/iconengines")
 install(PROGRAMS "$<TARGET_FILE:Qt5::QSvgPlugin>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/imageformats")
 install(PROGRAMS "$<TARGET_FILE:Qt5::PrintSupport>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/printsupport")
+install(PROGRAMS "$<TARGET_FILE:Qt5::Network>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/network")
+install(PROGRAMS "$<TARGET_FILE:Qt5::Xml>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/xml")
 
 install(PROGRAMS "$<TARGET_FILE:Qt5::Gui>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 install(PROGRAMS "$<TARGET_FILE:Qt5::Core>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

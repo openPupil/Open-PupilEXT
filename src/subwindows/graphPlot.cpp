@@ -7,7 +7,14 @@ uint64 GraphPlot::sharedTimestamp = 0;
 
 // Create a graph plot window showing the given plotvalue in real-time
 // QCustomPlot library is used for plotting
-GraphPlot::GraphPlot(QString plotValue, bool stereoMode, bool legend, QWidget *parent) : QWidget(parent), customPlot(new QCustomPlot(parent)), plotValue(plotValue), incrementedTimestamp(0), interaction(false) {
+GraphPlot::GraphPlot(QString plotValue, ProcMode procMode, bool legend, QWidget *parent) : 
+    QWidget(parent), 
+    customPlot(new QCustomPlot(parent)), 
+    plotValue(plotValue), 
+    incrementedTimestamp(0), 
+    interaction(false),
+    yinteraction(true) 
+    {
 
     setWindowTitle(plotValue);
 
@@ -23,19 +30,59 @@ GraphPlot::GraphPlot(QString plotValue, bool stereoMode, bool legend, QWidget *p
 
     setLayout(layout);
 
-    customPlot->addGraph();
+    
 
+    // GB begin
+    /*
     if(stereoMode) {
         customPlot->addGraph();
 
         QPen penSec(Qt::green, 0, Qt::SolidLine);
         customPlot->graph(1)->setPen(penSec);
     }
+    */
+    QPen pen1 = QPen(Qt::blue, 0, Qt::SolidLine);
+    QPen pen2 = QPen(Qt::green, 0, Qt::SolidLine);
+    QPen pen3 = QPen(Qt::cyan, 0, Qt::SolidLine);
+    QPen pen4 = QPen(Qt::yellow, 0, Qt::SolidLine);
+    byte numCols=1;
+    switch(procMode) {
+        case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
+            customPlot->addGraph();
+            customPlot->graph(0)->setPen(pen1);
+            //numCols=1;
+            break;
+        case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
+        case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        case ProcMode::STEREO_IMAGE_ONE_PUPIL:
+            customPlot->addGraph();
+            customPlot->addGraph();
+            customPlot->graph(0)->setPen(pen1);
+            customPlot->graph(1)->setPen(pen2);
+            numCols=2;
+            break;
+        case ProcMode::STEREO_IMAGE_TWO_PUPIL:
+            customPlot->addGraph();
+            customPlot->addGraph();
+            customPlot->addGraph();
+            customPlot->addGraph();
+            customPlot->graph(0)->setPen(pen1);
+            customPlot->graph(1)->setPen(pen2);
+            customPlot->graph(2)->setPen(pen3);
+            customPlot->graph(3)->setPen(pen4);
+            numCols=4;
+            break;
+    }
+
+    enableInteractions();
+    enableYAxisInteraction();
+    // GB end
+
 
     customPlot->legend->setVisible(legend);
 
-    QPen pen(Qt::blue, 0, Qt::SolidLine);
-    customPlot->graph(0)->setPen(pen);
+//    QPen pen(Qt::blue, 0, Qt::SolidLine);
+//    customPlot->graph(0)->setPen(pen);
 
     QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
     timeTicker->setTimeFormat("%m:%s");
@@ -72,6 +119,8 @@ void GraphPlot::reset() {
 
     incrementedTimestamp = 0;
     customPlot->graph(0)->data()->clear();
+
+    // GB TODO: IMPORTANT TODO: clean all plots
 }
 
 // On right click on the plot a context menu is created at the position of the click
@@ -118,42 +167,43 @@ void GraphPlot::enableYAxisInteraction() {
 }
 
 // Sets Y axis label of the graph plot according to the current plot value
+// GB: capitalized first letter for fancy look
 void GraphPlot::setupPlotAxis() {
 
     if(plotValue == DataTable::FRAME_NUMBER) {
-        customPlot->yAxis->setLabel("frame number");
+        customPlot->yAxis->setLabel("Frame number");
     } else if(plotValue == DataTable::CAMERA_FPS) {
-        customPlot->yAxis->setLabel("[fps]");
+        customPlot->yAxis->setLabel("[FPS]");
     } else if(plotValue == DataTable::PUPIL_FPS) {
-        customPlot->yAxis->setLabel("[fps]");
+        customPlot->yAxis->setLabel("[FPS]");
     } else if(plotValue == DataTable::PUPIL_CENTER_X) {
-        customPlot->yAxis->setLabel("pupil center [px]");
+        customPlot->yAxis->setLabel("Pupil center [px]");
     } else if(plotValue == DataTable::PUPIL_CENTER_Y) {
-        customPlot->yAxis->setLabel("pupil center [px]");
+        customPlot->yAxis->setLabel("Pupil center [px]");
     } else if(plotValue == DataTable::PUPIL_MAJOR) {
-        customPlot->yAxis->setLabel("pupil major axis [px]");
+        customPlot->yAxis->setLabel("Pupil major axis [px]");
     } else if(plotValue == DataTable::PUPIL_MINOR) {
-        customPlot->yAxis->setLabel("pupil minor axis [px]");
+        customPlot->yAxis->setLabel("Pupil minor axis [px]");
     } else if(plotValue == DataTable::PUPIL_WIDTH) {
-        customPlot->yAxis->setLabel("pupil width [px]");
+        customPlot->yAxis->setLabel("Pupil width [px]");
     } else if(plotValue == DataTable::PUPIL_HEIGHT) {
-        customPlot->yAxis->setLabel("pupil height [px]");
+        customPlot->yAxis->setLabel("Pupil height [px]");
     } else if(plotValue == DataTable::PUPIL_CONFIDENCE) {
-        customPlot->yAxis->setLabel("pupil confidence");
+        customPlot->yAxis->setLabel("Pupil confidence");
         customPlot->yAxis->setRange(-0.2, 1.2);
     } else if(plotValue == DataTable::PUPIL_OUTLINE_CONFIDENCE) {
-        customPlot->yAxis->setLabel("pupil outline confidence");
+        customPlot->yAxis->setLabel("Pupil outline confidence");
         customPlot->yAxis->setRange(-0.2, 1.2);
     } else if(plotValue == DataTable::PUPIL_CIRCUMFERENCE) {
-        customPlot->yAxis->setLabel("pupil circumference [px]");
+        customPlot->yAxis->setLabel("Pupil circumference [px]");
     } else if(plotValue == DataTable::PUPIL_RATIO) {
-        customPlot->yAxis->setLabel("pupil axis ratio");
+        customPlot->yAxis->setLabel("Pupil axis ratio");
     } else if(plotValue == DataTable::PUPIL_DIAMETER) {
-        customPlot->yAxis->setLabel("pupil diameter [px]");
+        customPlot->yAxis->setLabel("Pupil diameter [px]");
     } else if(plotValue == DataTable::PUPIL_UNDIST_DIAMETER) {
-        customPlot->yAxis->setLabel("pupil undistorted diameter [px]");
+        customPlot->yAxis->setLabel("Pupil undistorted diameter [px]");
     } else if(plotValue == DataTable::PUPIL_PHYSICAL_DIAMETER) {
-        customPlot->yAxis->setLabel("pupil physical diameter [mm]");
+        customPlot->yAxis->setLabel("Pupil physical diameter [mm]");
     }
 }
 
@@ -225,6 +275,98 @@ void GraphPlot::appendData(const int &framecount) {
     }
 }
 
+
+// Slot that is called upon receiving a new stereo pupil detection
+// Updates the table columns with current pupil data i.e. all meta information of both pupil detections
+// This is called from the pupil detection process, potentially 120 times per second, however only data is appended in that rate
+// Plot replots are executed in rates defined by updateDelay i.e. 30 fps
+// GB: made it work with vector of pupils for different Proc modes
+void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename) {
+
+    if(sharedTimestamp==0)
+        sharedTimestamp = timestamp;
+    uint64 m_timestamp = timestamp - sharedTimestamp;
+
+    byte numCols=1;
+    switch(procMode) {
+        case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
+            //numCols=1;
+            break;
+        case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
+        case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        case ProcMode::STEREO_IMAGE_ONE_PUPIL:
+            numCols=2;
+            break;
+        case ProcMode::STEREO_IMAGE_TWO_PUPIL:
+            numCols=4;
+            break;
+    }
+
+    // add data
+    // GB: TODO: physical diameter is the same for two views, but is added as two different curves now..
+    for(byte i=0; i<numCols; i++) {
+        if(plotValue == DataTable::PUPIL_CENTER_X) {
+            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].center.x);
+        } else if(plotValue == DataTable::PUPIL_CENTER_Y) {
+            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].center.y);
+        } else if(plotValue == DataTable::PUPIL_MAJOR) {
+            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].majorAxis());
+        } else if(plotValue == DataTable::PUPIL_MINOR) {
+            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].minorAxis());
+        } else if(plotValue == DataTable::PUPIL_WIDTH) {
+            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].width());
+        } else if(plotValue == DataTable::PUPIL_HEIGHT) {
+            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].height());
+        } else if(plotValue == DataTable::PUPIL_CONFIDENCE) {
+            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].confidence);
+        } else if(plotValue == DataTable::PUPIL_OUTLINE_CONFIDENCE) {
+            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].outline_confidence);
+        } else if(plotValue == DataTable::PUPIL_CIRCUMFERENCE) {
+            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].circumference());
+        } else if(plotValue == DataTable::PUPIL_RATIO) {
+            customPlot->graph(i)->addData(m_timestamp/1000.0, (double)Pupils[i].majorAxis() / Pupils[i].minorAxis());
+        } else if(plotValue == DataTable::PUPIL_DIAMETER) {
+            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].diameter());
+        } else if(plotValue == DataTable::PUPIL_UNDIST_DIAMETER) {
+            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].undistortedDiameter);
+        } else if(plotValue == DataTable::PUPIL_PHYSICAL_DIAMETER) {
+            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].physicalDiameter);
+        }
+    }
+
+    if(timer.elapsed() > updateDelay) {
+        timer.restart();
+
+        if(!interaction) {
+            
+            if(!yinteraction && plotValue != DataTable::PUPIL_CONFIDENCE && plotValue != DataTable::PUPIL_OUTLINE_CONFIDENCE) {
+                // rescale value (vertical) axis to fit the current data:
+            //    customPlot->graph(0)->rescaleValueAxis(false, true);
+            //    customPlot->graph(1)->rescaleValueAxis(false, true);
+                for(byte i=0; i<numCols; i++) {
+                    customPlot->graph(i)->rescaleValueAxis(false, true);
+                }
+            }
+            
+            // make key axis range scroll with the data (at a constant range size of 15secs):
+            customPlot->xAxis->setRange(m_timestamp/1000.0, 15, Qt::AlignRight);
+        }
+
+
+        // if the first data is older than 4 minutes, remove 2 minutes of worth
+        if((m_timestamp/1000.0) - customPlot->graph(0)->dataMainKey (0) > 240) {
+        //    customPlot->graph(0)->data()->removeBefore((m_timestamp/1000.0)-120);
+        //    customPlot->graph(1)->data()->removeBefore((m_timestamp/1000.0)-120);
+            for(byte i=0; i<numCols; i++) {
+                customPlot->graph(i)->data()->removeBefore((m_timestamp/1000.0)-120);
+            }
+        }
+
+        customPlot->replot();
+    }
+}
+
+/*
 // Slot that is called upon receiving a new pupil detection
 // Updates the table columns with current pupil data i.e. all meta information of the pupil
 // This is called from the pupil detection process, potentially 120 times per second, however only data is appended in that rate
@@ -362,3 +504,4 @@ void GraphPlot::appendData(quint64 timestamp, const Pupil &pupil, const Pupil &p
         customPlot->replot();
     }
 }
+*/

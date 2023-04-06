@@ -3,7 +3,7 @@
 #define PUPILEXT_STEREOCAMERAVIEW_H
 
 /**
-    @author Moritz Lode
+    @author Moritz Lode, Gábor Bényei
 */
 
 #include <QtCore/qobjectdefs.h>
@@ -15,6 +15,10 @@
 #include "videoView.h"
 #include "../pupilDetection.h"
 #include "../devices/stereoCamera.h"
+
+#include "../devices/fileCamera.h"
+#include <QSpinBox>
+#include <QSlider>
 
 /**
     Main view showing the two camera images side-by-side for a stereo camera, at the same time displays results of the pupil detection rendered
@@ -58,7 +62,7 @@ private:
     QAction *plotCenterAct;
     QAction *plotROIAct;
 
-    QAction *roiMenuAct;
+    //QAction *roiMenuAct;
     QAction *customROIAct;
     QAction *smallROIAct;
     QAction *middleROIAct;
@@ -74,28 +78,47 @@ private:
     QLabel *processingConfigLabel;
     QElapsedTimer pupilViewTimer;
 
+    
 
     bool displayPupilView;
     bool plotPupilCenter;
     bool plotROIContour;
     bool initPupilViewSize;
-    QSize pupilViewSize;
-    QSize pupilViewSizeSec;
+    //QSize pupilViewSize;
+    //QSize pupilViewSizeSec;
+    
     double currentCameraFPS;
+
+    // GB added begin
+    QAction *pupilDetectionMenuAct;
+    QLabel *processingModeLabel;
+
+    ColorFill pupilColorFill = ColorFill::NO_FILL;
+    float pupilColorFillThreshold = 0.0;
+    QSpinBox *autoParamPupSizeBox;
+    QSlider *autoParamSlider;
+
+    std::vector<QSize> pupilViewSize;
+
+    QAction *showAutoParamAct;
+
+    bool showAutoParamOverlay;
+    
+    void updateProcModeLabel(); // GB added
+    // GB added end
 
     void loadSettings();
 
 public slots:
 
     void onPlotMenuClick();
-    void onROIMenuClick();
-    void saveROISelection(QRectF roi);
-    void saveSecondaryROISelection(QRectF roi);
+    //void onROIMenuClick();
 
     void updateView(const CameraImage &img);
     void updateCameraFPS(double fps);
     void updateProcessingFPS(double fps);
-    void updatePupilView(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filename);
+    //void updatePupilView(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filename);
+    void updatePupilView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils);
 
     void onFitClick();
     void on100pClick();
@@ -114,10 +137,35 @@ public slots:
     void updateAlgorithmLabel();
     void updateConfigLabel(QString config);
 
+    // GB modified/added begin
+    void onPupilDetectionMenuClick();
+
+    void saveMainROI1Selection(QRectF roi); // GB modified and renamed
+    void saveMainROI2Selection(QRectF roi);
+    void saveSecondaryROI1Selection(QRectF roi); // GB modified and renamed
+    void saveSecondaryROI2Selection(QRectF roi);
+
+    void displayFileCameraFrame(int frameNumber);
+
+    void updateForPupilDetectionProcMode();
+    //void updateView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils);
+    void updateView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils);
+    void onPupilColorFillChanged(int itemIndex);
+    void onPupilColorFillThresholdChanged(double value);
+
+    void onShowAutoParamOverlay(bool state);
+    void onAutoParamPupSize(int value);
+    // GB modified/added end
+
 signals:
 
+    // GÁBOR modified: not handled in pupilDetection anymore
     void onShowROI(bool value);
     void onShowPupilCenter(bool value);
+    void onChangePupilColorFill(int colorFill);
+    void onChangePupilColorFillThreshold(float value);
+    void onChangeShowAutoParamOverlay(bool state);
+    // GÁBOR end
 
 };
 

@@ -4,10 +4,16 @@
 #include <opencv2/imgcodecs.hpp>
 #include <QtCore/qthreadpool.h>
 #include "imageWriter.h"
+#include "supportFunctions.h"
 
 // Creates a new image writer that outputs images in the given directory
 // If stereo is true, a stereo directory structure is created in the given directory
-ImageWriter::ImageWriter(QString directory, QString format, bool stereo, QObject *parent) : QObject(parent), format(format), stereoMode(stereo) {
+ImageWriter::ImageWriter(const QString& directory, QString format, bool stereo, QObject *parent) : QObject(parent), format(format), stereoMode(stereo) {
+
+    // GB added begin
+    // GB: changed to "const QString&"
+    SupportFunctions::preparePath(directory);
+    // GB added end
 
     outputDirectory = QDir(directory);
 

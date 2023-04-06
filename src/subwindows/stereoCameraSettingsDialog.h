@@ -3,7 +3,7 @@
 #define PUPILEXT_STEREOCAMERASETTINGSDIALOG_H
 
 /**
-    @author Moritz Lode
+    @author Moritz Lode, Gábor Bényei
 */
 
 
@@ -17,6 +17,9 @@
 #include "../devices/stereoCamera.h"
 #include "serialSettingsDialog.h"
 
+// BG added
+#include "stereoCameraView.h" // BG NOTE: to connect with acquisition image ROI changes to view update
+
 /**
     Custom widget for configuring a stereo camera setup, main and secondary camera are selected and opened, hardware trigger established and camera settings configured.
 
@@ -29,11 +32,12 @@ class StereoCameraSettingsDialog : public QDialog {
 
 public:
 
-    explicit StereoCameraSettingsDialog(StereoCamera *camera, SerialSettingsDialog *serialSettings, QWidget *parent = nullptr);
+    explicit StereoCameraSettingsDialog(StereoCamera *camera, SerialSettingsDialog *serialSettings, QWidget *parent = nullptr); 
 
     ~StereoCameraSettingsDialog() override;
 
     void accept() override;
+    void setCameraConfigurable(bool state); // GB added
 
 protected:
 
@@ -84,6 +88,41 @@ private:
     void updateForms();
     void loadSettings();
     void saveSettings();
+    
+    // BG added (+made global) begin
+    QHBoxLayout *framerateInputLayout; 
+    QLabel *frameRateLabel;
+    QLabel *exposureLabel;
+
+    QLabel *imageROIwidthLabel;
+    QLabel *imageROIheightLabel;
+    QLabel *imageROIoffsetXLabel;
+    QLabel *imageROIoffsetYLabel;
+    QLabel *binningLabel;
+
+    QLabel *imageROIwidthMaxLabel;
+    QLabel *imageROIheightMaxLabel;
+    QLabel *imageROIoffsetXMaxLabel;
+    QLabel *imageROIoffsetYMaxLabel;
+
+    QSpinBox *imageROIwidthInputBox;
+    QSpinBox *imageROIheightInputBox;
+    QSpinBox *imageROIoffsetXInputBox;
+    QSpinBox *imageROIoffsetYInputBox;
+    QComboBox *binningBox;
+
+    int lastUsedBinningVal = 0;
+    //when binning value is 1. Must be divisible by 4 (camera dependent). 4*16
+    const int minImageSize = 64; 
+    //when binning value is 1. Must be divisible by 4 (camera dependent). 4*16
+    const int imageSizeChangeSingleStep = 32;
+    // BG added end
+
+public slots:
+    // GB added begin
+    void setLimitationsWhileTracking(bool state);
+    void setLimitationsWhileUnconnected(bool state);
+    // GB added end
 
 private slots:
 
@@ -106,6 +145,23 @@ private slots:
     void onSerialConnect();
 
     void onSettingsChange();
+
+    // BG added begin
+    void onSetImageROIwidth(int val);
+    void onSetImageROIheight(int val);
+    void onSetImageROIoffsetX(int val);
+    void onSetImageROIoffsetY(int val);
+    void onBinningModeChange(int index);
+
+    void updateImageROISettingsMin(int binningVal);
+    void updateImageROISettingsMax();
+    void updateImageROISettingsValues();
+    // BG added end
+
+public slots:
+    // GB added begin
+    void openStereoCamera(const QString &camName1, const QString &camName2);
+    // GB added end
 
 signals:
 

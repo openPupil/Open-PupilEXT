@@ -3,7 +3,7 @@
 #define PUPILEXT_ELSESETTINGS_H
 
 /**
-    @author Moritz Lode
+    @authors Moritz Lode, Gábor Bényei
 */
 
 #include "PupilMethodSetting.h"
@@ -25,7 +25,13 @@ class ElSeSettings : public PupilMethodSetting {
 
 public:
 
-    explicit ElSeSettings(ElSe *m_else, QWidget *parent=0) : PupilMethodSetting(parent), p_else(m_else), configParameters(defaultParameters)  {
+    // GB: added pupilDetection instance to get the actual ROIs for Autometric Parametrization calculations
+    explicit ElSeSettings(PupilDetection * pupilDetection, ElSe *m_else, QWidget *parent=0) : 
+        PupilMethodSetting(parent), 
+        p_else(m_else), 
+        pupilDetection(pupilDetection), 
+        configParameters(defaultParameters)  {
+
         configParameters = applicationSettings->value("ElSeSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
 
         configIndex = applicationSettings->value("ElSeSettings.configIndex", "Default").toString();
@@ -38,6 +44,16 @@ public:
         } else {
             parameterConfigs->setCurrentText(configIndex);
         }
+
+        // GB added begin
+        if(parameterConfigs->currentText()=="Automatic Parametrization") {
+            minAreaBox->setEnabled(false);
+            maxAreaBox->setEnabled(false);
+        } else {
+            minAreaBox->setEnabled(true);
+            maxAreaBox->setEnabled(true);
+        } 
+        // GB added end
 
         QGridLayout *infoLayout = new QGridLayout(infoBox);
 
@@ -53,32 +69,41 @@ public:
         pLabel->setText("Wolfgang Fuhl, Thiago Santini, Thomas Kübler, Enkelejda Kasneci, \"ElSe: Ellipse Selection for Robust Pupil Detection in Real-World Environments.\", 2016<br/>Part of the <a href=\"https://www-ti.informatik.uni-tuebingen.de/santini/EyeRecToo\">EyeRecToo</a> software. Copyright (c) 2018, Thiago Santini / University of Tübingen");
         infoLayout->addWidget(pLabel, 1, 0);
 
+        // GB modified begin
+        // GB NOTE: removed \n to let it fit more efficiently
         QLabel *confLabel;
         if(p_else->hasConfidence())
-            confLabel = new QLabel("Info:\nThis method does provide its own confidence.");
+            confLabel = new QLabel("Info: This method does provide its own confidence.");
         else
-            confLabel = new QLabel("Info:\nThis method does not provide its own confidence, use the outline confidence.");
+            confLabel = new QLabel("Info: This method does not provide its own confidence, use the outline confidence."); 
         confLabel->setWordWrap(true);
         infoLayout->addWidget(confLabel, 2, 0);
 
-        QLabel *infoLabel = new QLabel("CAUTION:\nProcessing using this algorithm may be very slow, reduce the camera acquiring fps accordingly.");
+        QLabel *infoLabel = new QLabel("CAUTION: Processing using this algorithm may be very slow, reduce the camera acquiring fps accordingly."); 
         infoLabel->setWordWrap(true);
         infoLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
         infoLayout->addWidget(infoLabel, 3, 0);
 
 #if _DEBUG
-        QLabel *warnLabel = new QLabel("CAUTION:\nDebug build may perform very slow.\nUse release build or adjust processing speed to not risk memory overflow.");
+        QLabel *warnLabel = new QLabel("CAUTION: Debug build may perform very slow. Use release build or adjust processing speed to not risk memory overflow.");
         warnLabel->setWordWrap(true);
         warnLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
         infoLayout->addWidget(warnLabel, 4, 0);
 #endif
         infoBox->setLayout(infoLayout);
+        // GB modified end
     }
 
     ~ElSeSettings() override = default;
 
-    void addSecondary(ElSe *s_else) {
-        secondaryElse = s_else;
+    void add2(ElSe *s_else) {
+        else2 = s_else;
+    }
+    void add3(ElSe *s_else) {
+        else3 = s_else;
+    }
+    void add4(ElSe *s_else) {
+        else4 = s_else;
     }
 
     QMap<QString, QList<float>> getParameter() {
@@ -94,6 +119,12 @@ public:
         configParameters = defaultParameters;
     }
 
+    // GB modified begin
+    bool isAutoParamEnabled() override {
+        return (parameterConfigs->currentText()=="Automatic Parametrization");
+    }
+    // GB modified end
+
 public slots:
 
     void loadSettings() override {
@@ -107,6 +138,22 @@ public slots:
             parameterConfigs->setCurrentText(configIndex);
         }
 
+        // GG added begin
+        if(parameterConfigs->currentText()=="Automatic Parametrization") {
+            float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
+            pupilDetection->setAutoParamEnabled(true);
+            pupilDetection->setAutoParamPupSizePercent(autoParamPupSizePercent);
+            pupilDetection->setAutoParamScheduled(true);
+
+            minAreaBox->setEnabled(false);
+            maxAreaBox->setEnabled(false);
+        } else {
+            pupilDetection->setAutoParamEnabled(false);
+            minAreaBox->setEnabled(true);
+            maxAreaBox->setEnabled(true);
+        } 
+        // GB added end
+
 //        QList<float> selectedParameter = configParameters.value(configIndex);
 //
 //        minAreaBox->setValue(selectedParameter[0]);
@@ -116,22 +163,47 @@ public slots:
     }
 
     void updateSettings() override {
-        float minAreaRatio = p_else->minAreaRatio;
-        float maxAreaRatio = p_else->maxAreaRatio;
 
-        minAreaRatio = minAreaBox->value();
-        maxAreaRatio = maxAreaBox->value();
+        // GB modified begin
 
-        p_else->minAreaRatio = minAreaRatio;
-        p_else->maxAreaRatio = maxAreaRatio;
+        // First come the parameters roughly independent from ROI size and relative pupil size 
+        // (NONE HERE)
 
-        configParameters[parameterConfigs->currentText()][0] = minAreaRatio;
-        configParameters[parameterConfigs->currentText()][1] = maxAreaRatio;
+        // Then the specific ones that are set by autoParam
+        int procMode = pupilDetection->getCurrentProcMode();
+        if(parameterConfigs->currentText()=="Automatic Parametrization") {
+            float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
+            pupilDetection->setAutoParamPupSizePercent(autoParamPupSizePercent);
+            pupilDetection->setAutoParamScheduled(true);
 
-        if(secondaryElse) {
-            secondaryElse->minAreaRatio = minAreaRatio;
-            secondaryElse->maxAreaRatio = maxAreaRatio;
+        } else {
+            float minAreaRatio = p_else->minAreaRatio;
+            float maxAreaRatio = p_else->maxAreaRatio;
+
+            minAreaRatio = minAreaBox->value();
+            maxAreaRatio = maxAreaBox->value();
+
+            p_else->minAreaRatio = minAreaRatio;
+            p_else->maxAreaRatio = maxAreaRatio;
+
+            configParameters[parameterConfigs->currentText()][0] = minAreaRatio;
+            configParameters[parameterConfigs->currentText()][1] = maxAreaRatio;
+
+            if(else2) {
+                else2->minAreaRatio = minAreaRatio;
+                else2->maxAreaRatio = maxAreaRatio;
+            }
+            if(else3) {
+                else3->minAreaRatio = minAreaRatio;
+                else3->maxAreaRatio = maxAreaRatio;
+            }
+            if(else4) {
+                else4->minAreaRatio = minAreaRatio;
+                else4->maxAreaRatio = maxAreaRatio;
+            }
+            
         }
+        // GB modified end
 
         emit onConfigChange(parameterConfigs->currentText());
 
@@ -142,7 +214,14 @@ public slots:
 private:
 
     ElSe *p_else;
-    ElSe *secondaryElse = nullptr;
+    //ElSe *secondaryElse = nullptr; // GB refactored
+    // GB added begin
+    ElSe *else2 = nullptr;
+    ElSe *else3 = nullptr;
+    ElSe *else4 = nullptr;
+
+    PupilDetection *pupilDetection; 
+    // GB added end
 
     QDoubleSpinBox *minAreaBox;
     QDoubleSpinBox *maxAreaBox;
@@ -163,6 +242,11 @@ private:
         QHBoxLayout *configsLayout = new QHBoxLayout();
 
         parameterConfigs = new QComboBox();
+        // GB modified begin
+        QLabel *parameterConfigsLabel = new QLabel(tr("Parameter configuration:"));
+        parameterConfigs->setFixedWidth(250);
+        configsLayout->addWidget(parameterConfigsLabel);
+        // GB modified end
         configsLayout->addWidget(parameterConfigs);
 
         QMapIterator<QString, QList<float>> i(configParameters);
@@ -176,7 +260,7 @@ private:
         mainLayout->addLayout(configsLayout);
         mainLayout->addSpacerItem(new QSpacerItem(40, 5, QSizePolicy::Fixed));
 
-        QGroupBox *sizeGroup = new QGroupBox("Pupil Area Proportion");
+        QGroupBox *sizeGroup = new QGroupBox("Algorithm specific: Pupil Area Proportion"); // GB: "Algorithm specific: "
 
         QFormLayout *sizeLayout = new QFormLayout();
 
@@ -186,6 +270,7 @@ private:
         minAreaBox->setSingleStep(0.001);
         minAreaBox->setMaximum(100);
         minAreaBox->setValue(minAreaRatio);
+        minAreaBox->setFixedWidth(60); // GB
         sizeLayout->addRow(minAreaLabel, minAreaBox);
 
         QLabel *maxAreaLabel = new QLabel(tr("Max. Area [%]:"));
@@ -194,6 +279,7 @@ private:
         maxAreaBox->setSingleStep(0.001);
         maxAreaBox->setMaximum(100);
         maxAreaBox->setValue(maxAreaRatio);
+        maxAreaBox->setFixedWidth(60); // GB
         sizeLayout->addRow(maxAreaLabel, maxAreaBox);
 
         sizeGroup->setLayout(sizeLayout);
@@ -201,8 +287,8 @@ private:
 
         QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
-        resetButton = new QPushButton("Reset");
-        fileButton = new QPushButton("Load File");
+        resetButton = new QPushButton("Reset algorithm parameters"); // GB: clarified text
+        fileButton = new QPushButton("Load config file"); // GB: clarified text
 
         buttonsLayout->addWidget(resetButton);
         connect(resetButton, SIGNAL(clicked()), this, SLOT(onResetClick()));
@@ -242,7 +328,8 @@ private:
             { "Default", {0.005f, 0.2f} },
             { "ROI 0.3 Optimized", {0.001f, 0.823f} },
             { "ROI 0.6 Optimized", {0.001f, 0.131f} },
-            { "Full Image Optimized", {0.001f, 0.038f} }
+            { "Full Image Optimized", {0.001f, 0.038f} },
+            { "Automatic Parametrization", {-1.0f, -1.0f} } // GB added
     };
 
     QMap<QString, QList<float>> configParameters;
@@ -254,8 +341,24 @@ private slots:
     void onParameterConfigSelection(QString configKey) {
         QList<float> selectedParameter = configParameters.value(configKey);
 
-        minAreaBox->setValue(selectedParameter[0]);
-        maxAreaBox->setValue(selectedParameter[1]);
+        // GB modified begin
+
+        // First come the parameters roughly independent from ROI size and relative pupil size 
+        // (NONE HERE)
+
+        // Then the specific ones that are set by autoParam
+        if(parameterConfigs->currentText()=="Automatic Parametrization") {
+            minAreaBox->setEnabled(false);
+            maxAreaBox->setEnabled(false);
+            // TODO: hide value text too
+        } else {
+            minAreaBox->setEnabled(true);
+            maxAreaBox->setEnabled(true);
+            
+            minAreaBox->setValue(selectedParameter[0]);
+            maxAreaBox->setValue(selectedParameter[1]);
+        }
+        // GB modified end
 
         //updateSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
     }

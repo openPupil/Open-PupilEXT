@@ -3,7 +3,7 @@
 #define PUPILEXT_CAMERA_H
 
 /**
-    @author Moritz Lode
+    @authors Moritz Lode, Gábor Bényei
 */
 
 
@@ -12,8 +12,11 @@
 
 /**
     Enum representing the different camera image types, also used for differentiating the respective camera type
+
+
+    GB: added LIVE_SINGLE_WEBCAM 
 */
-enum CameraImageType { LIVE_SINGLE_CAMERA=0, LIVE_STEREO_CAMERA=1, SINGLE_IMAGE_FILE=2, STEREO_IMAGE_FILE=3 };
+enum CameraImageType { LIVE_SINGLE_CAMERA=0, LIVE_STEREO_CAMERA=1, SINGLE_IMAGE_FILE=2, STEREO_IMAGE_FILE=3, LIVE_SINGLE_WEBCAM = 4 };
 
 /**
     Struct representing a camera image returned from a camera and its respective meta-data
@@ -27,7 +30,7 @@ struct CameraImage {
     cv::Mat img;
     cv::Mat imgSecondary;
     uint64_t timestamp;
-    uint64_t frameNumber;
+    uint64_t frameNumber; // GB NOTE: it was originally already there in beta 0.1.1, and it holds the INDEX of image (not starting from 1)
     std::string filename;
 };
 

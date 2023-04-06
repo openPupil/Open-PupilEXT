@@ -20,7 +20,7 @@ SingleCameraCalibrationView::SingleCameraCalibrationView(SingleCamera *camera, Q
 
     QVBoxLayout* layout = new QVBoxLayout(this);
 
-    videoView = new VideoView();
+    videoView = new VideoView(false);
     layout->addWidget(videoView);
 
     QGroupBox *qualityGroup = new QGroupBox("Calibration Quality");
@@ -324,5 +324,4 @@ void SingleCameraCalibrationView::onVerifyFileChecked(bool value) {
         }
     }
 }
-
 

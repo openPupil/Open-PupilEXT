@@ -2,7 +2,7 @@
 #define PUPILEXT_GENERALSETTINGSDIALOG_H
 
 /**
-    @author Moritz Lode
+    @author Moritz Lode, Gábor Bényei
 */
 
 #include <QtWidgets/QDialog>
@@ -15,6 +15,11 @@
 
 /**
     General settings window (dialog) containing all general settings of the pupilext software
+
+    NOTE: Modified by Gábor Bényei, 2023 jan
+    GB NOTE:
+        Playback speed and playback loop settings were moved to ImagePlaybackControlDialog.
+        Other new settings are added.
 */
 class GeneralSettingsDialog : public QDialog {
     Q_OBJECT
@@ -29,13 +34,14 @@ public:
 
     QString getWriterFormat() const;
 
+    // GB added begin
+    bool getMetaSnapshotsEnabled() const;
+    bool getSaveOfflineEventLog() const; 
+    // GB added end
 
 private:
 
     QSettings *applicationSettings;
-
-    int playbackSpeed;
-    bool playbackLoop;
 
     QString writerFormat;
 
@@ -45,6 +51,16 @@ private:
     QComboBox *formatBox;
     QSpinBox *playbackSpeedInputBox;
     QCheckBox *playbackLoopBox;
+
+    // GB added begin
+    bool metaSnapshotsEnabled;
+    bool saveOfflineEventLog; 
+
+    QString delimiterToUse;
+    QComboBox *delimiterBox;
+    QCheckBox *metaSnapshotBox;
+    QCheckBox *saveOfflineEventLogBox;
+    // GB added end
 
     void createForm();
     void saveSettings();
@@ -56,9 +72,15 @@ private slots:
     void cancel();
     void onFormatChange(int index);
     void readSettings();
-    void setPlaybackSpeed(int playbackSpeed);
+    //void setPlaybackSpeed(int playbackSpeed);
     void setWriterFormat(const QString &writerFormat);
-    void setPlaybackLoop(int m_state);
+    //void setPlaybackLoop(int m_state);
+
+    // GB added begin
+    void onDelimiterChange(int index); 
+    void setMetaSnapshotEnabled(int m_state);
+    void setSaveOfflineEventLog(int m_state);
+    // GB added end
 
 signals:
 

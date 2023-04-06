@@ -58,7 +58,7 @@ SingleCamera::SingleCamera(const CDeviceInfo &di, QObject* parent)
             loadCalibrationFile();
         }
 
-        if (camera.CanWaitForFrameTriggerReady()) {
+        if(camera.CanWaitForFrameTriggerReady()) {
 
             // Start the grabbing using the grab loop thread, by setting the grabLoopType parameter
             // to GrabLoop_ProvidedByInstantCamera. The grab results are delivered to the image event handlers.
@@ -576,3 +576,231 @@ void SingleCamera::loadCalibrationFile() {
         cameraCalibration->loadFromFile(configFile.toStdString().c_str());
     }
 }
+
+
+int SingleCamera::getImageROIwidth() { 
+    return (int)camera.Width.GetValue();
+}
+
+int SingleCamera::getImageROIheight() { 
+    return (int)camera.Height.GetValue();
+}
+
+int SingleCamera::getImageROIoffsetX() { 
+    return (int)camera.OffsetX.GetValue();
+}
+
+int SingleCamera::getImageROIoffsetY() { 
+    return (int)camera.OffsetY.GetValue();
+}
+
+// NOTE: Binning affects this
+int SingleCamera::getImageROIwidthMax() {
+    // Classic/U/L GigE cameras
+  //  return (int)camera.Width.GetMax();
+    // other cameras
+    return (int)camera.WidthMax.GetValue();
+}
+
+// NOTE: Binning affects this
+int SingleCamera::getImageROIheightMax() {
+    // Classic/U/L GigE cameras
+  //  return (int)camera.Height.GetMax();
+    // other cameras
+    return (int)camera.HeightMax.GetValue();
+}
+
+int SingleCamera::getBinningVal() {
+    //if(camera.BinningHorizontal.GetValue()!=camera.BinningVertical.GetValue())
+    //    return 0;
+    return camera.BinningHorizontal.GetValue();
+}
+
+double SingleCamera::getTemperature() {
+    double d = 0.0;
+    if(!camera.DeviceTemperature.IsReadable())
+        return d;
+
+    // DEV
+    //qDebug() << camera.GetValue(Basler_UniversalCameraParams::PLCamera::DeviceModelName);
+
+    // NOTE: this line is only needed in ace 2, boost, and dart IMX Cameras
+    // NOTE: sensor temp (and maybe others too) cannot be measured while grabbing, but coreboard anytime
+    camera.DeviceTemperatureSelector.SetValue(Basler_UniversalCameraParams::DeviceTemperatureSelectorEnums::DeviceTemperatureSelector_Coreboard);
+    
+    d = camera.DeviceTemperature.GetValue();
+
+    return d;
+}
+
+// NOTE: grabbing "pause" is necessary for setting binning
+bool SingleCamera::setBinningVal(int value) {
+
+    bool success = false;
+
+    if(camera.IsGrabbing())
+        camera.StopGrabbing();
+
+    // in case of our Basler cameras here, only mode=1,2,4 are only valid values
+    if (camera.BinningVertical.IsWritable()) {
+        // "Enable sensor binning"
+        // "Note: Available on selected camera models only"
+       // camera.BinningSelector.SetValue(BinningSelector_Sensor); // NOTE: found in Basler docs, but no trace of it in Pylon::CBaslerUniversalInstantCamera:: when code tries to compile. What is this?
+
+        // Set "binning mode" of camera
+        camera.BinningHorizontalMode.TrySetValue(BinningHorizontalMode_Average);
+        //camera.BinningHorizontalMode.SetValue(BinningHorizontalMode_Sum);
+        camera.BinningVerticalMode.TrySetValue(BinningVerticalMode_Average);
+        //camera.BinningVerticalMode.SetValue(BinningHorizontalMode_Sum);
+
+        if(value==2 || value==3) {
+            camera.BinningHorizontal.TrySetValue(2);
+            camera.BinningVertical.TrySetValue(2);
+            std::cout << "Setting binning to 2 on both axes"<< std::endl;
+            success = true;
+        } else if(value==4) {
+            camera.BinningHorizontal.TrySetValue(4);
+            camera.BinningVertical.TrySetValue(4);
+            std::cout << "Setting binning to 4 on both axes"<< std::endl;
+            success = true;
+        } else { //if(value==1) {
+            camera.BinningHorizontal.TrySetValue(1);
+            camera.BinningVertical.TrySetValue(1);
+            std::cout << "Setting binning to 1 (no binning) on both axes"<< std::endl;
+            success = true;
+        }
+    }
+    camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    return success;
+}
+
+// NOTE: grabbing "pause" is necessary for setting image ROI
+bool SingleCamera::setImageROIwidth(int width) {
+    //std::cout << "Setting Image ROI width=" << std::to_string(width) << std::endl;
+    bool success = false;
+
+    if(camera.IsGrabbing())
+        camera.StopGrabbing();
+
+    // ace Classic/U/L GigE Cameras
+   // int maxWidth = camera.Width.GetMax();
+   // int maxHeight = camera.Height.GetMax();
+    // other cameras
+    int maxWidth = camera.WidthMax.GetValue();
+    int offsetX = camera.OffsetX.GetValue();
+
+    if(width < 16)
+        width=16;
+
+    int modVal=width%4;
+    if(modVal != 0)
+        width -= modVal;
+
+    if (offsetX >= maxWidth-16)
+        width = maxWidth-offsetX;
+
+    if (width + offsetX <= maxWidth && camera.Width.IsWritable() ) {
+        camera.Width.SetValue(width);
+        success = true;
+    }
+    camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    return success;
+}
+
+// NOTE: grabbing "pause" is necessary for setting image ROI
+bool SingleCamera::setImageROIheight(int height) {
+    //std::cout << "Setting Image ROI height=" << std::to_string(height) << std::endl;
+    bool success = false;
+
+    if(camera.IsGrabbing())
+        camera.StopGrabbing();
+
+    // ace Classic/U/L GigE Cameras
+   // int maxWidth = camera.Width.GetMax();
+   // int maxHeight = camera.Height.GetMax();
+    // other cameras
+    int maxHeight = camera.HeightMax.GetValue();
+    int offsetY = camera.OffsetY.GetValue();
+
+    if(height < 16)
+        height=16;
+
+    int modVal=height%4;
+    if(modVal != 0)
+        height -= modVal;
+    
+    if (offsetY >= maxHeight-16)
+        height = maxHeight-offsetY;
+
+    if (height + offsetY <= maxHeight && camera.Height.IsWritable() ) {
+        camera.Height.TrySetValue(height);
+        success = true;
+    } 
+    camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    return success;
+}
+
+// NOTE: grabbing "pause" is necessary for setting image ROI
+bool SingleCamera::setImageROIoffsetX(int offsetX) {
+    //std::cout << "Setting Image ROI offsetX=" << std::to_string(offsetX) << std::endl;
+    bool success = false;
+
+    if(camera.IsGrabbing())
+        camera.StopGrabbing();
+
+    // ace Classic/U/L GigE Cameras
+   // int maxWidth = camera.Width.GetMax();
+   // int maxHeight = camera.Height.GetMax();
+    // other cameras
+    int maxWidth = camera.WidthMax.GetValue();
+    int width = camera.Width.GetValue();
+
+    if(maxWidth - offsetX < 16)
+        offsetX = maxWidth - 16;
+    //if(width + offsetX > maxWidth)
+    //    return;
+    
+    int modVal=offsetX%4;
+    if(modVal != 0)
+        offsetX -= modVal;
+
+    if (width + offsetX <= maxWidth && camera.OffsetX.IsWritable() ) {
+        camera.OffsetX.TrySetValue(offsetX);
+        success = true;
+    }
+    camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    return success;
+}
+
+// NOTE: grabbing "pause" is necessary for setting image ROI
+bool SingleCamera::setImageROIoffsetY(int offsetY) {
+    //std::cout << "Setting Image ROI offsetY=" << std::to_string(offsetY) << std::endl;
+    bool success = false;
+
+    if(camera.IsGrabbing())
+        camera.StopGrabbing();
+
+    // ace Classic/U/L GigE Cameras
+   // int maxWidth = camera.Width.GetMax();
+   // int maxHeight = camera.Height.GetMax();
+    // other cameras
+    int maxHeight = camera.HeightMax.GetValue();
+    int height = camera.Height.GetValue();
+
+    if(maxHeight - offsetY < 16)
+        offsetY = maxHeight - 16;
+    //if(height + offsetY > maxHeight)
+    //    return;
+
+    int modVal=offsetY%4;
+    if(modVal != 0)
+        offsetY -= modVal;
+
+    if (height + offsetY <= maxHeight && camera.OffsetY.IsWritable() ) {
+        camera.OffsetY.TrySetValue(offsetY);
+        success = true;
+    } 
+    camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    return success;
+}
+
