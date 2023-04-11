@@ -142,6 +142,10 @@ private slots:
     void updateImageROISettingsMin(int binningVal);
     void updateImageROISettingsMax();
     void updateImageROISettingsValues();
+
+    void setExposureTimeValue(int value);
+    void setAcquisitionFPSValue(int value);
+    void enableAcquisitionFrameRate(bool value);
     // BG added end
 
 signals:

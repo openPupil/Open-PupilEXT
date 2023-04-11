@@ -297,9 +297,10 @@ void SingleCameraSettingsDialog::createForm() {
     connect(hwTriggerEnabled, SIGNAL(toggled(bool)), singleCamera, SLOT(enableHardwareTrigger(bool)));
 
     connect(gainInputBox, SIGNAL(valueChanged(double)), singleCamera, SLOT(setGainValue(double)));
-    connect(exposureInputBox, SIGNAL(valueChanged(int)), singleCamera, SLOT(setExposureTimeValue(int)));
-    connect(framerateEnabled, SIGNAL(toggled(bool)), singleCamera, SLOT(enableAcquisitionFrameRate(bool)));
-    connect(framerateInputBox, SIGNAL(valueChanged(int)), singleCamera, SLOT(setAcquisitionFPSValue(int)));
+    connect(exposureInputBox, SIGNAL(valueChanged(int)), this, SLOT(setExposureTimeValue(int)));
+    connect(framerateEnabled, SIGNAL(toggled(bool)), this, SLOT(enableAcquisitionFrameRate(bool)));
+    connect(framerateInputBox, SIGNAL(valueChanged(int)), this, SLOT(setAcquisitionFPSValue(int)));
+    
 
     connect(saveButton, &QPushButton::clicked, this, &SingleCameraSettingsDialog::saveButtonClick);
     connect(loadButton, &QPushButton::clicked, this, &SingleCameraSettingsDialog::loadButtonClick);
@@ -661,4 +662,19 @@ void SingleCameraSettingsDialog::setLimitationsWhileTracking(bool state) {
 
     loadButton->setDisabled(state);
     saveButton->setDisabled(state);
+}
+
+void SingleCameraSettingsDialog::setExposureTimeValue(int value) {
+    singleCamera->setExposureTimeValue(value);
+    updateFrameRateValue();
+}
+
+void SingleCameraSettingsDialog::setAcquisitionFPSValue(int value) {
+    singleCamera->setAcquisitionFPSValue(value);
+    updateFrameRateValue();
+}
+
+void SingleCameraSettingsDialog::enableAcquisitionFrameRate(bool value) {
+    singleCamera->enableAcquisitionFrameRate(value);
+    updateFrameRateValue();
 }
