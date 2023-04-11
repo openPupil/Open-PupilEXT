@@ -96,9 +96,12 @@ void ImageReader::setPlaybackSpeed(int fps) {
     QMutexLocker locker(&mutex);
     if(fps <= 0) {
         noDelay = true;
+        playbackSpeed = 0;
         playbackDelay = 33; // We set playback delay to some value so that the timestamps which are incremented by that delay are valid
     } else {
-        playbackDelay = (int) 1000.0f / fps; // delay in ms
+        noDelay = false;
+        playbackSpeed = fps;
+        playbackDelay = (int) (1000.0f / fps); // delay in ms
     }
 }
 
