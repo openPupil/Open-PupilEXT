@@ -1,49 +1,51 @@
 
 #include "recEventTracker.h"
 
-
 // buffer mode (used for live camera input, but vectors are still stored and can be written at closing of image recording)
-RecEventTracker::RecEventTracker(QObject *parent) : 
-    QObject(parent), 
-    applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
+RecEventTracker::RecEventTracker(QObject *parent) : QObject(parent),
+                                                    applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent))
+{
 
-    mode=EventReplayMode::BUFFER;
+    mode = EventReplayMode::BUFFER;
 }
 
 // storage mode (vectors filled and can be read anytime)
-RecEventTracker::RecEventTracker(const QString& fileName, QObject *parent) : 
-    QObject(parent), 
-    applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
-        
-    mode=EventReplayMode::STORAGE;
+RecEventTracker::RecEventTracker(const QString &fileName, QObject *parent) : QObject(parent),
+                                                                             applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent))
+{
 
-    //std::cout << "RecEventTracker(const QString& fileName, QObject *parent = 0)" << std::endl;
-    //std::cout << "File name = " << fileName.toStdString() << std::endl;
+    mode = EventReplayMode::STORAGE;
+
+    // std::cout << "RecEventTracker(const QString& fileName, QObject *parent = 0)" << std::endl;
+    // std::cout << "File name = " << fileName.toStdString() << std::endl;
 
     dataFile = new QFile(fileName);
-    int numLines=0;
+    int numLines = 0;
     // NOTE: not necessarily an error if this file does not exist
-    if(!dataFile->open(QIODevice::ReadOnly)) { //| QIODevice::Text)
+    if (!dataFile->open(QIODevice::ReadOnly))
+    { //| QIODevice::Text)
         std::cout << "Could not open offline event log XML file. Check file availability or file access permission." << std::endl;
         return;
     }
-    
+
     int errLn;
     int errCol;
     QString errStr;
     QDomDocument domDocument;
-    if(!domDocument.setContent(dataFile, true, &errStr, &errLn,
-                                &errCol)) {
+    if (!domDocument.setContent(dataFile, true, &errStr, &errLn,
+                                &errCol))
+    {
         std::cout << tr("Could open offline event log XML file, but persing failed at: line %1, column %2\nError: %3")
-                    .arg(errLn)
-                    .arg(errCol)
-                    .arg(errStr)
-                    .toStdString();
+                         .arg(errLn)
+                         .arg(errCol)
+                         .arg(errStr)
+                         .toStdString();
         return;
     }
 
     QDomElement root = domDocument.documentElement();
-    if (root.tagName() != "RecordedEvents") {
+    if (root.tagName() != "RecordedEvents")
+    {
         std::cout << "Could open offline event log XML file, but it does not contain recorded events.";
         return;
     }
@@ -54,61 +56,64 @@ RecEventTracker::RecEventTracker(const QString& fileName, QObject *parent) :
     double temp_val;
     double temp_val2;
     QString str;
-    
+
     child = root.firstChildElement("TrialIncrement");
-    temp_ts = 0;
-    temp_tr = 0;
-    while (!child.isNull()) {
+    while (!child.isNull())
+    {
+        temp_ts = 0;
+        temp_tr = 0;
         str = child.attribute("TimestampMs", "");
-        if(str.isEmpty())
-            continue;
-        temp_ts = str.toULong();
+        if (!str.isEmpty()){
+            temp_ts = str.toULongLong();
+        }
 
         str = child.attribute("TrialNumber", "");
-        if(str.isEmpty())
-            continue;
-        temp_tr = str.toUInt();
+        if (!str.isEmpty())
+            temp_tr = str.toUInt();
 
-        addTrialIncrement(temp_ts, temp_tr);
+        if (temp_ts != 0 && temp_tr != 0)
+            addTrialIncrement(temp_ts, temp_tr);
         child = child.nextSiblingElement("TrialIncrement");
     }
 
     child = root.firstChildElement("CameraTempCheck");
+
     str = "";
-    temp_ts = 0;
-    temp_val = temp_val2 = 0;
-    while (!child.isNull()) {
+    while (!child.isNull())
+    {
+
+        temp_ts = 0;
+        temp_val = temp_val2 = 0;
         str = child.attribute("TimestampMs", "");
-        if(str.isEmpty())
-            continue;
-        temp_ts = str.toULong();
+        if (!str.isEmpty())
+            temp_ts = str.toULongLong();
 
         str = child.attribute("Camera1", "");
-        if(str.isEmpty())
-            continue;
-        temp_val = str.toDouble();
+        if (!str.isEmpty())
+            temp_val = str.toDouble();
 
         str = child.attribute("Camera2", "");
-        if(str.isEmpty() || (!str.isEmpty() && str.toDouble() <= 0.0))
+        if (str.isEmpty() || (!str.isEmpty() && str.toDouble() <= 0.0))
             temp_val2 = 0.0;
         else
             temp_val2 = str.toDouble();
 
-        addTemperatureCheck(temp_ts, std::vector<double>{temp_val, temp_val2} );
+        if (temp_ts != 0 && temp_val != 0)
+            addTemperatureCheck(temp_ts, std::vector<double>{temp_val, temp_val2});
         child = child.nextSiblingElement("CameraTempCheck");
     }
 
     dataFile->close();
-    storageReady=true;
+    storageReady = true;
 }
 
 // below is the version that reads csv files
 /*
 // storage mode (vectors filled and can be read anytime)
-RecEventTracker::RecEventTracker(const QString& fileName, QObject *parent) : 
-    QObject(parent), 
+RecEventTracker::RecEventTracker(const QString& fileName, QObject *parent) :
+    QObject(parent),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
-        
+
     mode=EventReplayMode::STORAGE;
 
     //std::cout << "RecEventTracker(const QString& fileName, QObject *parent = 0)" << std::endl;
@@ -182,16 +187,20 @@ RecEventTracker::RecEventTracker(const QString& fileName, QObject *parent) :
 }
 */
 
-bool RecEventTracker::isStorageReady() {
+bool RecEventTracker::isStorageReady()
+{
     return storageReady;
 }
 
-RecEventTracker::~RecEventTracker() {
+RecEventTracker::~RecEventTracker()
+{
     close();
 }
 
-void RecEventTracker::close() {
-    if (dataFile){
+void RecEventTracker::close()
+{
+    if (dataFile)
+    {
         dataFile->close();
         dataFile->deleteLater();
     }
@@ -199,19 +208,22 @@ void RecEventTracker::close() {
     dataFile = nullptr;
 }
 
-void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestampTo, const QString& fileName) {
+void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestampTo, const QString &fileName)
+{
 
-    std::cout<<fileName.toStdString()<<std::endl;
+    std::cout << fileName.toStdString() << std::endl;
     SupportFunctions::preparePath(fileName);
     dataFile = new QFile(fileName);
-        
-    if(dataFile->exists()) {
+
+    if (dataFile->exists())
+    {
         std::cout << "An offline event log file already exists with name: " << fileName.toStdString() << ", writing cancelled." << std::endl;
-        // TODO: make it append 
+        // TODO: make it append
         return;
     }
 
-    if(!dataFile->open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
+    if (!dataFile->open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text))
+    {
         std::cout << "Offline event log XML file recording failure. Could not open file for writing: " << fileName.toStdString() << std::endl;
         delete dataFile;
         dataFile = nullptr;
@@ -222,23 +234,26 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
     QDomDocument document;
     QDomElement root = document.createElement("RecordedEvents");
     document.appendChild(root);
-    
+
     QDomElement currObj;
 
-    for(size_t i=0; i<trialIncrements.size(); i++)
-        if(trialIncrements[i].timestamp >= timestampFrom && trialIncrements[i].timestamp <= timestampTo) {
+    for (size_t i = 0; i < trialIncrements.size(); i++)
+        if (trialIncrements[i].timestamp >= timestampFrom && trialIncrements[i].timestamp <= timestampTo)
+        {
             currObj = document.createElement("TrialIncrement");
-            currObj.setAttribute("TimestampMs", QString::number(trialIncrements[i].timestamp)); 
-            currObj.setAttribute("TrialNumber", QString::number(trialIncrements[i].trialNumber)); 
+            currObj.setAttribute("TimestampMs", QString::number(trialIncrements[i].timestamp));
+            currObj.setAttribute("TrialNumber", QString::number(trialIncrements[i].trialNumber));
             root.appendChild(currObj);
         }
-    for(size_t i=0; i<temperatureChecks.size(); i++) {
-        if(temperatureChecks[i].temperatures[0] != 0 && temperatureChecks[i].timestamp >= timestampFrom && temperatureChecks[i].timestamp <= timestampTo) {
+    for (size_t i = 0; i < temperatureChecks.size(); i++)
+    {
+        if (temperatureChecks[i].temperatures[0] != 0 && temperatureChecks[i].timestamp >= timestampFrom && temperatureChecks[i].timestamp <= timestampTo)
+        {
             currObj = document.createElement("CameraTempCheck");
-            currObj.setAttribute("TimestampMs", QString::number(temperatureChecks[i].timestamp)); 
-            currObj.setAttribute("Camera1", temperatureChecks[i].temperatures[0]); 
-            if(temperatureChecks[i].temperatures.size() > 1 && temperatureChecks[i].temperatures[1] != 0)
-                currObj.setAttribute("Camera2", temperatureChecks[i].temperatures[1]); 
+            currObj.setAttribute("TimestampMs", QString::number(temperatureChecks[i].timestamp));
+            currObj.setAttribute("Camera1", temperatureChecks[i].temperatures[0]);
+            if (temperatureChecks[i].temperatures.size() > 1 && temperatureChecks[i].temperatures[1] != 0)
+                currObj.setAttribute("Camera2", temperatureChecks[i].temperatures[1]);
             root.appendChild(currObj);
         }
     }
@@ -255,17 +270,17 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
 
     std::cout << "saveOfflineEventLog(const QString& fileName, QObject *parent = 0)" << std::endl;
 
-    QString header = 
+    QString header =
         QString::fromStdString("timestamp_ms") + delim +
         QString::fromStdString("event_type") + delim +
         QString::fromStdString("notation_value1") + delim +
-        QString::fromStdString("notation_value2") 
+        QString::fromStdString("notation_value2")
     ;
 
     std::cout<<fileName.toStdString()<<std::endl;
     SupportFunctions::preparePath(fileName);
     dataFile = new QFile(fileName);
-        
+
     if(dataFile->exists()) {
         std::cout << "An offline event log file already exists with name: " << fileName.toStdString() << ", writing cancelled." << std::endl;
         return;
@@ -284,7 +299,7 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
             *textStream <<
                 QString::number(trialIncrements[i].timestamp) << delim <<
                 "TRIAL_INCREMENT" << delim <<
-                QString::number(trialIncrements[i].trialNumber) << delim 
+                QString::number(trialIncrements[i].trialNumber) << delim
                 << Qt::endl;
     for(size_t i=0; i<temperatureChecks.size(); i++) {
         if(temperatureChecks[i].temperatures[0] != 0 && temperatureChecks[i].timestamp >= timestampFrom && temperatureChecks[i].timestamp <= timestampTo)
@@ -300,82 +315,94 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
 }
 */
 
-
-uint RecEventTracker::getLastCommissionedTrialNumber() {
+uint RecEventTracker::getLastCommissionedTrialNumber()
+{
     return bufferTrialCounter;
 }
-void RecEventTracker::resetBufferTrialCounter(const quint64 &timestamp) {
-    
+void RecEventTracker::resetBufferTrialCounter(const quint64 &timestamp)
+{
+
     // NOTE: it is okay to reset the counter even if it is at counting 1, it can signal the beginning of a recording or whatever
     // could be however called a "TrialReset" rather than plainly "TrialIncrement"...
-    //if(mode==STORAGE || bufferTrialCounter==1) 
-    if(mode==STORAGE)
+    // if(mode==STORAGE || bufferTrialCounter==1)
+    if (mode == STORAGE)
         return;
 
     bufferTrialCounter = 0;
     addTrialIncrement(timestamp); // will increase counter instantly to 1
 }
-bool RecEventTracker::isReady() {
+bool RecEventTracker::isReady()
+{
     return storageReady;
 }
-uint RecEventTracker::getTrialAtTimestamp(quint64 timestamp) {
-    for(size_t i=trialIncrements.size(); i>=0; i--)
-        if(trialIncrements[i].timestamp < timestamp) {
+uint RecEventTracker::getTrialAtTimestamp(quint64 timestamp)
+{
+    for (size_t i = trialIncrements.size(); i >= 0; i--)
+        if (trialIncrements[i].timestamp < timestamp)
+        {
             return trialIncrements[i].trialNumber;
         }
-    //qDebug() << "No trial found, returning assumed trial number 1";
+    // qDebug() << "No trial found, returning assumed trial number 1";
     return 1;
 }
 
-TrialIncrement RecEventTracker::getTrialIncrement(quint64 timestamp) {
+TrialIncrement RecEventTracker::getTrialIncrement(quint64 timestamp)
+{
     TrialIncrement emptyElem;
-    if(trialIncrements.size()<1)
+    if (trialIncrements.size() < 1)
         return emptyElem;
 
-    size_t i=1;
-    while(i<=trialIncrements.size()) { // GB: I dont use decremental indexing here, caused some weird "overflow", MSVC 2019 x86_amd64
-        if(trialIncrements[trialIncrements.size()-i].timestamp < timestamp) {
+    size_t i = 1;
+    while (i <= trialIncrements.size())
+    { // GB: I dont use decremental indexing here, caused some weird "overflow", MSVC 2019 x86_amd64
+        if (trialIncrements[trialIncrements.size() - i].timestamp < timestamp)
+        {
             // if the gotten timestamp is just after an elem in the vector, that is the one we were looking for
-        //    qDebug() << "BUFFER: found applicable TrialIncrement of: \n" << 
-        //        "index " << trialIncrements.size()-i << 
-        //        "timestamp " << trialIncrements[trialIncrements.size()-i].timestamp << 
-        //        "trial number " << trialIncrements[trialIncrements.size()-i].trialNumber;
-            return trialIncrements[trialIncrements.size()-i];
+            //    qDebug() << "BUFFER: found applicable TrialIncrement of: \n" <<
+            //        "index " << trialIncrements.size()-i <<
+            //        "timestamp " << trialIncrements[trialIncrements.size()-i].timestamp <<
+            //        "trial number " << trialIncrements[trialIncrements.size()-i].trialNumber;
+            return trialIncrements[trialIncrements.size() - i];
         }
         i++;
     }
-    return(emptyElem);
+    return (emptyElem);
 }
 
-TemperatureCheck RecEventTracker::getTemperatureCheck(quint64 timestamp) {
+TemperatureCheck RecEventTracker::getTemperatureCheck(quint64 timestamp)
+{
     TemperatureCheck emptyElem;
-    if(temperatureChecks.size()<1)
+    if (temperatureChecks.size() < 1)
         return emptyElem;
 
-    size_t i=1;
-    while(i<=temperatureChecks.size()) { // GB: I dont use decremental indexing here, caused some weird "overflow", MSVC2019 x86_amd64
-        if(temperatureChecks[temperatureChecks.size()-i].timestamp < timestamp) {
+    size_t i = 1;
+    while (i <= temperatureChecks.size())
+    { // GB: I dont use decremental indexing here, caused some weird "overflow", MSVC2019 x86_amd64
+        if (temperatureChecks[temperatureChecks.size() - i].timestamp < timestamp)
+        {
             // if the gotten timestamp is just after an elem in the vector, that is the one we were looking for
-        //    qDebug() << "BUFFER: found applicable TemperatureCheck of: \n" << 
-        //        "index " << temperatureChecks.size()-i << 
-        //        "timestamp " << temperatureChecks[temperatureChecks.size()-i].timestamp << 
-        //        "trial number " << temperatureChecks[temperatureChecks.size()-i].trialNumber;
-            return temperatureChecks[temperatureChecks.size()-i];
+            //    qDebug() << "BUFFER: found applicable TemperatureCheck of: \n" <<
+            //        "index " << temperatureChecks.size()-i <<
+            //        "timestamp " << temperatureChecks[temperatureChecks.size()-i].timestamp <<
+            //        "trial number " << temperatureChecks[temperatureChecks.size()-i].trialNumber;
+            return temperatureChecks[temperatureChecks.size() - i];
         }
         i++;
     }
-    return(emptyElem);
+    return (emptyElem);
 }
 
-void RecEventTracker::addTrialIncrement(const quint64 &timestamp) {
+void RecEventTracker::addTrialIncrement(const quint64 &timestamp)
+{
     bufferTrialCounter++; // increment internal counter
-    //qDebug() << "pushed back =   " << QString::number(timestamp);
-    trialIncrements.push_back(TrialIncrement{ timestamp, bufferTrialCounter });
+    // qDebug() << "pushed back =   " << QString::number(timestamp);
+    trialIncrements.push_back(TrialIncrement{timestamp, bufferTrialCounter});
 }
-void RecEventTracker::addTemperatureCheck(std::vector<double> d) {
-    quint64 timestamp  = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    //qDebug() << "pushed back temperature check at = " << QString::number(timestamp);
-    temperatureChecks.push_back(TemperatureCheck{ timestamp, d });
+void RecEventTracker::addTemperatureCheck(std::vector<double> d)
+{
+    quint64 timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    // qDebug() << "pushed back temperature check at = " << QString::number(timestamp);
+    temperatureChecks.push_back(TemperatureCheck{timestamp, d});
 }
 /*
 void RecEventTracker::updateGrabTimestamp(CameraImage cimg) {
@@ -384,16 +411,19 @@ void RecEventTracker::updateGrabTimestamp(CameraImage cimg) {
 }
 */
 
-void RecEventTracker::addTrialIncrement(quint64 timestamp, uint trialNumber) {
-    trialIncrements.push_back(TrialIncrement{ timestamp, trialNumber });
+void RecEventTracker::addTrialIncrement(quint64 timestamp, uint trialNumber)
+{
+    trialIncrements.push_back(TrialIncrement{timestamp, trialNumber});
     // NOTE: there is no increment here, so properly monotonically increasing trial numbering should be cared for in the caller class
 }
 
-void RecEventTracker::addTemperatureCheck(quint64 timestamp, std::vector<double> d) { // TODO: HA CSAK 1 ADAT VAN
-    temperatureChecks.push_back(TemperatureCheck{ timestamp, d });
+void RecEventTracker::addTemperatureCheck(quint64 timestamp, std::vector<double> d)
+{ // TODO: HA CSAK 1 ADAT VAN
+    temperatureChecks.push_back(TemperatureCheck{timestamp, d});
 }
 
-QChar RecEventTracker::determineDelimiter(QString _text) {
+QChar RecEventTracker::determineDelimiter(QString _text)
+{
     QChar delimiter = 'E';
     const QChar acceptedDelims[] = {
         (QChar)'\u002C', // COMMA \u002C
@@ -404,13 +434,14 @@ QChar RecEventTracker::determineDelimiter(QString _text) {
 
     for (int pos = 0; pos < _text.size(); pos++)
         for (char hcx = 0; hcx < 4; hcx++)
-            if (acceptedDelims[hcx] == _text[pos]) {
+            if (acceptedDelims[hcx] == _text[pos])
+            {
                 delimiter = _text[pos];
                 goto getout;
             }
-    getout:
+getout:
 
-    //if (delimiter == 'E')
-    //    throw new Exception();
+    // if (delimiter == 'E')
+    //     throw new Exception();
     return delimiter;
 }
