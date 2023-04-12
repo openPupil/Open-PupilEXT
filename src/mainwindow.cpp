@@ -966,7 +966,7 @@ void MainWindow::onRecordClick() {
         return;
     // GB added end
 
-    if(recordOn) {
+    if(recordOn && dataWriter) {
         // Deactivate recording
 
         dataWriter->close(); // TODO check if may terminate writing to early? because of the lag of the event queue in pupildetection
@@ -1107,6 +1107,7 @@ void MainWindow::onCameraDisconnectClick() {
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStarted()), this, SLOT(onPlaybackSafelyStarted()));
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyPaused()), this, SLOT(onPlaybackSafelyPaused()));
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), this, SLOT(onPlaybackSafelyStopped()));
+        imagePlaybackControlDialog = nullptr;
     }
     if(camTempMonitor) {
         if(recEventTracker)
@@ -1114,7 +1115,8 @@ void MainWindow::onCameraDisconnectClick() {
         
         camTempMonitor->setRunning(false);
         //camTempMonitor->thread()->deleteLater();
-        camTempMonitor->deleteLater(); 
+        camTempMonitor->deleteLater();
+        camTempMonitor = nullptr; 
     }
     trialWidget->setVisible(false);
 
