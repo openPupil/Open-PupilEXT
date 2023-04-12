@@ -98,6 +98,7 @@ private:
 
     RestorableQMdiSubWindow *calibrationWindow; 
     RestorableQMdiSubWindow *cameraViewWindow;
+    RestorableQMdiSubWindow *sharpnessWindow;
 
     QMenu *windowMenu;
     QMenu *singleCameraDevicesMenu; // GB: refactored name
@@ -189,6 +190,9 @@ private:
     QLabel *remoteStatusIcon;
 
     DataStreamer *dataStreamer;
+
+    void loadCalibrationWindow();
+    void loadSharpnessWindow();
     // GB added end
 
 private slots:

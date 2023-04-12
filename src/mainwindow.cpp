@@ -32,6 +32,7 @@ MainWindow::MainWindow():
                           selectedCamera(nullptr),
                           cameraViewWindow(nullptr),
                           calibrationWindow(nullptr),
+                          sharpnessWindow(nullptr),
                           dataWriter(nullptr), // GB set to nullptr
                           imageWriter(nullptr), // GB set to nullptr
                           
@@ -1572,59 +1573,35 @@ void MainWindow::onCalibrateClick() {
     // I think the same can happen to Sharpness window too
 
     // GB modified begin
-    if(calibrationWindow && calibrationWindow->isVisible()) {
-        calibrationWindow->close();
-        delete calibrationWindow;
-        calibrationWindow = nullptr;
-    }
     
-    QWidget *calibrationDialog;
-    QString calibrationDialogName;
-    if(selectedCamera && selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA) {
-        calibrationDialog = new SingleCameraCalibrationView(dynamic_cast<SingleCamera*>(selectedCamera), this);
-        calibrationDialogName = "SingleCameraCalibrationView";
-    } else if(selectedCamera && selectedCamera->getType() == CameraImageType::LIVE_SINGLE_WEBCAM) {
-        calibrationDialog = new SingleWebcamCalibrationView(dynamic_cast<SingleWebcam*>(selectedCamera), this);
-        calibrationDialogName = "SingleWebcamCalibrationView";
-    } else if(selectedCamera && selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA) {
-        calibrationDialog = new StereoCameraCalibrationView(dynamic_cast<StereoCamera*>(selectedCamera), this);
-        calibrationDialogName = "StereoCameraCalibrationView";
-    } else if(selectedCamera && selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE) {
-        calibrationDialog = new SingleFileCameraCalibrationView(dynamic_cast<FileCamera*>(selectedCamera), this);
-        calibrationDialogName = "SingleFileCameraCalibrationView";
-    } else if(selectedCamera && selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE) {
-        calibrationDialog = new StereoFileCameraCalibrationView(dynamic_cast<FileCamera*>(selectedCamera), this);
-        calibrationDialogName = "StereoFileCameraCalibrationView";
+    if(mdiArea->subWindowList().contains(calibrationWindow)) {
+        calibrationWindow->show();
+        calibrationWindow->raise();
+        calibrationWindow->activateWindow();
+        calibrationWindow->setFocus();
+        if(calibrationWindow->isMinimized() || calibrationWindow->isShaded())
+            calibrationWindow->showNormal();
     }
-
-    RestorableQMdiSubWindow *child = new RestorableQMdiSubWindow(calibrationDialog, calibrationDialogName, this);
-    mdiArea->addSubWindow(child);
-    child->show();
-    child->restoreGeometry();
-    connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
-    calibrationWindow = child;
+    else {
+        loadCalibrationWindow();
+    }
     // GB modified end
 }
 
 void MainWindow::onSharpnessClick() {
 
-    if(selectedCamera && (
-        selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA  // ||
-        // selectedCamera->getType() == CameraImageType::LIVE_SINGLE_WEBCAM
-    )) {
-        RestorableQMdiSubWindow *child = new RestorableQMdiSubWindow(new SingleCameraSharpnessView(dynamic_cast<SingleCamera*>(selectedCamera), this), "SingleCameraSharpnessView", this);
-        mdiArea->addSubWindow(child);
-        child->show();
-        child->restoreGeometry();
-        connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
+    if (mdiArea->subWindowList().contains(sharpnessWindow)){
+        sharpnessWindow->show();
+        sharpnessWindow->raise();
+        sharpnessWindow->activateWindow();
+        sharpnessWindow->setFocus();
+        if(sharpnessWindow->isMinimized() || sharpnessWindow->isShaded())
+            sharpnessWindow->showNormal();
     }
-//    else if(selectedCamera && selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE) {
-//        RestorableQMdiSubWindow *child = new RestorableQMdiSubWindow(new SingleCameraSharpnessView(dynamic_cast<FileCamera*>(selectedCamera), this), "SingleCameraSharpnessView", this);
-//        mdiArea->addSubWindow(child);
-//        child->show();
-//        child->restoreGeometry();
-//        connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
-//    }
+    else {
+        loadSharpnessWindow();
+    }
+
 }
 
 void MainWindow::dataTableClick() {
@@ -2128,5 +2105,55 @@ void MainWindow::onRemoteConnStateChanged() {
         const QIcon offlineIcon = QIcon(":icons/Breeze/actions/22/media-record.svg");
         remoteStatusIcon->setPixmap(offlineIcon.pixmap(16, 16));
     }
+}
+
+void MainWindow::loadCalibrationWindow(){
+    QWidget *calibrationDialog;
+    QString calibrationDialogName;
+    if(selectedCamera && selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA) {
+        calibrationDialog = new SingleCameraCalibrationView(dynamic_cast<SingleCamera*>(selectedCamera), this);
+        calibrationDialogName = "SingleCameraCalibrationView";
+    } else if(selectedCamera && selectedCamera->getType() == CameraImageType::LIVE_SINGLE_WEBCAM) {
+        calibrationDialog = new SingleWebcamCalibrationView(dynamic_cast<SingleWebcam*>(selectedCamera), this);
+        calibrationDialogName = "SingleWebcamCalibrationView";
+    } else if(selectedCamera && selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA) {
+        calibrationDialog = new StereoCameraCalibrationView(dynamic_cast<StereoCamera*>(selectedCamera), this);
+        calibrationDialogName = "StereoCameraCalibrationView";
+    } else if(selectedCamera && selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE) {
+        calibrationDialog = new SingleFileCameraCalibrationView(dynamic_cast<FileCamera*>(selectedCamera), this);
+        calibrationDialogName = "SingleFileCameraCalibrationView";
+    } else if(selectedCamera && selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE) {
+        calibrationDialog = new StereoFileCameraCalibrationView(dynamic_cast<FileCamera*>(selectedCamera), this);
+        calibrationDialogName = "StereoFileCameraCalibrationView";
+    }
+
+    RestorableQMdiSubWindow *child = new RestorableQMdiSubWindow(calibrationDialog, calibrationDialogName, this);
+    mdiArea->addSubWindow(child);
+    child->setWindowTitle("Calibration view");
+    child->show();
+    child->restoreGeometry();
+    connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
+    calibrationWindow = child;
+}
+
+void MainWindow::loadSharpnessWindow(){
+        if(selectedCamera && (
+        selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA  // ||
+        // selectedCamera->getType() == CameraImageType::LIVE_SINGLE_WEBCAM
+    )) {
+        RestorableQMdiSubWindow *child = new RestorableQMdiSubWindow(new SingleCameraSharpnessView(dynamic_cast<SingleCamera*>(selectedCamera), this), "SingleCameraSharpnessView", this);
+        mdiArea->addSubWindow(child);
+        child->show();
+        child->restoreGeometry();
+        sharpnessWindow = child;
+        connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
+    }
+//    else if(selectedCamera && selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE) {
+//        RestorableQMdiSubWindow *child = new RestorableQMdiSubWindow(new SingleCameraSharpnessView(dynamic_cast<FileCamera*>(selectedCamera), this), "SingleCameraSharpnessView", this);
+//        mdiArea->addSubWindow(child);
+//        child->show();
+//        child->restoreGeometry();
+//        connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
+//    }
 }
 
