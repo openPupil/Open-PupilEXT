@@ -56,6 +56,10 @@ public:
     }
     // GB added end
 
+    void setImageSize(const float width, const float height){
+        imageSize.width = width;
+        imageSize.height = height;
+    }
     // Source Andy Maloney: https://github.com/asmaloney/asmOpenCV/blob/master/asmOpenCV.h
     static inline QImage cvMatToQImage(const cv::Mat &inMat)
     {

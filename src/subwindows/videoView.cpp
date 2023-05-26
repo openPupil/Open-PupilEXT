@@ -4,6 +4,7 @@
 #include <ctime>
 #include <opencv2/imgproc.hpp>
 #include "videoView.h"
+#include "../supportFunctions.h"
 
 // Creates a new live-view widget
 VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selectionColor2, QWidget *parent) : 
@@ -62,7 +63,6 @@ VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selecti
     penAutoParamAccent.setStyle(Qt::DashLine);
     penAutoParamBack.setStyle(Qt::SolidLine);
 
-
     //roi1Selection = new ResizableRectItem(QRectF(QPointF(32, 32), QPointF(200, 200)));
     roi1Selection = new ResizableRectItem(QRectF(QPointF(20, 20), QPointF(20 + 200, 20 + 150)), QSizeF(4,3) );
     roi1Selection->setMinSize(QSizeF(30,30)); // GB
@@ -70,7 +70,8 @@ VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selecti
     roi1Selection->setFlag(QGraphicsItem::ItemIsMovable);
     roi1Selection->setZValue(100);
     connect(roi1Selection, SIGNAL(onChange()), this, SLOT(onROI1Change()));
-
+    roi1Selection->setVisible(false);
+    graphicsScene->addItem(roi1Selection);
     // GB modified begin
     if(usingDoubleROI) {
         //roi2Selection = new ResizableRectItem(QRectF(QPointF(32, 32), QPointF(200, 300))); // DIFFERENT POSITION
@@ -80,6 +81,8 @@ VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selecti
         roi2Selection->setFlag(QGraphicsItem::ItemIsMovable);
         roi2Selection->setZValue(100);
         connect(roi2Selection, SIGNAL(onChange()), this, SLOT(onROI2Change()));
+        roi2Selection->setVisible(false);
+        graphicsScene->addItem(roi2Selection);
     }
     // GB modified end
 
@@ -240,7 +243,7 @@ void VideoView::drawAutoParamOverlay() {
     }
     geBufferAP.clear();
 
-    if(!showAutoParamOverlay)
+    if(!showAutoParamOverlay || !showROI)
         return;
 
     //QRectF roi1;
@@ -602,19 +605,11 @@ void VideoView::enablePupilView(bool value) {
 
 // Show the ROI selection on top of the scene
 void VideoView::showROISelection(bool value) {
-
-    if(value) {
-        graphicsScene->addItem(roi1Selection);
-        if(usingDoubleROI)
-            graphicsScene->addItem(roi2Selection);
-    } else {
-        // GB NOTE: This must stay here, before removing roi1Selection from the graphics scene
-        drawOverlay();
-
-        graphicsScene->removeItem(roi1Selection);
-        if(usingDoubleROI)
-            graphicsScene->removeItem(roi2Selection);
-    }
+    roi1Selection->setVisible(value);
+    if(usingDoubleROI)
+        roi2Selection->setVisible(value);
+    // GB NOTE: This must stay here, before removing roi1Selection from the graphics scene
+    //drawOverlay();
 }
 
 // Saves the current selected rect by the ROI selection (GB: ROI nr 1)
@@ -624,7 +619,9 @@ bool VideoView::saveROI1Selection() {
 
     // GB modified begin
     //QRectF roi = roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
-    QRectF roiD = roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
+    //QRectF roiDBoundingRect = roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
+    QRectF roiD = roi1Selection->sceneBoundingRect();
+    //QRectF roiD = roi1Selection->getRect();
     QRectF roiR;
     if(imageSize.width>0 && imageSize.height>0)
         roiR = QRectF( roiD.x()/imageSize.width, roiD.y()/imageSize.height, roiD.width()/imageSize.width, roiD.height()/imageSize.height );
@@ -644,9 +641,19 @@ bool VideoView::saveROI1Selection() {
         return false;
     }
 
+    bool left = false;
+    if (roi1AllowedArea == ROIAllowedArea::RIGHT_HALF && roiR.left() < 0.5){
+    left = true;
+    }
+    bool right = false;
+    if (roi1AllowedArea == ROIAllowedArea::LEFT_HALF && roiR.right() > 0.5){
+        right = true;
+    }
+    QRectF sceneRect = graphicsScene->sceneRect();
+    bool contains = graphicsScene->sceneRect().contains(roiD);
     if( !graphicsScene->sceneRect().contains(roiD) ||
-            (roi1AllowedArea == ROIAllowedArea::RIGHT_HALF && roiR.left() < 0.5) ||
-            (roi1AllowedArea == ROIAllowedArea::LEFT_HALF && roiR.right() > 0.5) ) {
+            (left) ||
+            (right) ) {
         std::cout<<"Saving ROI1 Selection: out of scene bounds."<<std::endl;
         return false;
     }
@@ -713,7 +720,7 @@ void VideoView::discardROISelection() {
         roi1Selection->setBrush(selectionColorCorrect1);
         roi1Selection->setPos(0, 0);
         qDebug() << "roi1Selection->setRect() via discardROISelection(): " << roiR; 
-        
+        QRectF rect = roi1Selection->getRect();
         roi1SelectionRectLastR = roiR; 
         roi1Selection->setRect(QRect(roi1SelectionRectLastR.x()*imageSize.width,roi1SelectionRectLastR.y()*imageSize.height,roi1SelectionRectLastR.width()*imageSize.width,roi1SelectionRectLastR.height()*imageSize.height));
         
@@ -799,7 +806,9 @@ void VideoView::setROI1SelectionR(float roiSize) {
         roi1SelectionRectLastR = QRectF(0.5-roiSize/2, 0.5-roiSize/2, roiSize, roiSize);
     else
         roi1SelectionRectLastR = QRectF(0.75-roiSize/2, 0.5-roiSize/2, roiSize, roiSize);
-    roi1Selection->setRect(QRect(roi1SelectionRectLastR.x()*imageSize.width,roi1SelectionRectLastR.y()*imageSize.height,roi1SelectionRectLastR.width()*imageSize.width,roi1SelectionRectLastR.height()*imageSize.height));
+
+    roi2Selection->setNormalizedRect(SupportFunctions::getRectDiscreteFromRational(QSizeF(imageSize.width, imageSize.height), roi2SelectionRectLastR));
+    
     qDebug() << "roi1Selection->setRect() via setROI1Selection(float roiSize) (RATIO): " << roi1SelectionRectLastR; 
 }
 
@@ -819,22 +828,23 @@ void VideoView::setROI2SelectionR(float roiSize) {
 // Sets a ROI (GB: ROI nr 1) selection based on a given rectangle
 // GB: modified for RATIO ROIs
 void VideoView::setROI1SelectionR(QRectF roiR) {
-    if(roiR.isEmpty() || roiR.left()<0 || roiR.right()>1)
+    if(roiR.isEmpty())
         return;
 
-    roi1SelectionRectLastR = roiR; 
-    roi1Selection->setRect(QRect(roi1SelectionRectLastR.x()*imageSize.width,roi1SelectionRectLastR.y()*imageSize.height,roi1SelectionRectLastR.width()*imageSize.width,roi1SelectionRectLastR.height()*imageSize.height));
+    roi1SelectionRectLastR = roiR;
+    roi1Selection->setNormalizedRect(SupportFunctions::getRectDiscreteFromRational(QSizeF(imageSize.width, imageSize.height), roi1SelectionRectLastR));
+    
     qDebug() << "roi1Selection->setRect() via setROI1Selection(QRectF roi) (RATIO): " << roiR; 
 }
 
 // Sets a ROI (GB: ROI nr 2) selection based on a given rectangle
 // GB: added, and modified for RATIO ROIs
 void VideoView::setROI2SelectionR(QRectF roiR) {
-    if(roiR.isEmpty() || !usingDoubleROI || roiR.left()<0 || roiR.right()>1)
+    if(roiR.isEmpty() || !usingDoubleROI)
         return;
 
     roi2SelectionRectLastR = roiR; 
-    roi2Selection->setRect(QRect(roi2SelectionRectLastR.x()*imageSize.width,roi2SelectionRectLastR.y()*imageSize.height,roi2SelectionRectLastR.width()*imageSize.width,roi2SelectionRectLastR.height()*imageSize.height));
+    roi2Selection->setNormalizedRect(SupportFunctions::getRectDiscreteFromRational(QSizeF(imageSize.width, imageSize.height), roi2SelectionRectLastR));
     qDebug() << "roi2Selection->setRect() via setROI2Selection(QRectF roi) (RATIO): " << roiR; 
 }
 

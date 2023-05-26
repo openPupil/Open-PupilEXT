@@ -5,6 +5,7 @@
 #include <QtWidgets/QLayout>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QtWidgets>
+#include "../supportFunctions.h"
 
 // Creates a new stereo camera view widget, taking a stereo based camera (StereoCamera or FileCamera with stero mode)
 // Pupil detection process is used to get detection results and display them, communicate ROI selection
@@ -397,34 +398,39 @@ void StereoCameraView::loadSettings() {
     
     ProcMode val = pupilDetection->getCurrentProcMode();
 
-    QRectF roiMain1;
-    QRectF roiMain2;
-    QRectF roiSecondary1;
-    QRectF roiSecondary2;
+    QRectF roiMain1R;
+    QRectF roiMain2R;
+    QRectF roiSecondary1R;
+    QRectF roiSecondary2R;
     if(val == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
-        roiMain1 = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil1.rational", QRectF()).toRectF();
-        roiSecondary1 = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil2.rational", QRectF()).toRectF();
+        roiMain1R = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil1.rational", QRectF()).toRectF();
+        roiSecondary1R = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil2.rational", QRectF()).toRectF();
     } else if(val == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
-        roiMain1 = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilA1.rational", QRectF()).toRectF();
-        roiMain2 = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB1.rational", QRectF()).toRectF();
-        roiSecondary1 = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilA2.rational", QRectF()).toRectF();
-        roiSecondary2 = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB2.rational", QRectF()).toRectF();
+        roiMain1R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilA1.rational", QRectF()).toRectF();
+        roiMain2R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB1.rational", QRectF()).toRectF();
+        roiSecondary1R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilA2.rational", QRectF()).toRectF();
+        roiSecondary2R = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB2.rational", QRectF()).toRectF();
     }
 
-    if(!roiMain1.isEmpty()) {
-        mainVideoView->setROI1SelectionR(roiMain1);
+    QRectF initRoi = camera->getImageROI();
+    if(!roiMain1R.isEmpty()) {
+        QRectF roiMain1D = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil1.discrete", QRectF()).toRectF();
+        mainVideoView->setROI1SelectionR(SupportFunctions::calculateRoiR(initRoi, roiMain1D, roiMain1R));
         //mainVideoView->saveROI1Selection(); // GB: why save just after loading?
     }
-    if(!roiMain2.isEmpty()) {
-        mainVideoView->setROI2SelectionR(roiMain2);
+    if(!roiMain2R.isEmpty()) {
+        QRectF roiMain2D = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB1.discrete", QRectF()).toRectF();
+        mainVideoView->setROI2SelectionR(SupportFunctions::calculateRoiR(initRoi, roiMain2D, roiMain2R));
     }
 
-    if(!roiSecondary1.isEmpty()) {
-        secondaryVideoView->setROI1SelectionR(roiSecondary1);
+    if(!roiSecondary1R.isEmpty()) {
+        QRectF roiSecondary1D = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil2.discrete", QRectF()).toRectF();
+        secondaryVideoView->setROI1SelectionR(SupportFunctions::calculateRoiR(initRoi, roiSecondary1D, roiSecondary1R));
         //secondaryVideoView->saveROI1Selection(); // GB: why save just after loading?
     }
-    if(!roiSecondary2.isEmpty()) {
-        secondaryVideoView->setROI2SelectionR(roiSecondary2);
+    if(!roiSecondary2R.isEmpty()) {
+        QRectF roiSecondary2D = applicationSettings->value("StereoCameraView.ROIstereoImageTwoPupilB2.discrete", QRectF()).toRectF();
+        secondaryVideoView->setROI2SelectionR(SupportFunctions::calculateRoiR(initRoi, roiSecondary2D, roiSecondary2R));
     }
 
     
@@ -932,6 +938,8 @@ void StereoCameraView::updateForPupilDetectionProcMode() {
         //qDebug() << "Processing mode is undetermined" << Qt::endl;
     }
 
+    mainVideoView->setImageSize(camera->getImageROIwidth(), camera->getImageROIheight());
+    secondaryVideoView->setImageSize(camera->getImageROIwidth(), camera->getImageROIheight());
     loadSettings(); // same as onSettingsChange()
 
     updateProcModeLabel();

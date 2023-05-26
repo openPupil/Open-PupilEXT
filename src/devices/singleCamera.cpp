@@ -610,6 +610,10 @@ int SingleCamera::getImageROIheightMax() {
     return (int)camera.HeightMax.GetValue();
 }
 
+QRectF SingleCamera::getImageROI(){
+    return QRectF(getImageROIoffsetX(),getImageROIoffsetY(),getImageROIwidth(), getImageROIheight());
+}
+
 int SingleCamera::getBinningVal() {
     //if(camera.BinningHorizontal.GetValue()!=camera.BinningVertical.GetValue())
     //    return 0;

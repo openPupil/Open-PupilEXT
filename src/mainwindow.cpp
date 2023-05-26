@@ -855,9 +855,12 @@ void MainWindow::onTrackActClick() {
         // BREAKPOINT
         // GB: this needs to happen, because if we just open a camera, and start tracking, no ROI has been set for pupilDetection before
         if(val == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
-            QRectF roi1 = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.discrete", QRectF()).toRectF();
-            if(!roi1.isEmpty())
-                pupilDetectionWorker->setROIsingleImageOnePupil(roi1);
+            QRectF roi1D = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.discrete", QRectF()).toRectF();
+            if(!roi1D.isEmpty()){
+                QRectF initRoi = selectedCamera->getImageROI();
+                QRectF roi1R = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.rational", QRectF()).toRectF();
+                pupilDetectionWorker->setROIsingleImageOnePupil(SupportFunctions::calculateRoiD(initRoi, roi1D, roi1R));
+                }
         } else if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
             QRectF roiA = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilA.discrete", QRectF()).toRectF();
             QRectF roiB = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilB.discrete", QRectF()).toRectF();
@@ -1005,7 +1008,7 @@ void MainWindow::onRecordClick() {
             applicationSettings->value("metaSnapshotsEnabled", "1") == "true" ))
             MetaSnapshotOrganizer::writeMetaSnapshot(
                 absPath + baseName + QString::fromStdString("-datarec-meta.xml"),
-                selectedCamera, imageWriter, pupilDetectionWorker, dataWriter);
+                selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, applicationSettings);
         // GB added end
         
         // GB new kind of signals
@@ -1068,7 +1071,7 @@ void MainWindow::onRecordImageClick() {
             
             MetaSnapshotOrganizer::writeMetaSnapshot(
                 outputDirectory + "/" + QString::fromStdString("imagerec-meta.xml"),
-                selectedCamera, imageWriter, pupilDetectionWorker, dataWriter);
+                selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, applicationSettings);
         }
         // GB: maybe write unix timestamp too in the name of meta snapshot file?
         // GB added end

@@ -2,7 +2,7 @@
 #include <QtWidgets/QLayout>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QtWidgets>
-
+#include "../supportFunctions.h"
 #include "singleCameraView.h"
 
 // Create new single camera view given a single camera object and a pupil detection process
@@ -64,6 +64,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     // GB added/modified begin
     showAutoParamAct = plotMenu->addAction(tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct->setCheckable(true);
+    showAutoParamAct->setEnabled(plotROIContour);
     showAutoParamAct->setChecked(showAutoParamOverlay);
     showAutoParamAct->setStatusTip(tr("Display expected pupil size maximum and minimum values as currently set for Automatic Parametrization."));
     plotMenu->addAction(showAutoParamAct);
@@ -397,13 +398,16 @@ void SingleCameraView::loadSettings() {
         roi1 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil1.rational", QRectF()).toRectF();
         roi2 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil2.rational", QRectF()).toRectF();
     }
-
+    QRectF initRoi = camera->getImageROI();
     if(!roi1.isEmpty()) {
-        videoView->setROI1SelectionR(roi1);
-        //videoView->saveROI1Selection(); // GB: why save just after loading?
+        QRectF roi1D = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.discrete", QRectF()).toRectF();
+        
+        videoView->setROI1SelectionR(SupportFunctions::calculateRoiR(initRoi, roi1D, roi1));
     }
     if(!roi2.isEmpty()) {
-        videoView->setROI2SelectionR(roi2);
+        QRectF roi2D = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilA.discrete", QRectF()).toRectF();
+        
+        videoView->setROI1SelectionR(SupportFunctions::calculateRoiR(initRoi, roi2D, roi2));
     }
     // GB added/modified end
 }
@@ -695,6 +699,8 @@ void SingleCameraView::onPlotPupilCenterClick(bool value) {
 void SingleCameraView::onPlotROIClick(bool value) {
     plotROIContour = value;
     applicationSettings->setValue("SingleCameraView.plotROIContour", plotROIContour);
+    showAutoParamAct->setEnabled(value);
+    emit onShowAutoParamOverlay(showAutoParamOverlay);
 
     emit onShowROI(plotROIContour);
 }
@@ -805,6 +811,7 @@ void SingleCameraView::updateForPupilDetectionProcMode() {
         //qDebug() << "Processing mode is undetermined" << Qt::endl;
     }
 
+    videoView->setImageSize(camera->getImageROIwidth(), camera->getImageROIheight());
     loadSettings(); // same as onSettingsChange()
 
     updateProcModeLabel();

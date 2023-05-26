@@ -40,6 +40,8 @@ public:
     explicit GrabberDummy(int deviceID);
 
     bool running() const;
+
+    cv::Size getImageSize() const;
  
 signals:
     void finished();
@@ -93,6 +95,12 @@ public:
     bool isOpen() override;
     void close() override;
     CameraImageType getType() override;
+
+    int getImageROIwidth() override; 
+    int getImageROIheight() override; 
+    int getImageROIoffsetX() override; 
+    int getImageROIoffsetY() override;
+    QRectF getImageROI() override;
 
     bool isHardwareTriggerEnabled();
 

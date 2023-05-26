@@ -318,3 +318,11 @@ void ResizableRectItem::setMinSize(QSizeF size) {
 
     minSize = size;
 }
+
+/**
+ * Sets position to 0 so new rect is in image space.
+*/
+void ResizableRectItem::setNormalizedRect(const QRectF rect){
+    setPos(0.0f,0.0f);
+    setRect(rect);
+}

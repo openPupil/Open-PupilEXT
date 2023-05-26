@@ -11,6 +11,10 @@ bool GrabberDummy::running() const {
     return m_running;
 }
 
+cv::Size GrabberDummy::getImageSize() const {
+    return image.size();
+}
+
 std::string uint64_to_string( uint64 value ) {
     std::ostringstream os;
     os << value;
@@ -245,6 +249,26 @@ double SingleWebcam::getExposureValue() {
 
 double SingleWebcam::getResizeFactor() {
     return grabberDummy->getResizeFactor();
+}
+
+int SingleWebcam::getImageROIwidth(){
+    return grabberDummy->getImageSize().width;
+}
+
+int SingleWebcam::getImageROIheight(){
+    return grabberDummy->getImageSize().height;
+}
+
+int SingleWebcam::getImageROIoffsetX(){
+    return 0;
+}
+
+int SingleWebcam::getImageROIoffsetY(){
+    return 0;
+}
+
+QRectF SingleWebcam::getImageROI(){
+    return QRectF(0,0,getImageROIwidth(), getImageROIheight());
 }
 
 

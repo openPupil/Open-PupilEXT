@@ -5,24 +5,20 @@
 
 // Writes all details of the camera settings and pupil detection settings to a "meta file" in human-readable format
 // added by kheki4 on 2022.11.07.
-void MetaSnapshotOrganizer::writeMetaSnapshot(QString fileName, Camera *camera, ImageWriter *imageWriter, PupilDetection *pupilDetection, DataWriter *dataWriter) {
+
+
+void MetaSnapshotOrganizer::writeMetaSnapshot(QString fileName, Camera *camera, ImageWriter *imageWriter, PupilDetection *pupilDetection, DataWriter *dataWriter, QSettings *applicationSettings) {
 
     QDomDocument document;
     QDomElement root = document.createElement("MetaSnapshot");
     document.appendChild(root);
 
+    addInfoNode(document, root, imageWriter, dataWriter, fileName);    
 
-    addInfoNode(document, root, fileName);    
-    if(imageWriter) {
-        root.setAttribute("ImageOutputDirectory", imageWriter->getOpenableDirectoryName());
-    }
-    if(dataWriter) {
-        root.setAttribute("CSVOutputFileName", dataWriter->getDataFileName());
-    }
     addCameraNode(document, root, camera);
 
     if(pupilDetection && pupilDetection->isTrackingOn())
-        addPupilDetectionNode(document, root, pupilDetection);
+        addPupilDetectionNode(document, root, pupilDetection, applicationSettings);
     
     QString payload = document.toString();
 
@@ -58,26 +54,30 @@ void MetaSnapshotOrganizer::writeMetaSnapshot(QString fileName, Camera *camera, 
     
 }
 
-void MetaSnapshotOrganizer::addInfoNode(QDomDocument &document, QDomElement &root, QString fileName) {
-    QDomElement infoNode = document.createElement("Info");
-    root.appendChild(infoNode);
+void MetaSnapshotOrganizer::addInfoNode(QDomDocument &document, QDomElement &root, ImageWriter *imageWriter, DataWriter *dataWriter, QString fileName) {
+    
+    QMap<QString, QString> metaSnapshot;
+    metaSnapshot["version"] = QString::number(version);
+    metaSnapshot["creationTime"] = QDateTime::currentDateTime().toString("yyyy. MMM dd. hh:mm:ss");
+    metaSnapshot["name"] = QString(fileName);
+    metaSnapshot["creationTimeUnix"] = QString::number(QDateTime::currentMSecsSinceEpoch());
+    metaSnapshot["algorithm"] = "test";
+    metaSnapshot["type"] = "test";
+    if(imageWriter) {
+        metaSnapshot["imageOutputDirectory"] = imageWriter->getOpenableDirectoryName();
+    }
+    if(dataWriter) {
+        metaSnapshot["csvOutputFile"] = dataWriter->getDataFileName();
+    }
 
-
-
-
-    QString metaSnapshotVersion = QString::fromStdString("1");
-    QDateTime dateTime = QDateTime::currentDateTime();
-    //QString humanDate = QLocale::system().toString(dateTime, QLocale::LongFormat);
-    QString humanDate = dateTime.toString("yyyy. MMM dd. hh:mm:ss");
-    infoNode.setAttribute("MetaSnapshotVersion", QString(metaSnapshotVersion)); 
-    infoNode.setAttribute("MetaSnapshotName", QString(fileName));
-    infoNode.setAttribute("MetaSnapshotCreationTime", humanDate);
-    infoNode.setAttribute("MetaSnapshotCreationTimeUNIXms", QString::number(QDateTime::currentMSecsSinceEpoch()));
+    addMapToNode(document, metaSnapshot, root);
 }
 
 void MetaSnapshotOrganizer::addCameraNode(QDomDocument &document, QDomElement &root, Camera *camera) {
-    QDomElement cameraNode = document.createElement("Camera");
+   
 
+    QString cameraIds[] = {"Main", "Secondary"};
+    
     QString cameraImageType = "";
     if(camera->getType() == SINGLE_IMAGE_FILE)
         cameraImageType = "SINGLE_IMAGE_FILE";
@@ -90,34 +90,56 @@ void MetaSnapshotOrganizer::addCameraNode(QDomDocument &document, QDomElement &r
     else if(camera->getType() == LIVE_SINGLE_WEBCAM)
         cameraImageType = "LIVE_SINGLE_WEBCAM";
 
-    cameraNode.setAttribute("CameraImageType", cameraImageType);
+    
+
+
+    
+
+    
     
 
     if(camera->getType() == LIVE_SINGLE_CAMERA) {
         SingleCamera *singleCamera = dynamic_cast<SingleCamera *>(camera);
+        QMap<QString, QString> cameraMap;
+        cameraMap["id"] = cameraIds[0];
+        cameraMap["friendlyName"] =  singleCamera->getFriendlyName();
+        cameraMap["cameraCalibrationFileName"] = singleCamera->getCalibrationFilename();
+        cameraMap["lineSource"] = singleCamera->getLineSource();
+        cameraMap["binning"] = singleCamera->getBinningVal();
+        QMap<QString, QString> settingsMap;
+        settingsMap["cameraImageType"] = cameraImageType;
+        settingsMap["width"] = singleCamera->getImageROIwidthMax();
+        settingsMap["height"] = singleCamera->getImageROIheightMax();
+        settingsMap["gain"] = singleCamera->getGainValue();
+        settingsMap["exposureTime"] = singleCamera->getExposureTimeValue();
+         
+        
 
-        // only live camera devices have the calibration file name
-        cameraNode.setAttribute("CameraCalibrationFileName", singleCamera->getCalibrationFilename());
-        cameraNode.setAttribute("LineSource", QString(singleCamera->getLineSource())); 
-        cameraNode.setAttribute("Binning", singleCamera->getBinningVal()); 
-        QDomElement maxImageSize = document.createElement("MaxImageSize");
-        maxImageSize.setAttribute("width", singleCamera->getImageROIwidthMax()); 
-        maxImageSize.setAttribute("height", singleCamera->getImageROIheightMax()); 
-        cameraNode.appendChild(maxImageSize);
-        QDomElement actualImageROI = document.createElement("ImageAcqROI");
-        actualImageROI.setAttribute("x", singleCamera->getImageROIoffsetX()); 
-        actualImageROI.setAttribute("y", singleCamera->getImageROIoffsetY()); 
-        actualImageROI.setAttribute("width", singleCamera->getImageROIwidth()); 
-        actualImageROI.setAttribute("height", singleCamera->getImageROIheight()); 
-        cameraNode.appendChild(actualImageROI);
+        QMap<QString, QString> acqRoiMap;
+        acqRoiMap["x"] = singleCamera->getImageROIoffsetX();
+        acqRoiMap["y"] = singleCamera->getImageROIoffsetY(); 
+        acqRoiMap["width"] = singleCamera->getImageROIwidth(); 
+        acqRoiMap["height"] = singleCamera->getImageROIheight(); 
+        
 
-        QDomElement cam1 = document.createElement("Main");
-        cam1.setAttribute("FriendlyName", singleCamera->getFriendlyName()); 
-        cameraNode.appendChild(cam1);
+
+
+        QDomElement actualImageROI = document.createElement("imageAcqRoi");
+        addMapToNode(document, acqRoiMap, actualImageROI);
+
+        QDomElement calibrationSettingsNode = document.createElement("calibrationSettings");
+        calibrationSettingsNode.appendChild(actualImageROI);
+        addMapToNode(document, settingsMap, calibrationSettingsNode);
+        QDomElement cameraNode = document.createElement("camera");
+        cameraNode.appendChild(calibrationSettingsNode);
+         addMapToNode(document, cameraMap, cameraNode);
+        QDomElement cameras = document.createElement("cameras");
+        cameras.appendChild(cameraNode);
+        root.appendChild(cameras);
 
     } else if(camera->getType() == LIVE_STEREO_CAMERA) {
         StereoCamera *stereoCamera = dynamic_cast<StereoCamera *>(camera);
-
+        QDomElement cameraNode = document.createElement("camera");
         // only live camera devices have the calibration file name
         cameraNode.setAttribute("CameraCalibrationFileName", stereoCamera->getCalibrationFilename());
         cameraNode.setAttribute("LineSource", QString(stereoCamera->getLineSource())); 
@@ -143,7 +165,7 @@ void MetaSnapshotOrganizer::addCameraNode(QDomDocument &document, QDomElement &r
 
     } else if(camera->getType() == SINGLE_IMAGE_FILE || camera->getType() == STEREO_IMAGE_FILE) {
         FileCamera *fileCamera = dynamic_cast<FileCamera *>(camera);
-
+        QDomElement cameraNode = document.createElement("camera");
         // only live camera devices have the calibration file name
         cameraNode.setAttribute("ImageDirectory", fileCamera->getImageDirectoryName()); 
 
@@ -162,12 +184,14 @@ void MetaSnapshotOrganizer::addCameraNode(QDomDocument &document, QDomElement &r
         cameraNode.appendChild(imageSize);
         
     }*/
-    root.appendChild(cameraNode);
+    //root.appendChild(cameraNode);
 }
 
-void MetaSnapshotOrganizer::addPupilDetectionNode(QDomDocument &document, QDomElement &root, PupilDetection *pupilDetection) {
-    QDomElement pdNode = document.createElement("PupilDetection");
+void MetaSnapshotOrganizer::addPupilDetectionNode(QDomDocument &document, QDomElement &root, PupilDetection *pupilDetection, QSettings *applicationSettings) {
+    QDomElement pdNode = document.createElement("pupilDetections");
+    root.appendChild(pdNode);
 
+    QString pupilIds[] = { "A", "B" };
     int val = pupilDetection->getCurrentProcMode();
     QString procMode = "UNDETERMINED";
     if(val == SINGLE_IMAGE_ONE_PUPIL) {
@@ -182,11 +206,15 @@ void MetaSnapshotOrganizer::addPupilDetectionNode(QDomDocument &document, QDomEl
         procMode = "STEREO_IMAGE_TWO_PUPIL";
     } 
 
-    pdNode.setAttribute("ProcMode", procMode);
-    pdNode.setAttribute("Algorithm", QString::fromStdString(pupilDetection->getCurrentMethod1()->title()));
+    QMap<QString, QString> pupilDetectionMap;
+    pupilDetectionMap["procMode"] = procMode;
+
+
+    //pdNode.setAttribute("ProcMode", procMode);
+    //pdNode.setAttribute("Algorithm", QString::fromStdString(pupilDetection->getCurrentMethod1()->title()));
     // TODO alg params too, etc
 
-    QDomElement pdROIs = document.createElement("PupilDetectionROIs");
+    QDomElement pdROIs = document.createElement("pupilDetection");
     
     QDomElement pupilObjA;
     QDomElement pupilObjB;
@@ -194,18 +222,55 @@ void MetaSnapshotOrganizer::addPupilDetectionNode(QDomDocument &document, QDomEl
     QDomElement viewObjASec;
     QDomElement viewObjBMain;
     QDomElement viewObjBSec;
+    QMap<QString, QString> pupilMap;
+    QMap<QString, QString> discreteMap;
+    QMap<QString, QString> rationalMap;
+    QDomElement id = document.createElement("id");
+    QRectF rationalROI = applicationSettings->value("SingleCameraView.ROIsingleImageOnePupil.rational", QRectF()).toRectF();
+    QVector<QDomElement> pupilDetectionROIs;
+    QDomElement discreteROIObj = document.createElement("pupilDetectionROI");
+    QDomElement rationalROIObj = document.createElement("pupilDetectionROI");
     switch(val) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            pupilObjA = document.createElement("A");
-            pdROIs.appendChild(pupilObjA);
-            viewObjAMain = document.createElement("Main");
-            
-            viewObjAMain.setAttribute("x", pupilDetection->getROIsingleImageOnePupil().x()); 
-            viewObjAMain.setAttribute("y", pupilDetection->getROIsingleImageOnePupil().y()); 
-            viewObjAMain.setAttribute("width", pupilDetection->getROIsingleImageOnePupil().width()); 
-            viewObjAMain.setAttribute("height", pupilDetection->getROIsingleImageOnePupil().height()); 
 
-            pupilObjA.appendChild(viewObjAMain);
+            
+            pupilMap["id"] = pupilIds[0];
+            
+            
+            viewObjAMain = document.createElement("cameraRef");
+            
+            viewObjAMain.appendChild(id);
+
+            
+            discreteMap["x"] = pupilDetection->getROIsingleImageOnePupil().x();
+            discreteMap["y"] = pupilDetection->getROIsingleImageOnePupil().y();
+            discreteMap["width"] = pupilDetection->getROIsingleImageOnePupil().width();
+            discreteMap["height"] = pupilDetection->getROIsingleImageOnePupil().height();
+
+            
+            rationalMap["x"] = rationalROI.x();
+            rationalMap["y"] = rationalROI.y();
+            rationalMap["width"] = rationalROI.width();
+            rationalMap["height"] = rationalROI.height();
+            
+            
+            addMapToNode(document, discreteMap, discreteROIObj);
+            pupilDetectionROIs.append(discreteROIObj);
+
+            
+            addMapToNode(document, rationalMap, rationalROIObj);
+
+            pupilDetectionROIs.append(rationalROIObj);
+
+            for (auto elem: pupilDetectionROIs){
+                viewObjAMain.appendChild(elem);
+            }
+            
+            pupilObjA = document.createElement("pupil");
+            addMapToNode(document, pupilMap, pupilObjA);
+
+            pdROIs.appendChild(viewObjAMain);
+            pdROIs.appendChild(pupilObjA);
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
             pupilObjA = document.createElement("A");
@@ -308,3 +373,11 @@ void MetaSnapshotOrganizer::addPupilDetectionNode(QDomDocument &document, QDomEl
     root.appendChild(pdNode);
 }
 
+void MetaSnapshotOrganizer::addMapToNode(QDomDocument &document, QMap<QString, QString> map, QDomElement &parent){
+    for (auto k : map.keys()){
+        QDomElement elem = document.createElement(k);
+        QDomText text = document.createTextNode(map.value(k));
+        elem.appendChild(text);
+        parent.appendChild(elem);
+    }
+}

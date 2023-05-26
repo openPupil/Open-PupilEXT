@@ -90,3 +90,23 @@ void FileCamera::step1framePrev() {
         imageReader->pause();
     imageReader->step1frame(false);
 }
+
+int FileCamera::getImageROIwidth(){
+    return imageReader->getImageWidth();
+}
+
+int FileCamera::getImageROIheight(){
+    return imageReader->getImageHeight();
+}
+
+int FileCamera::getImageROIoffsetX(){
+    return 0;
+}
+
+int FileCamera::getImageROIoffsetY(){
+    return 0;
+}
+
+QRectF FileCamera::getImageROI(){
+    return QRectF(0,0,getImageROIwidth(), getImageROIheight());
+}

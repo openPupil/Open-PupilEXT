@@ -793,6 +793,10 @@ int StereoCamera::getImageROIheightMax() {
     return val0;
 }
 
+QRectF StereoCamera::getImageROI(){
+    return QRectF(getImageROIoffsetX(),getImageROIoffsetY(),getImageROIwidth(), getImageROIheight());
+}
+
 int StereoCamera::getBinningVal() {
     if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || !cameras[1].BinningHorizontal.IsReadable()) {
         return 1;

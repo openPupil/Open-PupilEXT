@@ -110,6 +110,12 @@ public:
     }
     // GB added end
 
+    int getImageROIwidth() override; 
+    int getImageROIheight() override; 
+    int getImageROIoffsetX() override; 
+    int getImageROIoffsetY() override;
+    QRectF getImageROI() override;
+
     CameraCalibration *getCameraCalibration();
     StereoCameraCalibration *getStereoCameraCalibration();
 

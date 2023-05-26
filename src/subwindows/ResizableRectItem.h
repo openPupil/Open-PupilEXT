@@ -39,6 +39,8 @@ public:
     }
     // GB end
 
+    void setNormalizedRect(const QRectF rect);
+
 private:
 
     // GB begin

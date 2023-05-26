@@ -26,13 +26,16 @@
 class MetaSnapshotOrganizer : public QObject {
     Q_OBJECT
 
+    static const int version = 1;
+
 public:
 
-    static void addInfoNode(QDomDocument &document, QDomElement &root, QString fileName);
+    static void addInfoNode(QDomDocument &document, QDomElement &root, ImageWriter *imageWriter, DataWriter *dataWriter, QString fileName);
     static void addCameraNode(QDomDocument &document, QDomElement &root, Camera *camera);
-    static void addPupilDetectionNode(QDomDocument &document, QDomElement &root, PupilDetection *pupilDetection);
+    static void addPupilDetectionNode(QDomDocument &document, QDomElement &root, PupilDetection *pupilDetection, QSettings *applicationSettings);
     
-    static void writeMetaSnapshot(QString fileName, Camera *camera, ImageWriter *imageWriter, PupilDetection *pupilDetection, DataWriter *dataWriter);
+    static void writeMetaSnapshot(QString fileName, Camera *camera, ImageWriter *imageWriter, PupilDetection *pupilDetection, DataWriter *dataWriter, QSettings *applicationSettings);
 
+    static void addMapToNode(QDomDocument &document, QMap<QString, QString> map, QDomElement &parent);
 };
 
