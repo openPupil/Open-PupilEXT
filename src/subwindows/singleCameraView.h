@@ -51,7 +51,8 @@ private:
 
     QToolBar *toolBar;
     QAction *saveROI;
-    QAction *discardROI;
+    QAction *resetROI;
+    QAction *discardROISelection;
     QAction *plotMenuAct;
     QAction *displayDetailAct;
     QAction *plotCenterAct;
@@ -98,6 +99,9 @@ private:
     bool showAutoParamOverlay;
     
     void updateProcModeLabel();
+
+    QRectF tempROIRect1;
+    QRectF tempROIRect2;
     // GB added end
 
 public slots:
@@ -119,7 +123,8 @@ public slots:
     void onZoomMinusClick();
     void onSetROIClick(float roiSize);
     void onSaveROIClick();
-    void onDiscardROIClick();
+    void onResetROIClick();
+    void onDiscardROISelectionClick();
 
     void onDisplayPupilViewClick(bool value);
     void onPlotPupilCenterClick(bool value);

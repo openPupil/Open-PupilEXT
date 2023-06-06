@@ -210,7 +210,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     toolBar->addAction(pupilDetectionMenuAct);
     toolBar->addSeparator();
 
-    // NOTE: added this to prevent the toolbar from popping bigger/smaller everytime saveROI and discardROI actions are revealed/hidden
+    // NOTE: added this to prevent the toolbar from popping bigger/smaller everytime saveROI and resetROI actions are revealed/hidden
     toolBar->setFixedHeight(36);
     
     // GB added/modified end
@@ -221,8 +221,12 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(saveROI, &QAction::triggered, this, &SingleCameraView::onSaveROIClick);
 
     const QIcon discardIcon = QIcon(":/icons/Breeze/actions/22/dialog-cancel.svg"); //QIcon::fromTheme("camera-video");
-    discardROI = new QAction(discardIcon, tr("Reset ROI"), this);
-    connect(discardROI, &QAction::triggered, this, &SingleCameraView::onDiscardROIClick);
+    discardROISelection = new QAction(discardIcon, tr("Cancel ROI Selection"), this);
+    connect(discardROISelection, &QAction::triggered, this, &SingleCameraView::onDiscardROISelectionClick);
+
+    const QIcon resetIcon = QIcon(":/icons/Breeze/actions/22/gtk-convert.svg");
+    resetROI = new QAction(resetIcon, tr("Reset ROI"), this);
+    connect(resetROI, &QAction::triggered, this, &SingleCameraView::onResetROIClick);
 
 
     toolBar->setAllowedAreas(Qt::TopToolBarArea);
@@ -640,13 +644,17 @@ void SingleCameraView::onDisplayPupilViewClick(bool value) {
 }
 
 void SingleCameraView::onSetROIClick(float roiSize) {
-    toolBar->addAction(discardROI);
+    toolBar->addAction(resetROI);
+    toolBar->addAction(discardROISelection);
     toolBar->addAction(saveROI);
+    
+    tempROIRect1 = videoView->getROI1SelectionR();
     videoView->setROI1SelectionR(roiSize);
     if(videoView->getDoubleROI()) { // GB
+        tempROIRect2 = videoView->getROI2SelectionR();
         videoView->setROI2SelectionR(roiSize);
     }
-    //videoView->discardROISelection();
+    //videoView->resetROISelection();
     videoView->showROISelection(true);
 }
 
@@ -661,14 +669,15 @@ void SingleCameraView::onSaveROIClick() {
     if( s1 || s2 ) { 
         // GB: if any is ok to set, we proceed
         videoView->showROISelection(false);
-        toolBar->removeAction(discardROI);
+        toolBar->removeAction(resetROI);
         toolBar->removeAction(saveROI);
+        toolBar->removeAction(discardROISelection);
     }
 }
 
 // One method for discarding one or both ROIs
-void SingleCameraView::onDiscardROIClick() {
-    videoView->discardROISelection();
+void SingleCameraView::onResetROIClick() {
+    videoView->resetROISelection();
 }
 
 // Changes pupil color fill of the videoView
@@ -851,3 +860,9 @@ void SingleCameraView::displayFileCameraFrame(int frameNumber) {
     videoView->updateView(temp1);
 }
 
+void SingleCameraView::onDiscardROISelectionClick(){
+    videoView->setROI1SelectionR(tempROIRect1);
+    if(videoView->getDoubleROI())
+        videoView->setROI2SelectionR(tempROIRect2);
+    onSaveROIClick();
+}

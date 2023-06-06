@@ -56,7 +56,8 @@ private:
 
     QToolBar *toolBar;
     QAction *saveROI;
-    QAction *discardROI;
+    QAction *resetROI;
+    QAction *discardROISelection;
     QAction *plotMenuAct;
     QAction *displayDetailAct;
     QAction *plotCenterAct;
@@ -103,6 +104,9 @@ private:
     QAction *showAutoParamAct;
 
     bool showAutoParamOverlay;
+
+    QRectF tempROIs[4]; // 0 -> mainVideoView.ROI1Selection, 1 -> secondaryVideoView->ROI1Selection
+                        // 2 -> mainVideoView.ROI2Selection, 3 -> secondaryVideoView->ROI2Selection
     
     void updateProcModeLabel(); // GB added
     // GB added end
@@ -126,7 +130,8 @@ public slots:
     void onZoomMinusClick();
     void onSetROIClick(float roiSize);
     void onSaveROIClick();
-    void onDiscardROIClick();
+    void onResetROIClick();
+    void onDiscardROISelectionClick();
     void onPupilDetectionStart();
     void onPupilDetectionStop();
 

@@ -207,7 +207,7 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     toolBar->addAction(pupilDetectionMenuAct);
     toolBar->addSeparator();
 
-    // NOTE: added this to prevent the toolbar from popping bigger/smaller everytime saveROI and discardROI actions are revealed/hidden
+    // NOTE: added this to prevent the toolbar from popping bigger/smaller everytime saveROI and resetROI actions are revealed/hidden
     toolBar->setFixedHeight(36);
 
     // GB added/modified end
@@ -219,8 +219,12 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(saveROI, &QAction::triggered, this, &StereoCameraView::onSaveROIClick);
 
     const QIcon discardIcon = QIcon(":/icons/Breeze/actions/22/dialog-cancel.svg"); //QIcon::fromTheme("camera-video");
-    discardROI = new QAction(discardIcon, tr("Reset ROI"), this);
-    connect(discardROI, &QAction::triggered, this, &StereoCameraView::onDiscardROIClick);
+    discardROISelection = new QAction(discardIcon, tr("Cancel ROI Selection"), this);
+    connect(discardROISelection, &QAction::triggered, this, &StereoCameraView::onDiscardROISelectionClick);
+
+    const QIcon resetIcon = QIcon(":/icons/Breeze/actions/22/gtk-convert.svg"); //QIcon::fromTheme("camera-video");
+    resetROI = new QAction(resetIcon, tr("Reset ROI"), this);
+    connect(resetROI, &QAction::triggered, this, &StereoCameraView::onResetROIClick);
 
 
     toolBar->setAllowedAreas(Qt::TopToolBarArea);
@@ -717,16 +721,23 @@ void StereoCameraView::onDisplayPupilViewClick(bool value) {
 // Opens the ROI selection
 void StereoCameraView::onSetROIClick(float roiSize) {
 
-    toolBar->addAction(discardROI);
+    toolBar->addAction(resetROI);
+    toolBar->addAction(discardROISelection);
     toolBar->addAction(saveROI);
 
     // GB modified/added begin
+    tempROIs[0] = mainVideoView->getROI1SelectionR();
+    tempROIs[1] = secondaryVideoView->getROI1SelectionR();
     mainVideoView->setROI1SelectionR(roiSize);
     secondaryVideoView->setROI1SelectionR(roiSize);
-    if(mainVideoView->getDoubleROI())
+    if(mainVideoView->getDoubleROI()){
+        tempROIs[2] = mainVideoView->getROI2SelectionR();
         mainVideoView->setROI2SelectionR(roiSize);
-    if(secondaryVideoView->getDoubleROI())
+    }
+    if(secondaryVideoView->getDoubleROI()){
+        tempROIs[3] = secondaryVideoView->getROI2SelectionR();
         secondaryVideoView->setROI2SelectionR(roiSize);
+    }
     // GB modified/added end
     mainVideoView->showROISelection(true);
     secondaryVideoView->showROISelection(true);
@@ -747,15 +758,16 @@ void StereoCameraView::onSaveROIClick() {
     if( s1 || s2 || s3 || s4 ) { // GB: if any is ok to set, we proceed
         mainVideoView->showROISelection(false);
         secondaryVideoView->showROISelection(false);
-        toolBar->removeAction(discardROI);
+        toolBar->removeAction(resetROI);
         toolBar->removeAction(saveROI);
+        toolBar->removeAction(discardROISelection);
     }
 }
 
 // Reset/Discard the current ROI selection dialog
-void StereoCameraView::onDiscardROIClick() {
-    mainVideoView->discardROISelection();
-    secondaryVideoView->discardROISelection();
+void StereoCameraView::onResetROIClick() {
+    mainVideoView->resetROISelection();
+    secondaryVideoView->resetROISelection();
 }
 
 // Changes pupil color fill of the videoView
@@ -979,3 +991,12 @@ void StereoCameraView::displayFileCameraFrame(int frameNumber) {
     secondaryVideoView->updateView(temp2[1]);
 }
 
+void StereoCameraView::onDiscardROISelectionClick(){
+    mainVideoView->setROI1SelectionR(tempROIs[0]);
+    secondaryVideoView->setROI1SelectionR(tempROIs[1]);
+    if(mainVideoView->getDoubleROI())
+        mainVideoView->setROI2SelectionR(tempROIs[2]);
+    if(secondaryVideoView->getDoubleROI())
+        secondaryVideoView->setROI2SelectionR(tempROIs[3]);
+    onSaveROIClick();
+}

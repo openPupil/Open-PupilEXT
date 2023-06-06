@@ -213,6 +213,9 @@ public slots:
     void setROI2SelectionR(float roiSize);
     void setROI2SelectionR(QRectF roi);
 
+    QRectF getROI1SelectionR();
+    QRectF getROI2SelectionR();
+
     void clearProcessedOverlayMemory();
 
     void setDoubleROI(bool state); 
@@ -234,7 +237,7 @@ public slots:
     bool saveROI1Selection();
     bool saveROI2Selection();
 
-    void discardROISelection();
+    void resetROISelection();
 
     void fitView();
     void showFullView();

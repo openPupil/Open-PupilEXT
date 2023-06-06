@@ -706,7 +706,7 @@ bool VideoView::saveROI2Selection() {
 }
 
 // Discards the current ROI selection (GB: ROI nr 1 and 2), meaning no new ROI is set and the ROI selection is rest to a default size
-void VideoView::discardROISelection() {
+void VideoView::resetROISelection() {
 
     QRectF roiR;
 
@@ -719,7 +719,7 @@ void VideoView::discardROISelection() {
         roiR = QRectF( 0.35, 0.35, 0.3, 0.3 );
         roi1Selection->setBrush(selectionColorCorrect1);
         roi1Selection->setPos(0, 0);
-        qDebug() << "roi1Selection->setRect() via discardROISelection(): " << roiR; 
+        qDebug() << "roi1Selection->setRect() via resetROISelection(): " << roiR; 
         QRectF rect = roi1Selection->getRect();
         roi1SelectionRectLastR = roiR; 
         roi1Selection->setRect(QRect(roi1SelectionRectLastR.x()*imageSize.width,roi1SelectionRectLastR.y()*imageSize.height,roi1SelectionRectLastR.width()*imageSize.width,roi1SelectionRectLastR.height()*imageSize.height));
@@ -733,7 +733,7 @@ void VideoView::discardROISelection() {
         roiR = QRectF( 0.05, 0.35, 0.3, 0.3 );
         roi1Selection->setBrush(selectionColorCorrect1);
         roi1Selection->setPos(0, 0);
-        qDebug() << "roi1Selection->setRect() via discardROISelection(): " << roiR; 
+        qDebug() << "roi1Selection->setRect() via resetROISelection(): " << roiR; 
         
         roi1SelectionRectLastR = roiR; 
         roi1Selection->setRect(QRect(roi1SelectionRectLastR.x()*imageSize.width,roi1SelectionRectLastR.y()*imageSize.height,roi1SelectionRectLastR.width()*imageSize.width,roi1SelectionRectLastR.height()*imageSize.height));
@@ -746,7 +746,7 @@ void VideoView::discardROISelection() {
         roiR = QRectF( 0.65, 0.35, 0.3, 0.3 );
         roi2Selection->setBrush(selectionColorCorrect2);
         roi2Selection->setPos(0, 0);
-        qDebug() << "roi2Selection->setRect() via discardROISelection(): " << roiR; 
+        qDebug() << "roi2Selection->setRect() via resetROISelection(): " << roiR; 
         
         roi2SelectionRectLastR = roiR; 
         roi2Selection->setRect(QRect(roi2SelectionRectLastR.x()*imageSize.width,roi2SelectionRectLastR.y()*imageSize.height,roi2SelectionRectLastR.width()*imageSize.width,roi2SelectionRectLastR.height()*imageSize.height));
@@ -807,7 +807,7 @@ void VideoView::setROI1SelectionR(float roiSize) {
     else
         roi1SelectionRectLastR = QRectF(0.75-roiSize/2, 0.5-roiSize/2, roiSize, roiSize);
 
-    roi2Selection->setNormalizedRect(SupportFunctions::getRectDiscreteFromRational(QSizeF(imageSize.width, imageSize.height), roi2SelectionRectLastR));
+    roi1Selection->setNormalizedRect(SupportFunctions::getRectDiscreteFromRational(QSizeF(imageSize.width, imageSize.height), roi1SelectionRectLastR));
     
     qDebug() << "roi1Selection->setRect() via setROI1Selection(float roiSize) (RATIO): " << roi1SelectionRectLastR; 
 }
@@ -901,3 +901,10 @@ void VideoView::setROI2AllowedArea(int roiAllowedArea) {
     roi2AllowedArea = roiAllowedArea;
 }
 
+QRectF VideoView::getROI1SelectionR(){
+    return roi1SelectionRectLastR;
+}
+
+QRectF VideoView::getROI2SelectionR(){
+    return roi2SelectionRectLastR;
+}
