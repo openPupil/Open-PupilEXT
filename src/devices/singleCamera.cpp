@@ -617,7 +617,12 @@ QRectF SingleCamera::getImageROI(){
 int SingleCamera::getBinningVal() {
     //if(camera.BinningHorizontal.GetValue()!=camera.BinningVertical.GetValue())
     //    return 0;
+    try {
     return camera.BinningHorizontal.GetValue();
+    }
+    catch (AccessException e) {
+        return 1;
+    }
 }
 
 double SingleCamera::getTemperature() {
