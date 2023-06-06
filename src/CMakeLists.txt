@@ -70,7 +70,7 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         subwindows/singleFileCameraCalibrationView.h subwindows/singleFileCameraCalibrationView.cpp subwindows/RestorableQMdiSubWindow.h subwindows/subjectSelectionDialog.cpp subwindows/subjectSelectionDialog.h
         subwindows/singleCameraSharpnessView.h subwindows/singleCameraSharpnessView.cpp sharpnessCalculation.h sharpnessCalculation.cpp
         subwindows/calibrationHelpDialog.h subwindows/calibrationHelpDialog.cpp
-        subwindows/pupil-detection-methods/json.h)
+        subwindows/pupil-detection-methods/json.h subwindows/timestampSpinBox.h subwindows/timestampSpinBox.cpp)
 
 if(SPII_BUILD_FOUND)
 

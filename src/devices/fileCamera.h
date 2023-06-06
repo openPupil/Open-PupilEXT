@@ -87,9 +87,9 @@ public:
     std::vector<cv::Mat> getStillImageStereo(int frameNumber) {
         return imageReader->getStillImageStereo(frameNumber);
     }
-    /*int getFrameNumberForTimestamp(uint64_t timestamp) {
+    int getFrameNumberForTimestamp(uint64_t timestamp) {
         return imageReader->getFrameNumberForTimestamp(timestamp);
-    }*/
+    }
     uint64_t getTimestampForFrameNumber(int frameNumber) {
         return imageReader->getTimestampForFrameNumber(frameNumber);
     }
