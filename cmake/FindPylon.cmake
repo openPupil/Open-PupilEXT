@@ -87,7 +87,7 @@ elseif(MSVC)
     set(PYLON_LIB_SEARCH_PATH "${PYLON_HOME}/lib/x64")
 
     find_library(PYLON_BASE_LIBRARY
-            NAMES PylonBase_v6_0.lib
+            NAMES PylonBase_v6_2.lib
             PATHS ${PYLON_LIB_SEARCH_PATH})
     find_library(PYLON_GCBASE_LIBRARY
             NAMES GCBase_MD_VC141_v3_1_Basler_pylon.lib
@@ -96,10 +96,10 @@ elseif(MSVC)
             NAMES GenApi_MD_VC141_v3_1_Basler_pylon.lib
             PATHS ${PYLON_LIB_SEARCH_PATH})
     find_library(PYLON_UTILITY_LIBRARY
-            NAMES PylonUtility_v6_0.lib
+            NAMES PylonUtility_v6_2.lib
             PATHS ${PYLON_LIB_SEARCH_PATH})
     find_library(PYLON_GUI_LIBRARY
-            NAMES PylonGUI_v6_0.lib
+            NAMES PylonGUI_v6_2.lib
             PATHS ${PYLON_LIB_SEARCH_PATH})
     find_library(PYLON_C_LIBRARY
             NAMES PylonC.lib

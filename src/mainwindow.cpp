@@ -620,21 +620,25 @@ void MainWindow::openSourceDialog() {
 
 void MainWindow::setLogFile() {
 
-    logFileName = QFileDialog::getSaveFileName(this, tr("Save Log File"), recentPath, tr("CSV files (*.csv)"), nullptr, QFileDialog::DontConfirmOverwrite);
+    QString tempFile = QFileDialog::getSaveFileName(this, tr("Save Log File"), recentPath, tr("CSV files (*.csv)"), nullptr, QFileDialog::DontConfirmOverwrite);
 
     // GB: cleaner code without long indentation
-    if(logFileName.isEmpty()) 
+    if(tempFile.isEmpty()) 
         return;
 
-    QFileInfo fileInfo(logFileName);
+    if(!QFileInfo(tempFile).dir().exists())
+        return;
+
+    pupilDetectionDataFile = tempFile;
+    QFileInfo fileInfo(pupilDetectionDataFile);
     recentPath = fileInfo.dir().path();
 
     // check if filename has extension
     if(fileInfo.suffix().isEmpty()) {
-        logFileName = logFileName + ".csv";
+        pupilDetectionDataFile = pupilDetectionDataFile + ".csv";
     }
 
-    //QFile file(logFileName);
+    //QFile file(pupilDetectionDataFile);
     //file.open(QIODevice::WriteOnly); // Or QIODevice::ReadWrite
     //file.close();
 
@@ -646,6 +650,7 @@ void MainWindow::setLogFile() {
 void MainWindow::setOutputDirectory() {
 
     outputDirectory = QFileDialog::getExistingDirectory(this, tr("Output Directory"), recentPath);
+    
 
     // GB: cleaner code without long indentation
     if(outputDirectory.isEmpty()) 
@@ -905,7 +910,7 @@ void MainWindow::onTrackActClick() {
         trackAct->setIcon(trackOnIcon);
         trackingOn = true;
 
-        if(!logFileName.isEmpty())
+        if(!pupilDetectionDataFile.isEmpty())
             recordAct->setDisabled(false); // GB added here
     }
 }
@@ -965,7 +970,7 @@ void MainWindow::onStreamClick() {
 void MainWindow::onRecordClick() {
 
     // GB added begin
-    if(logFileName.isEmpty())
+    if(pupilDetectionDataFile.isEmpty())
         return;
     // GB added end
 
@@ -987,7 +992,7 @@ void MainWindow::onRecordClick() {
         // GB modified/added begin
         dataWriter = 
             new DataWriter(
-                logFileName, 
+                pupilDetectionDataFile, 
                 (ProcMode)pupilDetectionWorker->getCurrentProcMode(),
                 recEventTracker,
                 this);
@@ -998,16 +1003,16 @@ void MainWindow::onRecordClick() {
 
         safelyResetTrialCounter();
         
-        QFileInfo fi(logFileName);
-        QString absPath = fi.absolutePath(); // ? TODO: check if ends with "/" and append if not
-        QString baseName = fi.baseName();
+        QFileInfo fi(pupilDetectionDataFile);
+        QDir pupilDetectionDir = fi.dir();
+        QString metadataFileName = fi.baseName() + QString::fromStdString("-datarec-meta.xml");
 
         int currentProcMode = pupilDetectionWorker->getCurrentProcMode();
 
         if( (applicationSettings->value("metaSnapshotsEnabled", "1") == "1" || 
             applicationSettings->value("metaSnapshotsEnabled", "1") == "true" ))
             MetaSnapshotOrganizer::writeMetaSnapshot(
-                absPath + baseName + QString::fromStdString("-datarec-meta.xml"),
+                pupilDetectionDir.filePath(metadataFileName),
                 selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, applicationSettings);
         // GB added end
         
@@ -1679,11 +1684,25 @@ void MainWindow::onCreateGraphPlot(const QString &value) {
 
 // GB: Repaired bug leading to crash when path was too short
 void MainWindow::onOpenImageDirectory() {
-    imageDirectory = QFileDialog::getExistingDirectory(this, tr("Image Directory"), recentPath);
-
-    // GB: negated check logic and removed indentation accordingly
-    if(imageDirectory.isEmpty())
+    QFileDialog dialog(this, tr("Image Directory"), recentPath,tr("Image Files (*.png *.jpg *.bmp *.tiff *.jpeg *.webp)"));
+    dialog.setOptions(QFileDialog::DontUseNativeDialog | QFileDialog::DontResolveSymlinks);
+    
+    dialog.setFileMode(QFileDialog::Directory);
+    
+    if(!dialog.exec())
         return;
+    QString tempDir = dialog.directory().absolutePath();
+    // GB: negated check logic and removed indentation accordingly
+    if(tempDir.isEmpty())
+        return;
+
+    QDir imageDir(tempDir);
+    if (imageDir.isEmpty())
+        return;
+    
+    imageDirectory = tempDir;
+    
+
 
     // GB added begin
     // GB: added to disable/enable opening of a new directory when there is already one opened
@@ -1874,7 +1893,7 @@ void MainWindow::onPlaybackSafelyStarted() {
     if (!m_syncStream.isEmpty() && (m_syncStream == "0" || m_syncStream == "false"))
         syncStream = false;
     
-    if(syncRecordCsv && trackingOn && !logFileName.isEmpty() && !recordOn) {
+    if(syncRecordCsv && trackingOn && !pupilDetectionDataFile.isEmpty() && !recordOn) {
         onRecordClick();
     }
 

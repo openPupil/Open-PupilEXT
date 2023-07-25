@@ -88,7 +88,7 @@ private:
     SingleCameraSettingsDialog *singleCameraSettingsDialog;
     StereoCameraSettingsDialog *stereoCameraSettingsDialog;
 
-    QString logFileName;
+    QString pupilDetectionDataFile;
     QString outputDirectory;
     QString imageDirectory;
     QString recentPath; 

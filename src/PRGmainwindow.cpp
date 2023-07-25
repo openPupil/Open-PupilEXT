@@ -83,16 +83,16 @@ void MainWindow::PRGsetCsvPathAndName(const QString &str) {
     if(fullPathAndName == "")
         return;
         
-    logFileName.clear();
-    logFileName = fullPathAndName;
+    pupilDetectionDataFile.clear();
+    pupilDetectionDataFile = fullPathAndName;
 
-    QFileInfo fileInfo(logFileName);
+    QFileInfo fileInfo(pupilDetectionDataFile);
     // GB NOTE: recentPath is NOT set programmatically, as we can not ensure that the path exists at this point, 
     // which could later crash the GUI or whatever
 
     // check if filename has extension
     if(fileInfo.suffix().isEmpty())
-        logFileName = logFileName + ".csv";
+        pupilDetectionDataFile = pupilDetectionDataFile + ".csv";
     //std::cout << "saved logfilename (and path) after name-csv setting = " << logFileName.toStdString() << std::endl;
 
     if(trackingOn)
@@ -119,7 +119,7 @@ void MainWindow::PRGtrackStop() {
 }
 
 void MainWindow::PRGstreamStart() {
-    if(!selectedCamera || logFileName.isEmpty())
+    if(!selectedCamera || pupilDetectionDataFile.isEmpty())
         return;
     if(!trackingOn) // we can start tracking if only that is needed
         onTrackActClick();
@@ -133,7 +133,7 @@ void MainWindow::PRGstreamStop() {
 }
 
 void MainWindow::PRGrecordStart() {
-    if(!selectedCamera || logFileName.isEmpty())
+    if(!selectedCamera || pupilDetectionDataFile.isEmpty())
         return;
     if(!trackingOn) // we can start tracking if only that is needed
         onTrackActClick();

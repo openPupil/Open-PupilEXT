@@ -9,6 +9,7 @@
 
 void MetaSnapshotOrganizer::writeMetaSnapshot(QString fileName, Camera *camera, ImageWriter *imageWriter, PupilDetection *pupilDetection, DataWriter *dataWriter, QSettings *applicationSettings) {
 
+    qDebug() << fileName;
     QDomDocument document;
     QDomElement root = document.createElement("MetaSnapshot");
     document.appendChild(root);
