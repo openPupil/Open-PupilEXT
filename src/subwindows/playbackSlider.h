@@ -21,12 +21,12 @@
 class PlaybackSlider : public QSlider
 {
     // Empirically determined. Necessary
-    byte leftMargin = 3;
-    byte rightMargin = 3;
+    const uint leftMargin = 3;
+    const uint rightMargin = 3;
 
     // same
-    byte leftDrawMargin = 5; //3;
-    byte rightDrawMargin = 5; //3;
+    const uint leftDrawMargin = 5; //3;
+    const uint rightDrawMargin = 5; //3;
 
     float colorTickPos = 0.0f; // between 0 and 1
 

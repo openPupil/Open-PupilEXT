@@ -188,7 +188,7 @@ void DataTable::onPupilData(quint64 timestamp, int procMode, const std::vector<P
         tableModel->setItem(0, 0, item);
 
         // GB: modified to work with new Pupil vector signals
-        for(byte i=0; i<Pupils.size(); i++)
+        for(std::size_t i=0; i<Pupils.size(); i++)
             if(Pupils[i].valid(-2))
                 setPupilData(Pupils[i], i);
         // GB NOTE: this only works, because we defined the columns in the exact same order 

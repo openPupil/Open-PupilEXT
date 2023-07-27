@@ -211,7 +211,7 @@ void VideoView::updateViewProcessed(const cv::Mat &img, const std::vector<cv::Re
 
     tROIs.clear();
     tPupils.clear();
-    for(byte z=0; z<Pupils.size(); z++) {
+    for(std::size_t z=0; z<Pupils.size(); z++) {
         tROIs.push_back(ROIs[z]);
         tPupils.push_back(Pupils[z]);
     }
@@ -237,7 +237,7 @@ void VideoView::drawAutoParamOverlay() {
     penAutoParamBack.setWidthF(lineWidth);
 
     // to prevent memory leaks and lagging GUI
-    for(byte c=0; c<geBufferAP.size(); c++) {
+    for(std::size_t c=0; c<geBufferAP.size(); c++) {
         graphicsScene->removeItem(geBufferAP[c]);
         delete geBufferAP[c];
     }
@@ -311,7 +311,7 @@ void VideoView::drawUnprocessedOverlay() {
     penROIunprocessed2.setWidthF(lineWidth);
 
     // to prevent memory leaks and lagging GUI
-    for(byte c=0; c<geBufferROI.size(); c++) {
+    for(std::size_t c=0; c<geBufferROI.size(); c++) {
         graphicsScene->removeItem(geBufferROI[c]);
         delete geBufferROI[c];
     }
@@ -374,13 +374,13 @@ void VideoView::drawProcessedOverlay() {
     penPupilCenter.setWidthF(lineWidth);
 
     // to prevent memory leaks and lagging GUI
-    for(byte c=0; c<geBufferROI.size(); c++) {
+    for(std::size_t c=0; c<geBufferROI.size(); c++) {
         graphicsScene->removeItem(geBufferROI[c]);
         delete geBufferROI[c];
     }
     geBufferROI.clear();
 
-    for(byte z=0; z<tPupils.size(); z++) {
+    for(std::size_t z=0; z<tPupils.size(); z++) {
         if(showROI) {
             QGraphicsRectItem *ROIrect = new QGraphicsRectItem(tROIs[z].x, tROIs[z].y, tROIs[z].width, tROIs[z].height);
             ROIrect->setPen(penROIprocessed);

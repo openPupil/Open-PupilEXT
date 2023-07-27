@@ -503,7 +503,7 @@ void PupilDetectionSettingsDialog::updateProcModeCompatibility() {
         QStandardItem *item;
         QStandardItemModel *model = qobject_cast<QStandardItemModel *>(procModeBox->model());
 
-        for(byte idx = 0; idx < stateArr.size(); idx++) {
+        for(std::size_t idx = 0; idx < stateArr.size(); idx++) {
             item = model->item(idx);
             //std::cout << item->text().toStdString() << std::endl;
             item->setFlags(stateArr[idx] ? item->flags() | Qt::ItemIsEnabled : item->flags() & ~Qt::ItemIsEnabled);
@@ -516,7 +516,7 @@ void PupilDetectionSettingsDialog::updateProcModeCompatibility() {
         QStandardItem *item;
         QStandardItemModel *model = qobject_cast<QStandardItemModel *>(procModeBox->model());
 
-        for(byte idx = 0; idx < stateArr.size(); idx++) {
+        for(std::size_t idx = 0; idx < stateArr.size(); idx++) {
             item = model->item(idx);
             //std::cout << item->text().toStdString() << std::endl;
             item->setFlags(stateArr[idx] ? item->flags() | Qt::ItemIsEnabled : item->flags() & ~Qt::ItemIsEnabled);

@@ -75,10 +75,10 @@ public:
         return imageReader->getImageDirectoryName();
     }
     QString getImageWidth() {
-        return imageReader->getImageWidth();
+        return QString::number(imageReader->getImageWidth());
     }
     QString getImageHeight() {
-        return imageReader->getImageHeight();
+        return QString::number(imageReader->getImageHeight());
     }
 
     cv::Mat getStillImageSingle(int frameNumber) {

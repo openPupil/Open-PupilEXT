@@ -1,5 +1,14 @@
 {
     "cmake.configureSettings": {
+        "_comment1": "Choose below for linux target. Remove _comment1_ prefix from key name to choose, or add it to disable key.",
+        "_comment1_VCPKG_TARGET_TRIPLET": "x64-linux",
+        
+        "_comment2": "Choose below for windows target. Remove _comment2_ prefix from key name to choose, or add it to disable key.",
+        "_comment2_VCPKG_TARGET_TRIPLET": "x64-windows-static-md",
+
+        "_comment3": "Choose below for mac target. Remove _comment3_ prefix from key name to choose, or add it to disable key.",
+        "_comment3_VCPKG_TARGET_TRIPLET": "x64-osx",
+
         "VCPKG_TARGET_TRIPLET": "x64-windows-static-md",
         "CMAKE_TOOLCHAIN_FILE": "3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake"
     },

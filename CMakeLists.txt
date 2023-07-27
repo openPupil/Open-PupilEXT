@@ -20,6 +20,7 @@
 cmake_minimum_required(VERSION 3.15)
 project(PupilEXT)
 
+# On linux with GCC and QT 5.15.2 setting standard here is not recognized and is overwritten by QT to gnu++14
 #set(CMAKE_CXX_STANDARD 17)
 
 # ------------------------------------------------------------------------
@@ -79,6 +80,16 @@ elseif(MSVC OR WIN32)
     set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "C:/Qt/${QT_VERSION}/msvc2019_64")
 
     set(VCPKG_TARGET_TRIPLET x64-windows-static-md CACHE STRING "")
+else()
+	set(PYLON_HOME "/opt/pylon")
+    set(PYLON_INCLUDE_DIR "/opt/pylon/include")
+    set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/opt/pylon/include/pylon")
+    set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/opt/pylon/include/GenApi")
+    set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/opt/pylon/include/Base")
+    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake) # The find pylon file is in the cmake folder
+    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/opt/Qt/${QT_VERSION}/gcc_64")
+
+    set(VCPKG_TARGET_TRIPLET x64-linux CACHE STRING "")
 endif()
 # ----------------------------------------------------------------------------------------------
 

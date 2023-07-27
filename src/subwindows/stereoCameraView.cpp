@@ -612,7 +612,7 @@ void StereoCameraView::updatePupilView(const CameraImage &cimg, const int &procM
     if(displayPupilView && !initPupilViewSize) {
         initPupilViewSize = true;
 
-        for(byte z=0; z<Pupils.size(); z++)
+        for(std::size_t z=0; z<Pupils.size(); z++)
             if(Pupils[z].valid(-2))
                 pupilViewSize.push_back(QSize(static_cast<int>(Pupils[z].size.width * 1.6), static_cast<int>(Pupils[z].size.height * 1.6)));
             else

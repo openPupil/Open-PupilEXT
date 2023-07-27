@@ -13,6 +13,7 @@ set(MACOSX_BUNDLE_ICON_FILE icon.icns)
 set(APP_ICON_MACOSX ${PROJECT_SOURCE_DIR}/icon.icns)
 set_source_files_properties(${APP_ICON_MACOSX} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 
+
 # For packaging add the following code - add_executable(PupilEXT MACOSX_BUNDLE main.cpp
 add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} ${APP_ICON_MACOSX}
         mainwindow.cpp
@@ -71,6 +72,10 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         subwindows/singleCameraSharpnessView.h subwindows/singleCameraSharpnessView.cpp sharpnessCalculation.h sharpnessCalculation.cpp
         subwindows/calibrationHelpDialog.h subwindows/calibrationHelpDialog.cpp
         subwindows/pupil-detection-methods/json.h subwindows/timestampSpinBox.h subwindows/timestampSpinBox.cpp)
+
+# On linux with GCC and QT 5.15.2 setting standard here is recognized and is not overwritten by QT
+#set_property(TARGET PupilEXT PROPERTY CXX_STANDARD 17)
+#set(CMAKE_CXX_STANDARD 17)
 
 if(SPII_BUILD_FOUND)
 

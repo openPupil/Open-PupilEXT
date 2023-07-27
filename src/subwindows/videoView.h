@@ -162,11 +162,11 @@ private:
     QColor selectionColorWrong1 = Qt::red;
     QColor selectionColorWrong2 = Qt::darkRed;
 
-    QPen penROIprocessed = Qt::magenta;
+    QPen penROIprocessed = QPen(QColor(Qt::magenta));
     QPen penROIunprocessed1;// = Qt::blue;
     QPen penROIunprocessed2;// = Qt::green;
-    QPen penPupilOutline = Qt::red;
-    QPen penPupilCenter = Qt::red;
+    QPen penPupilOutline = QPen(QColor(Qt::red));
+    QPen penPupilCenter = QPen(QColor(Qt::red));
 
     std::vector<QGraphicsItem*> geBufferAP;
     QPen penAutoParamAccent = QColor(245, 197, 66, 255);

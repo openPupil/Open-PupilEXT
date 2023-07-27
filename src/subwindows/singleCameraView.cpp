@@ -554,7 +554,7 @@ void SingleCameraView::updatePupilView(const CameraImage &cimg, const int &procM
     // This is done only once after activation to not switch sizes at each pupil update which makes the pupil view to jitterish
     if(displayPupilView && !initPupilViewSize) {
         initPupilViewSize = true;
-        for(byte z=0; z<Pupils.size(); z++)
+        for(std::size_t z=0; z<Pupils.size(); z++)
             if(Pupils[z].valid(-2))
                 pupilViewSize.push_back(QSize(static_cast<int>(Pupils[z].size.width * 1.6), static_cast<int>(Pupils[z].size.height * 1.6)));
             else
@@ -567,7 +567,7 @@ void SingleCameraView::updatePupilView(const CameraImage &cimg, const int &procM
 
         std::vector<QRect> targets;
 
-        for(byte z=0; z<Pupils.size(); z++)
+        for(std::size_t z=0; z<Pupils.size(); z++)
             targets.push_back( QRect( QPoint(
                     static_cast<int>(Pupils[z].center.x - (0.5 * pupilViewSize[z].width())),
                     static_cast<int>(Pupils[z].center.y - (0.5 * pupilViewSize[z].width()))), pupilViewSize[z]) );
