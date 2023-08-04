@@ -1,5 +1,6 @@
 
 # Build environment troubleshooting notes (FAQ):
+(For building and development using Visual Studio Code)
 
 ---
 ---
