@@ -27,24 +27,13 @@ public:
 
     // GB: added pupilDetection instance to get the actual ROIs for Autometric Parametrization calculations
     explicit ElSeSettings(PupilDetection * pupilDetection, ElSe *m_else, QWidget *parent=0) : 
-        PupilMethodSetting(parent), 
+        PupilMethodSetting("ElSeSettings.configParameters","ElSeSettings.configIndex", parent), 
         p_else(m_else), 
-        pupilDetection(pupilDetection), 
-        configParameters(defaultParameters)  {
-
-        configParameters = applicationSettings->value("ElSeSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
-
-        configIndex = applicationSettings->value("ElSeSettings.configIndex", "Default").toString();
-
+        pupilDetection(pupilDetection)  {
+        
+        PupilMethodSetting::setDefaultParameters(defaultParameters);
         createForm();
-
-        if(parameterConfigs->findText(configIndex) < 0) {
-            std::cout<<"Did not found config: "<<configIndex.toStdString()<<std::endl;
-            parameterConfigs->setCurrentText("Default");
-        } else {
-            parameterConfigs->setCurrentText(configIndex);
-        }
-
+        parameterConfigs->setCurrentText(settingsMap.key(configIndex));
         // GB added begin
         if(parameterConfigs->currentText()=="Automatic Parametrization") {
             minAreaBox->setEnabled(false);
@@ -106,37 +95,10 @@ public:
         else4 = s_else;
     }
 
-    QMap<QString, QList<float>> getParameter() {
-        return configParameters;
-    }
-
-    void setParameter(QMap<QString, QList<float>> params) {
-        if(defaultParameters.size() == params.size())
-            configParameters = params;
-    }
-
-    void reset() {
-        configParameters = defaultParameters;
-    }
-
-    // GB modified begin
-    bool isAutoParamEnabled() override {
-        return (parameterConfigs->currentText()=="Automatic Parametrization");
-    }
-    // GB modified end
-
 public slots:
 
     void loadSettings() override {
-        configParameters = applicationSettings->value("ElSeSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
-        configIndex = applicationSettings->value("ElSeSettings.configIndex", "Default").toString();
-
-        if(parameterConfigs->findText(configIndex) < 0) {
-            std::cout<<"Did not found config: "<<configIndex.toStdString()<<std::endl;
-            parameterConfigs->setCurrentText("Default");
-        } else {
-            parameterConfigs->setCurrentText(configIndex);
-        }
+        PupilMethodSetting::loadSettings();
 
         // GG added begin
         if(parameterConfigs->currentText()=="Automatic Parametrization") {
@@ -186,8 +148,9 @@ public slots:
             p_else->minAreaRatio = minAreaRatio;
             p_else->maxAreaRatio = maxAreaRatio;
 
-            configParameters[parameterConfigs->currentText()][0] = minAreaRatio;
-            configParameters[parameterConfigs->currentText()][1] = maxAreaRatio;
+            QList<float>& currentParameters = getCurrentParameters();
+            currentParameters[0] = minAreaRatio;
+            currentParameters[1] = maxAreaRatio;
 
             if(else2) {
                 else2->minAreaRatio = minAreaRatio;
@@ -207,8 +170,7 @@ public slots:
 
         emit onConfigChange(parameterConfigs->currentText());
 
-        applicationSettings->setValue("ElSeSettings.configParameters", QVariant::fromValue(configParameters));
-        applicationSettings->setValue("ElSeSettings.configIndex", parameterConfigs->currentText());
+        PupilMethodSetting::updateSettings();
     }
 
 private:
@@ -226,13 +188,9 @@ private:
     QDoubleSpinBox *minAreaBox;
     QDoubleSpinBox *maxAreaBox;
 
-    QPushButton *resetButton;
-    QComboBox *parameterConfigs;
-    QPushButton *fileButton;
-
     void createForm() {
-
-        QList<float> selectedParameter = configParameters.value(configIndex);
+        PupilMethodSetting::loadSettings();
+        QList<float>& selectedParameter = getCurrentParameters();
 
         float minAreaRatio = selectedParameter[0];
         float maxAreaRatio = selectedParameter[1];
@@ -249,10 +207,9 @@ private:
         // GB modified end
         configsLayout->addWidget(parameterConfigs);
 
-        QMapIterator<QString, QList<float>> i(configParameters);
-        while (i.hasNext()) {
-            i.next();
-            parameterConfigs->addItem(i.key());
+        for (QMap<QString, Settings>::const_iterator cit = settingsMap.cbegin(); cit != settingsMap.cend(); cit++)
+        {
+            parameterConfigs->addItem(cit.key());
         }
 
         connect(parameterConfigs, SIGNAL(currentTextChanged(QString)), this, SLOT(onParameterConfigSelection(QString)));
@@ -310,36 +267,30 @@ private:
 
         //std::cout << std::setw(4) << j << std::endl;
 
-        QList<float> customs = defaultParameters["Default"];
+        QList<float> customs = defaultParameters[Settings::DEFAULT];
 
         customs[0] = j["Parameter Set"]["minAreaRatio"];
         customs[1] = j["Parameter Set"]["maxAreaRatio"];
 
-        configParameters.insert("Custom", customs);
-
-        if(parameterConfigs->findText("Custom") < 0) {
-            parameterConfigs->addItem("Custom");
-        }
-        parameterConfigs->setCurrentText("Custom");
+        insertCustomEntry(customs);
 
     }
 
-    QMap<QString, QList<float>> defaultParameters = {
-            { "Default", {0.005f, 0.2f} },
-            { "ROI 0.3 Optimized", {0.001f, 0.823f} },
-            { "ROI 0.6 Optimized", {0.001f, 0.131f} },
-            { "Full Image Optimized", {0.001f, 0.038f} },
-            { "Automatic Parametrization", {-1.0f, -1.0f} } // GB added
+    QMap<Settings, QList<float>> defaultParameters = {
+            { Settings::DEFAULT, {0.005f, 0.2f} },
+            { Settings::ROI_0_3_OPTIMIZED, {0.001f, 0.823f} },
+            { Settings::ROI_0_6_OPTIMIZED, {0.001f, 0.131f} },
+            { Settings::FULL_IMAGE_OPTIMIZED, {0.001f, 0.038f} },
+            { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, -1.0f} },
+            { Settings::CUSTOM, {-1.0f, -1.0f} } // GB added
     };
-
-    QMap<QString, QList<float>> configParameters;
-    QString configIndex;
 
 
 private slots:
 
     void onParameterConfigSelection(QString configKey) {
-        QList<float> selectedParameter = configParameters.value(configKey);
+        setConfigIndex(configKey);
+        QList<float>& selectedParameter = getCurrentParameters();
 
         // GB modified begin
 
@@ -361,27 +312,6 @@ private slots:
         // GB modified end
 
         //updateSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
-    }
-
-    void onResetClick() {
-        QString configKey = parameterConfigs->itemText(parameterConfigs->currentIndex());
-        configParameters[configKey] = defaultParameters.value(configKey);
-        onParameterConfigSelection(configKey);
-    }
-
-    void onLoadFileClick() {
-        QString filename = QFileDialog::getOpenFileName(this, tr("Open Algorithm Parameter File"), "", tr("JSON files (*.json)"));
-
-        if(!filename.isEmpty()) {
-
-            try {
-                loadSettingsFromFile(filename);
-            } catch(...) {
-                QMessageBox msgBox;
-                msgBox.setText("Error while loading parameter file. \nCorrect format and algorithm?");
-                msgBox.exec();
-            }
-        }
     }
 
 };

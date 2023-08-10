@@ -57,6 +57,7 @@ private:
     QAction *displayDetailAct;
     QAction *plotCenterAct;
     QAction *plotROIAct;
+    QMenu *autoParamMenu;
 
     //QAction *roiMenuAct;
     QAction *customROIAct;
@@ -102,6 +103,8 @@ private:
 
     QRectF tempROIRect1;
     QRectF tempROIRect2;
+
+    bool isAutoParamModificationEnabled();
     // GB added end
 
 public slots:
@@ -134,7 +137,7 @@ public slots:
     void onPupilDetectionStop();
 
     void onSettingsChange();
-    void updateConfigLabel(QString config);
+    void onPupilDetectionConfigChanged(QString config);
 
     // GB modified/added begin
     void onPupilDetectionMenuClick();

@@ -27,24 +27,13 @@ public:
 
     // GB: added pupilDetection instance to get the actual ROIs for Autometric Parametrization calculations
     explicit Swirski2DSettings(PupilDetection * pupilDetection, Swirski2D *m_swirski, QWidget *parent=0) : 
-        PupilMethodSetting(parent), 
+        PupilMethodSetting("Swirski2DSettings.configParameters","Swirski2DSettings.configIndex", parent), 
         p_swirski(m_swirski), 
-        pupilDetection(pupilDetection), 
-        configParameters(defaultParameters)  {
-        
-        configParameters = applicationSettings->value("Swirski2DSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
+        pupilDetection(pupilDetection){
 
-        configIndex = applicationSettings->value("Swirski2DSettings.configIndex", "Default").toString();
-
+        PupilMethodSetting::setDefaultParameters(defaultParameters);
         createForm();
-
-        if(parameterConfigs->findText(configIndex) < 0) {
-            std::cout<<"Did not found config: "<<configIndex.toStdString()<<std::endl;
-            parameterConfigs->setCurrentText("Default");
-        } else {
-            parameterConfigs->setCurrentText(configIndex);
-        }
-
+        parameterConfigs->setCurrentText(settingsMap.key(configIndex));
         // GB added begin
         if(parameterConfigs->currentText()=="Automatic Parametrization") {
             minRadiusBox->setEnabled(false);
@@ -105,38 +94,10 @@ public:
     void add4(Swirski2D *s_swirski) {
         swirski4 = s_swirski;
     }
-
-    QMap<QString, QList<float>> getParameter() {
-        return configParameters;
-    }
-
-    void setParameter(QMap<QString, QList<float>> params) {
-        if(defaultParameters.size() == params.size())
-            configParameters = params;
-    }
-
-    void reset() {
-        configParameters = defaultParameters;
-    }
-
-    // GB modified begin
-    bool isAutoParamEnabled() override {
-        return (parameterConfigs->currentText()=="Automatic Parametrization");
-    }
-    // GB modified end
-
 public slots:
 
     void loadSettings() override {
-        configParameters = applicationSettings->value("Swirski2DSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
-        configIndex = applicationSettings->value("Swirski2DSettings.configIndex", "Default").toString();
-
-        if(parameterConfigs->findText(configIndex) < 0) {
-            std::cout<<"Did not found config: "<<configIndex.toStdString()<<std::endl;
-            parameterConfigs->setCurrentText("Default");
-        } else {
-            parameterConfigs->setCurrentText(configIndex);
-        }
+        PupilMethodSetting::loadSettings();
 
         // GB added begin
         if(parameterConfigs->currentText()=="Automatic Parametrization") {
@@ -173,15 +134,16 @@ public slots:
         p_swirski->params.EarlyTerminationPercentage = termPercBox->value();
         p_swirski->params.EarlyRejection = earlyRejectionBox->isChecked();
 
-        configParameters[parameterConfigs->currentText()][2] = cannyBlurBox->value();
-        configParameters[parameterConfigs->currentText()][3] = cannyThreshold1Box->value();
-        configParameters[parameterConfigs->currentText()][4] = cannyThreshold2Box->value();
-        configParameters[parameterConfigs->currentText()][5] = starburstPointsBox->value();
-        configParameters[parameterConfigs->currentText()][6] = percInlierBox->value();
-        configParameters[parameterConfigs->currentText()][7] = iterInlierBox->value();
-        configParameters[parameterConfigs->currentText()][8] = termPercBox->value();
-        configParameters[parameterConfigs->currentText()][9] = imageAwareBox->isChecked();
-        configParameters[parameterConfigs->currentText()][10] = earlyRejectionBox->isChecked();
+        QList<float>& currentParameters = getCurrentParameters();
+        currentParameters[2] = cannyBlurBox->value();
+        currentParameters[3] = cannyThreshold1Box->value();
+        currentParameters[4] = cannyThreshold2Box->value();
+        currentParameters[5] = starburstPointsBox->value();
+        currentParameters[6] = percInlierBox->value();
+        currentParameters[7] = iterInlierBox->value();
+        currentParameters[8] = termPercBox->value();
+        currentParameters[9] = imageAwareBox->isChecked();
+        currentParameters[10] = earlyRejectionBox->isChecked();
 
         if(swirski2) {
             swirski2->params.CannyBlur = cannyBlurBox->value();
@@ -232,8 +194,8 @@ public slots:
             p_swirski->params.Radius_Min = minRadiusBox->value();
             p_swirski->params.Radius_Max = maxRadiusBox->value();
 
-            configParameters[parameterConfigs->currentText()][0] = minRadiusBox->value();
-            configParameters[parameterConfigs->currentText()][1] = maxRadiusBox->value();
+            currentParameters[0] = minRadiusBox->value();
+            currentParameters[1] = maxRadiusBox->value();
 
             if(swirski2) {
                 swirski2->params.Radius_Min = minRadiusBox->value();
@@ -253,8 +215,7 @@ public slots:
 
         emit onConfigChange(parameterConfigs->currentText());
 
-        applicationSettings->setValue("Swirski2DSettings.configParameters", QVariant::fromValue(configParameters));
-        applicationSettings->setValue("Swirski2DSettings.configIndex", parameterConfigs->currentText());
+        PupilMethodSetting::updateSettings();
     }
 
 private:
@@ -284,13 +245,9 @@ private:
     QCheckBox *imageAwareBox;
     QCheckBox *earlyRejectionBox;
 
-    QPushButton *resetButton;
-    QComboBox *parameterConfigs;
-    QPushButton *fileButton;
-
     void createForm() {
-
-        QList<float> selectedParameter = configParameters.value(configIndex);
+        PupilMethodSetting::loadSettings();
+        QList<float>& selectedParameter = getCurrentParameters();
 
         int Radius_Min = selectedParameter[0];
         int Radius_Max = selectedParameter[1];
@@ -318,10 +275,9 @@ private:
         // GB modified end
         configsLayout->addWidget(parameterConfigs);
 
-        QMapIterator<QString, QList<float>> i(configParameters);
-        while (i.hasNext()) {
-            i.next();
-            parameterConfigs->addItem(i.key());
+        for (QMap<QString, Settings>::const_iterator cit = settingsMap.cbegin(); cit != settingsMap.cend(); cit++)
+        {
+            parameterConfigs->addItem(cit.key());
         }
 
         connect(parameterConfigs, SIGNAL(currentTextChanged(QString)), this, SLOT(onParameterConfigSelection(QString)));
@@ -462,7 +418,7 @@ private:
 
         //std::cout << std::setw(4) << j << std::endl;
 
-        QList<float> customs = defaultParameters["Default"];
+        QList<float> customs = defaultParameters[Settings::DEFAULT];
 
         customs[0] = j["Parameter Set"]["Radius_Min"];
         customs[1] = j["Parameter Set"]["Radius_Max"];
@@ -476,12 +432,7 @@ private:
         customs[9] = j["Parameter Set"]["ImageAwareSupport"];
         customs[10] = j["Parameter Set"]["EarlyRejection"];
 
-        configParameters.insert("Custom", customs);
-
-        if(parameterConfigs->findText("Custom") < 0) {
-            parameterConfigs->addItem("Custom");
-        }
-        parameterConfigs->setCurrentText("Custom");
+        insertCustomEntry(customs);
 
 //        minRadiusBox->setValue(j["Parameter Set"]["Radius_Min"]);
 //        maxRadiusBox->setValue(j["Parameter Set"]["Radius_Max"]);
@@ -505,23 +456,21 @@ private:
 //            { "Full Image Optimized", {40, 43, 6.4f, 21, 22, 26, 16, 10, 34, 0, 1} }
 //    };
 
-    QMap<QString, QList<float>> defaultParameters = {
-            { "Default", {40, 80, 1.6f, 20., 40, 0, 20, 2, 95, 1, 1} },
-            { "ROI 0.3 Optimized", {10, 112, 0.1f, 33, 64, 26, 21, 6, 22, 0, 1} },
-            { "ROI 0.6 Optimized", {21, 108, 0.3f, 21, 79, 31, 25, 2, 14, 1, 0} },
-            { "Full Image Optimized", {19, 115, 0.4f, 46, 63, 25, 38, 10, 27, 0, 1} },
-            { "Automatic Parametrization", {-1, -1, 0.4f, 46, 63, 25, 38, 10, 27, 0, 1} } // GB added
+    QMap<Settings, QList<float>> defaultParameters = {
+            { Settings::DEFAULT, {40.0f, 80.0f, 1.6f, 20.0f, 40.0f, 0.0f, 20.0f, 2.0f, 95.0f, 1.0f, 1.0f} },
+            { Settings::ROI_0_3_OPTIMIZED, {10.0f, 112.0f, 0.1f, 33.0f, 64.0f, 26.0f, 21.0f, 6.0f, 22.0f, 0.0f, 1.0f} },
+            { Settings::ROI_0_6_OPTIMIZED, {21.0f, 108.0f, 0.3f, 21.0f, 79.0f, 31.0f, 25.0f, 2.0f, 14.0f, 1.0f, 0.0f} },
+            { Settings::FULL_IMAGE_OPTIMIZED, {19.0f, 115.0f, 0.4f, 46.0f, 63.0f, 25.0f, 38.0f, 10.0f, 27.0f, 0.0f, 1.0f} },
+            { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, -1.0f, 0.4f, 46.0f, 63.0f, 25.0f, 38.0f, 10.0f, 27.0f, 0.0f, 1.0f} },
+            { Settings::CUSTOM, {-1.0f, -1.0f, 0.4f, 46.0f, 63.0f, 25.0f, 38.0f, 10.0f, 27.0f, 0.0f, 1.0f} } // GB added
     };
-
-
-    QMap<QString, QList<float>> configParameters;
-    QString configIndex;
 
 
 private slots:
 
     void onParameterConfigSelection(QString configKey) {
-        QList<float> selectedParameter = configParameters.value(configKey);
+        setConfigIndex(configKey);
+        QList<float>& selectedParameter = getCurrentParameters();
 
         // GB modified begin
 
@@ -552,27 +501,6 @@ private slots:
         // GB modified end
 
         //updateSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
-    }
-
-    void onResetClick() {
-        QString configKey = parameterConfigs->itemText(parameterConfigs->currentIndex());
-        configParameters[configKey] = defaultParameters.value(configKey);
-        onParameterConfigSelection(configKey);
-    }
-
-    void onLoadFileClick() {
-        QString filename = QFileDialog::getOpenFileName(this, tr("Open Algorithm Parameter File"), "", tr("JSON files (*.json)"));
-
-        if(!filename.isEmpty()) {
-
-            try {
-                loadSettingsFromFile(filename);
-            } catch(...) {
-                QMessageBox msgBox;
-                msgBox.setText("Error while loading parameter file. \nCorrect format and algorithm?");
-                msgBox.exec();
-            }
-        }
     }
 
 };

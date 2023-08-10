@@ -27,24 +27,12 @@ public:
 
     // GB: added pupilDetection instance to get the actual ROIs for Autometric Parametrization calculations
     explicit PuReSTSettings(PupilDetection * pupilDetection, PuReST *purest, QWidget *parent=0) : 
-        PupilMethodSetting(parent), 
+        PupilMethodSetting("PuReSTSettings.configParameters","PuReSTSettings.configIndex", parent), 
         purest(purest), 
-        pupilDetection(pupilDetection), 
-        configParameters(defaultParameters) {
-        
-        configParameters = applicationSettings->value("PuReSTSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
-
-        configIndex = applicationSettings->value("PuReSTSettings.configIndex", "Default").toString();
-
+        pupilDetection(pupilDetection){
+        PupilMethodSetting::setDefaultParameters(defaultParameters);
         createForm();
-
-        if(parameterConfigs->findText(configIndex) < 0) {
-            std::cout<<"Did not found config: "<<configIndex.toStdString()<<std::endl;
-            parameterConfigs->setCurrentText("Default");
-        } else {
-            parameterConfigs->setCurrentText(configIndex);
-        }
-
+        parameterConfigs->setCurrentText(settingsMap.key(configIndex));
         // GB added begin
         if(parameterConfigs->currentText()=="Automatic Parametrization") {
             canthiDistanceBox->setEnabled(false);
@@ -104,37 +92,10 @@ public:
         purest4 = s_purest;
     }
 
-    QMap<QString, QList<float>> getParameter() {
-        return configParameters;
-    }
-
-    void setParameter(QMap<QString, QList<float>> params) {
-        if(defaultParameters.size() == params.size())
-            configParameters = params;
-    }
-
-    void reset() {
-        configParameters = defaultParameters;
-    }
-
-    // GB modified begin
-    bool isAutoParamEnabled() override {
-        return (parameterConfigs->currentText()=="Automatic Parametrization");
-    }
-    // GB modified end
-
 public slots:
 
     void loadSettings() override {
-        configParameters = applicationSettings->value("PuReSTSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
-        configIndex = applicationSettings->value("PuReSTSettings.configIndex", "Default").toString();
-
-        if(parameterConfigs->findText(configIndex) < 0) {
-            std::cout<<"Did not found config: "<<configIndex.toStdString()<<std::endl;
-            parameterConfigs->setCurrentText("Default");
-        } else {
-            parameterConfigs->setCurrentText(configIndex);
-        }
+        PupilMethodSetting::loadSettings();
 
         // GB added begin
         if(parameterConfigs->currentText()=="Automatic Parametrization") {
@@ -169,8 +130,9 @@ public slots:
         baseHeight = imageHeightBox->value();
         purest->baseSize = cv::Size(baseWidth, baseHeight);
 
-        configParameters[parameterConfigs->currentText()][0] = baseWidth;
-        configParameters[parameterConfigs->currentText()][1] = baseHeight;
+        QList<float>& currentParameters = getCurrentParameters();
+        currentParameters[0] = baseWidth;
+        currentParameters[1] = baseHeight;
 
         if(purest2) {
             purest2->baseSize = cv::Size(baseWidth, baseHeight);
@@ -202,9 +164,9 @@ public slots:
             purest->maxPupilDiameterMM = maxPupilDiameterMM;
             purest->minPupilDiameterMM = minPupilDiameterMM;
 
-            configParameters[parameterConfigs->currentText()][2] = meanCanthiDistanceMM;
-            configParameters[parameterConfigs->currentText()][3] = minPupilDiameterMM;
-            configParameters[parameterConfigs->currentText()][4] = maxPupilDiameterMM;
+            currentParameters[2] = meanCanthiDistanceMM;
+            currentParameters[3] = minPupilDiameterMM;
+            currentParameters[4] = maxPupilDiameterMM;
 
             if(purest2) {
                 purest2->meanCanthiDistanceMM = meanCanthiDistanceMM;
@@ -227,8 +189,7 @@ public slots:
 
         emit onConfigChange(parameterConfigs->currentText());
 
-        applicationSettings->setValue("PuReSTSettings.configParameters", QVariant::fromValue(configParameters));
-        applicationSettings->setValue("PuReSTSettings.configIndex", parameterConfigs->currentText());
+        PupilMethodSetting::updateSettings();
     }
 
 private:
@@ -250,13 +211,9 @@ private:
     QDoubleSpinBox *maxPupilBox;
     QDoubleSpinBox *minPupilBox;
 
-    QPushButton *resetButton;
-    QComboBox *parameterConfigs;
-    QPushButton *fileButton;
-
     void createForm() {
-
-        QList<float> selectedParameter = configParameters.value(configIndex);
+        PupilMethodSetting::loadSettings();
+        QList<float>& selectedParameter = getCurrentParameters();
 
         float meanCanthiDistanceMM = selectedParameter[2];
         float maxPupilDiameterMM = selectedParameter[4];
@@ -277,10 +234,9 @@ private:
         // GB modified end
         configsLayout->addWidget(parameterConfigs);
 
-        QMapIterator<QString, QList<float>> i(configParameters);
-        while (i.hasNext()) {
-            i.next();
-            parameterConfigs->addItem(i.key());
+        for (QMap<QString, Settings>::const_iterator cit = settingsMap.cbegin(); cit != settingsMap.cend(); cit++)
+        {
+            parameterConfigs->addItem(cit.key());
         }
 
         connect(parameterConfigs, SIGNAL(currentTextChanged(QString)), this, SLOT(onParameterConfigSelection(QString)));
@@ -377,26 +333,22 @@ private:
 
         //std::cout << std::setw(4) << j << std::endl;
 
-        QList<float> customs = defaultParameters["Default"];
+        QList<float> customs = defaultParameters[Settings::DEFAULT];
 
         customs[2] = j["Parameter Set"]["meanCanthiDistanceMM"];
         customs[3] = j["Parameter Set"]["minPupilDiameterMM"];
         customs[4] = j["Parameter Set"]["maxPupilDiameterMM"];
 
-        configParameters.insert("Custom", customs);
-
-        if(parameterConfigs->findText("Custom") < 0) {
-            parameterConfigs->addItem("Custom");
-        }
-        parameterConfigs->setCurrentText("Custom");
+        insertCustomEntry(customs);
     }
 
-    QMap<QString, QList<float>> defaultParameters = {
-            { "Default", {320.0f, 240.0f, 27.6f, 2.0f, 8.0f} },
-            { "ROI 0.3 Optimized", {320.0f, 240.0f, 65.9f, 4.7f, 17.5f} },
-            { "ROI 0.6 Optimized", {320.0f, 240.0f, 58.4f, 1.5f, 12.8f} },
-            { "Full Image Optimized", {320.0f, 240.0f, 99.6f, 1.8f, 7.2f} },
-            { "Automatic Parametrization", {320.0f, 240.0f, -1.0f, -1.0f, -1.0f} } // GB added
+    QMap<Settings, QList<float>> defaultParameters = {
+            { Settings::DEFAULT, {320.0f, 240.0f, 27.6f, 2.0f, 8.0f} },
+            { Settings::ROI_0_3_OPTIMIZED, {320.0f, 240.0f, 65.9f, 4.7f, 17.5f} },
+            { Settings::ROI_0_6_OPTIMIZED, {320.0f, 240.0f, 58.4f, 1.5f, 12.8f} },
+            { Settings::FULL_IMAGE_OPTIMIZED, {320.0f, 240.0f, 99.6f, 1.8f, 7.2f} },
+            { Settings::AUTOMATIC_PARAMETRIZATION, {320.0f, 240.0f, -1.0f, -1.0f, -1.0f} },
+            { Settings::CUSTOM, {320.0f, 240.0f, -1.0f, -1.0f, -1.0f} } // GB added
     };
 
 
@@ -407,18 +359,12 @@ private:
 //            { "Full Image Optimized", {320.0f, 240.0f, 71.3f, 2.2f, 6.3f} }
 //    };
 
-    QMap<QString, QList<float>> configParameters;
-    QString configIndex;
-
 
 private slots:
 
     void onParameterConfigSelection(QString configKey) {
-        //QString configKey = parameterConfigs->itemText(parameterConfigs->currentIndex());
-        QList<float> selectedParameter = configParameters.value(configKey);
-
-        //applicationSettings->setValue("PuReSTSettings.configIndex", configKey); // GB: commented this out (possibly it was here by mistake?)
-
+        setConfigIndex(configKey);
+        QList<float>& selectedParameter = getCurrentParameters();
 
         // GB modified begin
 
@@ -444,27 +390,6 @@ private slots:
         // GB modified end
 
         //updateSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
-    }
-
-    void onResetClick() {
-        QString configKey = parameterConfigs->itemText(parameterConfigs->currentIndex());
-        configParameters[configKey] = defaultParameters.value(configKey);
-        onParameterConfigSelection(configKey);
-    }
-
-    void onLoadFileClick() {
-        QString filename = QFileDialog::getOpenFileName(this, tr("Open Algorithm Parameter File"), "", tr("JSON files (*.json)"));
-
-        if(!filename.isEmpty()) {
-
-            try {
-                loadSettingsFromFile(filename);
-            } catch(...) {
-                QMessageBox msgBox;
-                msgBox.setText("Error while loading parameter file. \nCorrect format and algorithm?");
-                msgBox.exec();
-            }
-        }
     }
 
 };

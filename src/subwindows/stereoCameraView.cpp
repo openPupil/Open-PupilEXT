@@ -156,7 +156,8 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     roiMenu->addAction(middleROIAct);
 
 
-    QMenu *autoParamMenu = pupilDetectionMenu->addMenu(tr("&Automatic Parametrization"));
+    autoParamMenu = pupilDetectionMenu->addMenu(tr("&Automatic Parametrization"));
+    autoParamMenu->setEnabled(isAutoParamModificationEnabled());
     
     QWidget *autoParamPupSizeWidget = new QWidget();
     QHBoxLayout *autoParamPupSizeLayout = new QHBoxLayout();
@@ -321,7 +322,7 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(pupilDetection, SIGNAL(processingFinished()), this, SLOT(onPupilDetectionStop()));
     connect(pupilDetection, SIGNAL(fps(double)), this, SLOT(updateProcessingFPS(double)));
     connect(pupilDetection, SIGNAL (algorithmChanged()), this, SLOT (updateAlgorithmLabel()));
-    connect(pupilDetection, SIGNAL (configChanged(QString)), this, SLOT (updateConfigLabel(QString)));
+    connect(pupilDetection, SIGNAL (configChanged(QString)), this, SLOT (onPupilDetectionConfigChanged(QString)));
 
     pupilDetection->setUpdateFPS(1000/updateDelay);
 
@@ -877,8 +878,9 @@ void StereoCameraView::onSettingsChange() {
 
 // Updates a label which shows the current config
 // A config a i.e. the optimized detection parameter for a specific ROI size
-void StereoCameraView::updateConfigLabel(QString config) {
+void StereoCameraView::onPupilDetectionConfigChanged(QString config) {
     processingConfigLabel->setText(config);
+    autoParamMenu->setEnabled(isAutoParamModificationEnabled());
 }
 
 
@@ -999,4 +1001,8 @@ void StereoCameraView::onDiscardROISelectionClick(){
     if(secondaryVideoView->getDoubleROI())
         secondaryVideoView->setROI2SelectionR(tempROIs[3]);
     onSaveROIClick();
+}
+
+bool StereoCameraView::isAutoParamModificationEnabled(){
+    return pupilDetection->isAutoParamSettingsEnabled();
 }

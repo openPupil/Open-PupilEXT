@@ -333,7 +333,14 @@ private:
     bool autoParamEnabled = false; // true as long as there is demand for autoParam. Also for informing other class instances through getter
     float autoParamPupSizePercent = 50;
     bool autoParamScheduled = false; // true only if a new performAutoParam() is necessary shortly. (need this, because performAutoParam cannot do anything when called without ROIs defined)
+    
+    bool autoParamSettingsEnabled = false; // True if pupil detection algorithm has Automatic Parametrization setting selected.
+
     void performAutoParam(); // GB added
+
+    PupilDetectionMethod* getCurrentMethod(){
+        return getCurrentMethod1();
+    };
 
 public slots:
 
@@ -349,6 +356,8 @@ public slots:
 
     void setAutoParamEnabled(bool state);
     void setAutoParamPupSizePercent(float value);
+    bool isAutoParamSettingsEnabled();
+    void setAutoParamSettingsEnabled(bool enabled);
     float getAutoParamPupSizePercent();
     //void performAutoParam();
     void setAutoParamScheduled(bool state);

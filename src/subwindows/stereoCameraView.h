@@ -63,6 +63,8 @@ private:
     QAction *plotCenterAct;
     QAction *plotROIAct;
 
+    QMenu *autoParamMenu;
+
     //QAction *roiMenuAct;
     QAction *customROIAct;
     QAction *smallROIAct;
@@ -112,6 +114,7 @@ private:
     // GB added end
 
     void loadSettings();
+    bool isAutoParamModificationEnabled();
 
 public slots:
 
@@ -140,7 +143,7 @@ public slots:
     void onPlotROIClick(bool value);
     void onSettingsChange();
     void updateAlgorithmLabel();
-    void updateConfigLabel(QString config);
+    void onPupilDetectionConfigChanged(QString config);
 
     // GB modified/added begin
     void onPupilDetectionMenuClick();

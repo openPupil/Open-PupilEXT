@@ -1052,6 +1052,11 @@ template <typename T> void PupilDetection::writeVectorCSV(std::vector<std::pair<
 // When the config changes, emit a signal to inform others of the current settings config i.e. subject configuration
 void PupilDetection::setConfigLabel(QString config) {
     currentConfigLabel = config;
+        if (config =="Automatic Parametrization")
+        setAutoParamSettingsEnabled(true);
+    else
+        setAutoParamSettingsEnabled(false);
+
     emit configChanged(config);
 }
 
@@ -1193,6 +1198,14 @@ void PupilDetection::setAutoParamEnabled(bool state) {
     autoParamEnabled = state;
 
     // GB TODO: do update here onse more for sure?
+}
+
+bool PupilDetection::isAutoParamSettingsEnabled(){
+    return autoParamSettingsEnabled;
+}
+
+void PupilDetection::setAutoParamSettingsEnabled(bool enabled){
+    autoParamSettingsEnabled = enabled;
 }
 
 void PupilDetection::setAutoParamPupSizePercent(float value) {
@@ -1372,3 +1385,4 @@ void PupilDetection::performAutoParam() {
 
     }
 }
+

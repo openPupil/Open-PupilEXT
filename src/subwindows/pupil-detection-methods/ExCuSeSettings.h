@@ -27,23 +27,13 @@ public:
 
     // GB: added pupilDetection instance to get the actual ROIs for Autometric Parametrization calculations
     explicit ExCuSeSettings(PupilDetection * pupilDetection, ExCuSe *m_excuse, QWidget *parent=0) : 
-        PupilMethodSetting(parent), 
+        PupilMethodSetting("ExCuSeSettings.configParameters", "ExCuSeSettings.configIndex", parent), 
         p_excuse(m_excuse), 
-        pupilDetection(pupilDetection),
-        configParameters(defaultParameters)  {
-        
-        configParameters = applicationSettings->value("ExCuSeSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
+        pupilDetection(pupilDetection) {
 
-        configIndex = applicationSettings->value("ExCuSeSettings.configIndex", "Default").toString();
-
+        PupilMethodSetting::setDefaultParameters(defaultParameters);
         createForm();
-
-        if(parameterConfigs->findText(configIndex) < 0) {
-            std::cout<<"Did not found config: "<<configIndex.toStdString()<<std::endl;
-            parameterConfigs->setCurrentText("Default");
-        } else {
-            parameterConfigs->setCurrentText(configIndex);
-        }
+        parameterConfigs->setCurrentText(settingsMap.key(configIndex));
 
         // GB added begin
         if(parameterConfigs->currentText()=="Automatic Parametrization") {
@@ -103,37 +93,10 @@ public:
         excuse4 = s_excuse;
     }
 
-    QMap<QString, QList<float>> getParameter() {
-        return configParameters;
-    }
-
-    void setParameter(QMap<QString, QList<float>> params) {
-        if(defaultParameters.size() == params.size())
-            configParameters = params;
-    }
-
-    void reset() {
-        configParameters = defaultParameters;
-    }
-
-    // GB modified begin
-    bool isAutoParamEnabled() override {
-        return (parameterConfigs->currentText()=="Automatic Parametrization");
-    }
-    // GB modified end
-
 public slots:
 
     void loadSettings() override {
-        configParameters = applicationSettings->value("ExCuSeSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
-        configIndex = applicationSettings->value("ExCuSeSettings.configIndex", "Default").toString();
-
-        if(parameterConfigs->findText(configIndex) < 0) {
-            std::cout<<"Did not found config: "<<configIndex.toStdString()<<std::endl;
-            parameterConfigs->setCurrentText("Default");
-        } else {
-            parameterConfigs->setCurrentText(configIndex);
-        }
+        PupilMethodSetting::loadSettings();
 
         // GB added begin
         if(parameterConfigs->currentText()=="Automatic Parametrization") {
@@ -168,7 +131,8 @@ public slots:
 
         p_excuse->good_ellipse_threshold = good_ellipse_threshold;
 
-        configParameters[parameterConfigs->currentText()][1] = good_ellipse_threshold;
+        QList<float>& currentParameters = getCurrentParameters();
+        currentParameters[1] = good_ellipse_threshold;
 
         if(excuse2) {
             excuse2->good_ellipse_threshold = good_ellipse_threshold;
@@ -195,7 +159,7 @@ public slots:
             
             p_excuse->max_ellipse_radi = max_ellipse_radi;
 
-            configParameters[parameterConfigs->currentText()][0] = max_ellipse_radi;
+            currentParameters[0] = max_ellipse_radi;
 
             if(excuse2) {
                 excuse2->max_ellipse_radi = max_ellipse_radi;
@@ -209,14 +173,9 @@ public slots:
             
         }
         // GB modified end
-
-
-        
-
         emit onConfigChange(parameterConfigs->currentText());
 
-        applicationSettings->setValue("ExCuSeSettings.configParameters", QVariant::fromValue(configParameters));
-        applicationSettings->setValue("ExCuSeSettings.configIndex", parameterConfigs->currentText());
+        PupilMethodSetting::updateSettings();
     }
 
 private:
@@ -234,13 +193,9 @@ private:
     QSpinBox *maxRadiBox;
     QSpinBox *ellipseThresholdBox;
 
-    QPushButton *resetButton;
-    QComboBox *parameterConfigs;
-    QPushButton *fileButton;
-
     void createForm() {
-
-        QList<float> selectedParameter = configParameters.value(configIndex);
+        PupilMethodSetting::loadSettings();
+        QList<float>& selectedParameter = getCurrentParameters();
 
 
         int max_ellipse_radi = selectedParameter[0];
@@ -258,10 +213,9 @@ private:
         // GB modified end
         configsLayout->addWidget(parameterConfigs);
 
-        QMapIterator<QString, QList<float>> i(configParameters);
-        while (i.hasNext()) {
-            i.next();
-            parameterConfigs->addItem(i.key());
+                for (QMap<QString, Settings>::const_iterator cit = settingsMap.cbegin(); cit != settingsMap.cend(); cit++)
+        {
+            parameterConfigs->addItem(cit.key());
         }
 
         connect(parameterConfigs, SIGNAL(currentTextChanged(QString)), this, SLOT(onParameterConfigSelection(QString)));
@@ -317,36 +271,28 @@ private:
 
         //std::cout << std::setw(4) << j << std::endl;
 
-        QList<float> customs = defaultParameters["Default"];
+        QList<float> customs = PupilMethodSetting::defaultParameters[Settings::DEFAULT];
 
         customs[0] = j["Parameter Set"]["max_ellipse_radi"];
         customs[1] = j["Parameter Set"]["good_ellipse_threshold"];
 
-        configParameters.insert("Custom", customs);
-
-        if(parameterConfigs->findText("Custom") < 0) {
-            parameterConfigs->addItem("Custom");
-        }
-        parameterConfigs->setCurrentText("Custom");
-
+        insertCustomEntry(customs);
     }
 
-    QMap<QString, QList<float>> defaultParameters = {
-            { "Default", {50, 15} },
-            { "ROI 0.3 Optimized", {146, 7} },
-            { "ROI 0.6 Optimized", {216, 34} },
-            { "Full Image Optimized", {39, 0} },
-            { "Automatic Parametrization", {-1, 15} } // GB added
+    QMap<Settings, QList<float>> defaultParameters = {
+            { Settings::DEFAULT, {50.0f, 15.0f} },
+            { Settings::ROI_0_3_OPTIMIZED, {146.0f, 7.0f} },
+            { Settings::ROI_0_6_OPTIMIZED, {216.0f, 34.0f} },
+            { Settings::FULL_IMAGE_OPTIMIZED, {39.0f, 0.0f} },
+            { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, 15.0f} },
+            { Settings::CUSTOM, {-1.0f, 15.0f} } // GB added
     };
-
-
-    QMap<QString, QList<float>> configParameters;
-    QString configIndex;
 
 private slots:
 
     void onParameterConfigSelection(QString configKey) {
-        QList<float> selectedParameter = configParameters.value(configKey);
+        setConfigIndex(configKey);
+        QList<float>& selectedParameter = getCurrentParameters();
 
         // GB modified begin
         ellipseThresholdBox->setValue(selectedParameter[1]);
@@ -361,27 +307,6 @@ private slots:
         // GB modified end
 
         //updateSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
-    }
-
-    void onResetClick() {
-        QString configKey = parameterConfigs->itemText(parameterConfigs->currentIndex());
-        configParameters[configKey] = defaultParameters.value(configKey);
-        onParameterConfigSelection(configKey);
-    }
-
-    void onLoadFileClick() {
-        QString filename = QFileDialog::getOpenFileName(this, tr("Open Algorithm Parameter File"), "", tr("JSON files (*.json)"));
-
-        if(!filename.isEmpty()) {
-
-            try {
-                loadSettingsFromFile(filename);
-            } catch(...) {
-                QMessageBox msgBox;
-                msgBox.setText("Error while loading parameter file. \nCorrect format and algorithm?");
-                msgBox.exec();
-            }
-        }
     }
 
 };

@@ -159,7 +159,8 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     roiMenu->addAction(middleROIAct);
     
 
-    QMenu *autoParamMenu = pupilDetectionMenu->addMenu(tr("&Automatic Parametrization"));
+    autoParamMenu = pupilDetectionMenu->addMenu(tr("&Automatic Parametrization"));
+    autoParamMenu->setEnabled(isAutoParamModificationEnabled());
     
     QWidget *autoParamPupSizeWidget = new QWidget();
     QHBoxLayout *autoParamPupSizeLayout = new QHBoxLayout();
@@ -317,7 +318,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(pupilDetection, SIGNAL(processingFinished()), this, SLOT(onPupilDetectionStop()));
     connect(pupilDetection, SIGNAL(fps(double)), this, SLOT(updateProcessingFPS(double)));
     connect(pupilDetection, SIGNAL (algorithmChanged()), this, SLOT (updateAlgorithmLabel()));
-    connect(pupilDetection, SIGNAL (configChanged(QString)), this, SLOT (updateConfigLabel(QString)));
+    connect(pupilDetection, SIGNAL (configChanged(QString)), this, SLOT (onPupilDetectionConfigChanged(QString)));
 
     pupilDetection->setUpdateFPS(1000/updateDelay);
 
@@ -541,8 +542,9 @@ void SingleCameraView::updateAlgorithmLabel() {
     processingAlgorithmLabel->setText(QString::fromStdString(pupilDetection->getCurrentMethod1()->title()));
 }
 
-void SingleCameraView::updateConfigLabel(QString config) {
+void SingleCameraView::onPupilDetectionConfigChanged(QString config) {
     processingConfigLabel->setText(config);
+    autoParamMenu->setEnabled(isAutoParamModificationEnabled());
 }
 
 
@@ -710,7 +712,6 @@ void SingleCameraView::onPlotROIClick(bool value) {
     applicationSettings->setValue("SingleCameraView.plotROIContour", plotROIContour);
     showAutoParamAct->setEnabled(value);
     emit onShowAutoParamOverlay(showAutoParamOverlay);
-
     emit onShowROI(plotROIContour);
 }
 
@@ -832,7 +833,6 @@ void SingleCameraView::updateForPupilDetectionProcMode() {
 void SingleCameraView::onShowAutoParamOverlay(bool state) {
     showAutoParamOverlay = state;
     applicationSettings->setValue("SingleCameraView.showAutoParamOverlay", showAutoParamOverlay);
-
     emit onChangeShowAutoParamOverlay(showAutoParamOverlay);
 }
 
@@ -865,4 +865,8 @@ void SingleCameraView::onDiscardROISelectionClick(){
     if(videoView->getDoubleROI())
         videoView->setROI2SelectionR(tempROIRect2);
     onSaveROIClick();
+}
+
+bool SingleCameraView::isAutoParamModificationEnabled(){
+    return pupilDetection->isAutoParamSettingsEnabled();
 }
