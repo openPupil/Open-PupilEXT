@@ -9,7 +9,7 @@
 
 // Creates a new stereo camera view widget, taking a stereo based camera (StereoCamera or FileCamera with stero mode)
 // Pupil detection process is used to get detection results and display them, communicate ROI selection
-StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetection, QWidget *parent) :
+StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetection, bool playbackFrozen, QWidget *parent) :
         QWidget(parent),
         camera(camera),
         pupilDetection(pupilDetection),
@@ -17,6 +17,7 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
         plotPupilCenter(false),
         plotROIContour(true),
         initPupilViewSize(false),
+        playbackFrozen(playbackFrozen),
         //pupilViewSize(0, 0),
         currentCameraFPS(0.0),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
@@ -33,6 +34,12 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     toolBar->addSeparator();
     toolBar->addAction("+Zoom", this, &StereoCameraView::onZoomPlusClick);
     toolBar->addAction("-Zoom", this, &StereoCameraView::onZoomMinusClick);
+    if (playbackFrozen)
+        freezeText = "Unfreeze";
+    else 
+        freezeText = "Freeze";
+            
+    freezeAct = toolBar->addAction(freezeText, this, &StereoCameraView::onFreezeClicked);
     toolBar->addSeparator();
 
     QMenu *plotMenu = new QMenu("Show");
@@ -896,6 +903,23 @@ void StereoCameraView::onAutoParamPupSize(int value) {
     applicationSettings->setValue("autoParamPupSizePercent", value); 
     mainVideoView->drawOverlay();
     secondaryVideoView->drawOverlay();
+}
+
+void StereoCameraView::onFreezeClicked()
+{
+    emit cameraPlaybackChanged();
+}
+
+void StereoCameraView::onCameraPlaybackChanged()
+{
+    if (playbackFrozen)
+    freezeText = "Freeze";
+    else 
+        freezeText = "Unfreeze";
+
+    freezeAct->setText(freezeText);
+
+    playbackFrozen = !playbackFrozen;
 }
 
 void StereoCameraView::updateForPupilDetectionProcMode() {

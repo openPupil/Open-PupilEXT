@@ -317,54 +317,7 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
 }
 
 void ImagePlaybackControlDialog::onStartPauseButtonClick() {
-    if(playImagesOn) {
-        std::cout<<"Pausing FileCamera Click"<<std::endl;
-        fileCamera->pause();
-
-        //stalledTimestamp = fileCamera->getLastCommissionedTimestamp();
-        stalledTimestamp = fileCamera->getTimestampForFrameNumber(fileCamera->getLastCommissionedFrameNumber());
-        // GB NOTE: I have already added a guiderail in imageReader.cpp, but still, rarely just the image corresponding to the last commissioned frame number (and its timestamp) does never arrive at updateInfo(quint64 timestamp, int frameNumber)
-        std::cout<<"Pausing, lastTimestamp: "<< lastTimestamp << std::endl;
-        std::cout<<"Pausing, stalledTimestamp: "<< stalledTimestamp << std::endl;
-        if(lastTimestamp < stalledTimestamp) {
-            slider->setEnabled(false);
-            dial->setEnabled(false);
-            startPauseButton->setEnabled(false);
-            stopButton->setEnabled(false);
-            
-            infoGroup->setEnabled(false);
-
-            playbackStalled = true;
-            waitingForReset = false;
-
-        } else {
-            dial->setEnabled(true); 
-        }
-
-        const QIcon icon = QIcon(":/icons/Breeze/actions/22/media-playback-start.svg");
-        startPauseButton->setIcon(icon);
-        playImagesOn = false;
-        enableWidgets(false);
-    } else {
-        
-        //stalledTimestamp = 0;
-
-        // GB: dial can be buggy when touched during playing is on, so disabled it if play is on. 
-        // Can be operated separately, when paused
-        dial->setEnabled(false); 
-
-        emit onPlaybackSafelyStarted();
-
-        std::cout<<"Starting FileCamera Click"<<std::endl;
-        fileCamera->start();
-
-        const QIcon icon = QIcon(":/icons/Breeze/actions/22/media-playback-pause.svg");
-        startPauseButton->setIcon(icon);
-        playImagesOn = true;
-        enableWidgets(true);
-    }
-
-    this->update(); // invalidate 
+    emit cameraPlaybackChanged();
 }
 
 void ImagePlaybackControlDialog::onStopButtonClick() {
@@ -492,7 +445,9 @@ void ImagePlaybackControlDialog::readSettings() {
 
     const QByteArray m_playbackSpeed = applicationSettings->value("playbackSpeed", QByteArray()).toByteArray();
     if (!m_playbackSpeed.isEmpty())
-        playbackSpeed = m_playbackSpeed.toInt();
+        setPlaybackSpeed(m_playbackSpeed.toInt());
+    else
+        setPlaybackSpeed(30);
 
     const QByteArray m_playbackLoop = applicationSettings->value("playbackLoop", QByteArray()).toByteArray();
     playbackLoop = true;
@@ -562,6 +517,11 @@ bool ImagePlaybackControlDialog::getSyncStream() {
     return syncStream;
 }
 
+bool ImagePlaybackControlDialog::getPlayImagesOn()
+{
+    return playImagesOn;
+}
+
 // Set whether we want csv recording to start/pause on playback start/(pause/stop)
 void ImagePlaybackControlDialog::setSyncRecordCsv(int m_state) {
     syncRecordCsv = (bool) m_state;
@@ -576,6 +536,58 @@ void ImagePlaybackControlDialog::setSyncStream(int m_state) {
     applicationSettings->setValue("syncStream", syncStream);
 
     // TODO
+}
+
+void ImagePlaybackControlDialog::onCameraPlaybackChanged()
+{
+    if(playImagesOn) {
+        std::cout<<"Pausing FileCamera Click"<<std::endl;
+        fileCamera->pause();
+
+        //stalledTimestamp = fileCamera->getLastCommissionedTimestamp();
+        stalledTimestamp = fileCamera->getTimestampForFrameNumber(fileCamera->getLastCommissionedFrameNumber());
+        // GB NOTE: I have already added a guiderail in imageReader.cpp, but still, rarely just the image corresponding to the last commissioned frame number (and its timestamp) does never arrive at updateInfo(quint64 timestamp, int frameNumber)
+        std::cout<<"Pausing, lastTimestamp: "<< lastTimestamp << std::endl;
+        std::cout<<"Pausing, stalledTimestamp: "<< stalledTimestamp << std::endl;
+        if(lastTimestamp < stalledTimestamp) {
+            slider->setEnabled(false);
+            dial->setEnabled(false);
+            startPauseButton->setEnabled(false);
+            stopButton->setEnabled(false);
+            
+            infoGroup->setEnabled(false);
+
+            playbackStalled = true;
+            waitingForReset = false;
+
+        } else {
+            dial->setEnabled(true); 
+        }
+
+        const QIcon icon = QIcon(":/icons/Breeze/actions/22/media-playback-start.svg");
+        startPauseButton->setIcon(icon);
+        playImagesOn = false;
+        enableWidgets(false);
+    } else {
+        
+        //stalledTimestamp = 0;
+
+        // GB: dial can be buggy when touched during playing is on, so disabled it if play is on. 
+        // Can be operated separately, when paused
+        dial->setEnabled(false); 
+
+        emit onPlaybackSafelyStarted();
+
+        std::cout<<"Starting FileCamera Click"<<std::endl;
+        fileCamera->start();
+
+        const QIcon icon = QIcon(":/icons/Breeze/actions/22/media-playback-pause.svg");
+        startPauseButton->setIcon(icon);
+        playImagesOn = true;
+        enableWidgets(true);
+    }
+
+    this->update(); // invalidate 
 }
 
 void ImagePlaybackControlDialog::onFrameSelected(int frameNumber){

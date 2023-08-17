@@ -64,7 +64,7 @@ ImageReader::ImageReader(QString directory, int playbackSpeed, bool playbackLoop
     // GB added begin
     bool ok;
     for(size_t u = 0; u < filenames.size(); u++) {
-        acqTimestamps.push_back( QFileInfo(QString::fromStdString(filenames[u])).baseName().toULongLong(&ok, 0) );
+        acqTimestamps.push_back( QFileInfo(QString::fromStdString(filenames[u])).baseName().toULongLong(&ok, 10) );
     }
 
     // GB added begin

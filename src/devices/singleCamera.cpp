@@ -77,6 +77,8 @@ SingleCamera::SingleCamera(const CDeviceInfo &di, QObject* parent)
     }
 }
 
+
+
 SingleCamera::~SingleCamera() {
     calibrationThread->quit();
     calibrationThread->wait();
@@ -559,6 +561,18 @@ CameraImageType SingleCamera::getType() {
     return CameraImageType::LIVE_SINGLE_CAMERA;
 }
 
+void SingleCamera::startGrabbing()
+{
+    if (camera.IsOpen() && !camera.IsGrabbing())
+        camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+}
+
+void SingleCamera::stopGrabbing()
+{
+    if (camera.IsOpen() && camera.IsGrabbing())
+        camera.StopGrabbing();
+}
+
 QString SingleCamera::getCalibrationFilename() {
 
     return settingsDirectory.filePath(getFriendlyName() + "_calibration_" +
@@ -640,6 +654,11 @@ double SingleCamera::getTemperature() {
     d = camera.DeviceTemperature.GetValue();
 
     return d;
+}
+
+bool SingleCamera::isGrabbing()
+{
+    return camera.IsGrabbing();
 }
 
 // NOTE: grabbing "pause" is necessary for setting binning

@@ -72,6 +72,8 @@ public:
 protected:
 
     void closeEvent(QCloseEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
+    bool eventFilter(QObject *obj, QEvent *event);
 
 private:
  
@@ -137,6 +139,7 @@ private:
     bool recordImagesOn = false;
     //bool playImagesOn = false; // GB: from now can be checked via ImagePlaybackControlDialog
     bool hwTriggerOn = false;
+    bool cameraPlaying = true;
 
     void createActions();
     void createStatusBar();
@@ -193,6 +196,13 @@ private:
 
     void loadCalibrationWindow();
     void loadSharpnessWindow();
+
+    void stopCamera();
+    void startCamera();
+
+    void resetStatus(bool isConnect);
+
+    void connectCameraPlaybackChangedSlots();
     // GB added end
 
 private slots:
@@ -313,11 +323,17 @@ public slots:
     void PRGdisconnectRemoteCOM();
     void PRGdisconnectStreamUDP();
     void PRGdisconnectStreamCOM();
+
+    void onCameraFreezePressed();
+
+    void onCameraPlaybackChanged();
     // GB added end
 
 signals:
     void commitTrialCounterIncrement(quint64 timestamp);
     void commitTrialCounterReset(quint64 timestamp);
+
+    void cameraPlaybackChanged();
 
 };
 

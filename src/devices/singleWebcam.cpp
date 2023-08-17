@@ -178,6 +178,14 @@ SingleWebcam::SingleWebcam(int deviceID, QString friendlyName, QObject* parent)
     }
 }
 
+void SingleWebcam::stopGrabbing(){
+    grabberDummy->stop();
+}
+
+void SingleWebcam::startGrabbing(){
+    grabberDummy->run();
+}
+
 SingleWebcam::~SingleWebcam() {
     //grabbingThread->terminate();
     grabbingThread->deleteLater();
@@ -215,6 +223,11 @@ QString SingleWebcam::getCalibrationFilename() {
             QString::number(cameraCalibration->getSquareSize()) + "_" +
             QString::number(cameraCalibration->getBoardSize().width+1) + "x" +
             QString::number(cameraCalibration->getBoardSize().height+1) + ".xml");
+}
+
+bool SingleWebcam::isGrabbing()
+{
+    return grabberDummy->running();
 }
 
 void SingleWebcam::loadCalibrationFile() {

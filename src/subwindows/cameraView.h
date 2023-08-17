@@ -1,35 +1,19 @@
 
-#ifndef PUPILEXT_SINGLECAMERAVIEW_H
-#define PUPILEXT_SINGLECAMERAVIEW_H
+#ifndef PUPILEXT_CAMERAVIEW_H
+#define PUPILEXT_CAMERAVIEW_H
 
-/**
-    @author Moritz Lode, Gábor Bényei
-*/
 
-#include <QtCore/qobjectdefs.h>
 #include <QtWidgets/QWidget>
 
-#include "videoView.h"
-#include "../devices/singleCamera.h"
-#include "../pupilDetection.h"
-
-#include "../devices/fileCamera.h"
-
-/**
-    Main view showing the camera images for a single camera, at the same time displays results of the pupil detection rendered on top of the image
-
-    setUpdateFPS(): define the rate with which the camera view is updated, not changing the camera framerate or the pupil detection framerate
-
-    NOTE: Modified by Gábor Bényei, 2023 jan
-    GB NOTE: onShowROI() onShowPupilCenter() and not handled in pupilDetection anymore
-*/
-class SingleCameraView : public QWidget {
-    Q_OBJECT
+class CameraView : public QWidget {
+Q_OBJECT
 
 public:
 
-    explicit SingleCameraView(Camera *camera, PupilDetection *pupilDetection, bool playbackFrozen,  QWidget *parent=0);
-    ~SingleCameraView() override;
+    
+    explicit inline CameraView(QWidget *parent = 0) : QWidget(parent){}
+
+    virtual ~CameraView(){}
 
     void setUpdateFPS(int fps) {
         updateDelay = 1000/fps;
@@ -37,15 +21,12 @@ public:
             pupilDetection->setUpdateFPS(fps);
     }
 
-private:
-
     Camera *camera;
     PupilDetection *pupilDetection;
 
     QSettings *applicationSettings;
 
     QElapsedTimer timer;
-    QElapsedTimer pupilViewTimer;
     int updateDelay;
 
     QToolBar *toolBar;
@@ -59,6 +40,7 @@ private:
     QAction *displayDetailAct;
     QAction *plotCenterAct;
     QAction *plotROIAct;
+
     QMenu *autoParamMenu;
 
     //QAction *roiMenuAct;
@@ -66,7 +48,8 @@ private:
     QAction *smallROIAct;
     QAction *middleROIAct;
 
-    VideoView *videoView;
+    VideoView *mainVideoView;
+    VideoView *secondaryVideoView;
 
     QStatusBar *statusBar;
     QLabel *cameraFPSValue;
@@ -74,18 +57,18 @@ private:
     QLabel *processingFPSValue;
     QWidget *statusProcessingFPSWidget;
     QLabel *processingConfigLabel;
+    QElapsedTimer pupilViewTimer;
+
     
 
     bool displayPupilView;
     bool plotPupilCenter;
     bool plotROIContour;
     bool initPupilViewSize;
-
     //QSize pupilViewSize;
-
+    //QSize pupilViewSizeSec;
+    
     double currentCameraFPS;
-
-
 
     // GB added begin
     QAction *pupilDetectionMenuAct;
@@ -101,13 +84,9 @@ private:
     QAction *showAutoParamAct;
     bool showAutoParamOverlay;
     
-    QRectF tempROIRect1;
-    QRectF tempROIRect2;
+    virtual void updateProcModeLabel() = 0;
 
-    void updateProcModeLabel();
-    void loadSettings();
     bool isAutoParamModificationEnabled();
-    // GB added end
 
 public slots:
 
@@ -118,21 +97,23 @@ public slots:
     void updateCameraFPS(double fps);
     void updateProcessingFPS(double fps);
     //void updatePupilView(quint64 timestamp, const Pupil &pupil, const QString &filename);
-    void updatePupilView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils);
+    virtual void updatePupilView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils) = 0;
     void updateAlgorithmLabel();
 
-    void onFitClick();
+    virtual void onFitClick() = 0;
     //void onAcqImageROIchanged(); //added by kheki4 on 2022.10.24, NOTE: to properly re-fit view when image acquisition ROI is changed
-    void on100pClick();
-    void onZoomPlusClick();
-    void onZoomMinusClick();
-    void onSetROIClick(float roiSize);
-    void onSaveROIClick();
-    void onResetROIClick();
-    void onDiscardROISelectionClick();
+    virtual void on100pClick() = 0;
+    virtual void onZoomPlusClick() = 0;
+    virtual void onZoomMinusClick() = 0;
+    virtual void onSetROIClick(float roiSize) = 0;
+    virtual void onSaveROIClick() = 0;
+    virtual void onResetROIClick() = 0;
+    virtual void void onDiscardROISelectionClick() = 0;
 
-    void onDisplayPupilViewClick(bool value);
+    virtual void onDisplayPupilViewClick(bool value) = 0;
+    // TODO: REFACTOR
     void onPlotPupilCenterClick(bool value);
+    // TODO: REFACTOR
     void onPlotROIClick(bool value);
 
     void onPupilDetectionStart();
@@ -147,15 +128,18 @@ public slots:
     void saveROI1Selection(QRectF roiR); // GB modified and renamed
     void saveROI2Selection(QRectF roiR);
 
-    void displayFileCameraFrame(int frameNumber);
+    virtual void displayFileCameraFrame(int frameNumber) = 0;
 
-    void updateForPupilDetectionProcMode();
+    virtual void updateForPupilDetectionProcMode() = 0;
     void updateView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils);
+    // TODO: REFACTOR
     void onPupilColorFillChanged(int itemIndex);
+    // TODO: REFACTOR
     void onPupilColorFillThresholdChanged(double value);
 
+    // TODO: REFACTOR
     void onShowAutoParamOverlay(bool state);
-    void onAutoParamPupSize(int value);
+    virtual void onAutoParamPupSize(int value) = 0;
 
     void onFreezeClicked();
     void onCameraPlaybackChanged();
@@ -171,6 +155,9 @@ signals:
     void cameraPlaybackChanged();
     // GB end
 
-};
+protected:
+// TODO: implement in child
+    virtual void onPupilDetectionStopInternal() = 0;
+}
 
-#endif //PUPILEXT_SINGLECAMERAVIEW_H
+#endif //PUPILEXT_CAMERAVIEW_H

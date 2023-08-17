@@ -43,6 +43,9 @@ public:
     void close() override;
     CameraImageType getType() override;
 
+    void startGrabbing() override;
+    void stopGrabbing() override;
+
     void start();
     void stop();
     void pause();
@@ -65,6 +68,10 @@ public:
     void setPlaybackLoop(bool loop)
     {
         imageReader->setPlaybackLoop(loop);
+    }
+
+    bool isGrabbing(){
+        return imageReader->isPlaying();
     }
 
     // GB added begin

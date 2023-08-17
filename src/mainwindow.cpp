@@ -467,6 +467,8 @@ void MainWindow::createActions() {
 
     updateWindowMenu();
 
+
+
     
 }
 
@@ -555,6 +557,55 @@ void MainWindow::closeEvent(QCloseEvent *event) {
         writeSettings();
         event->accept();
     }
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_F){
+        Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers();
+        if (modifiers == Qt::ShiftModifier){
+            onCameraFreezePressed();
+        }
+        else
+            QWidget::keyPressEvent(event);
+    }
+    else {
+        QWidget::keyPressEvent(event);
+    }
+}
+
+void MainWindow::onCameraFreezePressed()
+{
+    emit cameraPlaybackChanged();
+}
+
+void MainWindow::onCameraPlaybackChanged()
+{
+    if (cameraPlaying){
+        stopCamera();
+    }
+    else{ 
+        startCamera();
+    }
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if(obj == singleCameraSettingsDialog || obj == stereoCameraSettingsDialog){
+        if (event->type() == QEvent::KeyPress) {
+            QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+            if (keyEvent->key() == Qt::Key_F){
+                keyPressEvent(keyEvent);
+                return true;
+            }
+            else
+                return false;
+        }
+        else 
+            return false;
+    }
+    else
+        return QObject::eventFilter(obj, event);
 }
 
 void MainWindow::about() {
@@ -1115,6 +1166,7 @@ void MainWindow::onCameraDisconnectClick() {
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStarted()), this, SLOT(onPlaybackSafelyStarted()));
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyPaused()), this, SLOT(onPlaybackSafelyPaused()));
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), this, SLOT(onPlaybackSafelyStopped()));
+        delete imagePlaybackControlDialog;
         imagePlaybackControlDialog = nullptr;
     }
     if(camTempMonitor) {
@@ -1126,7 +1178,6 @@ void MainWindow::onCameraDisconnectClick() {
         camTempMonitor->deleteLater();
         camTempMonitor = nullptr; 
     }
-    trialWidget->setVisible(false);
 
     cameraViewWindow = nullptr;
 
@@ -1228,20 +1279,8 @@ void MainWindow::onCameraDisconnectClick() {
     currentDirectoryLabel->setText("");
     currentDirectoryLabel->setToolTip("");
 
-    cameraAct->setDisabled(false);
-    cameraSettingsAct->setDisabled(true);
-    cameraActDisconnectAct->setDisabled(true);
-    calibrateAct->setDisabled(true);
-    sharpnessAct->setDisabled(true);
-    trackAct->setDisabled(true);
-    outputDirectoryAct->setDisabled(true);
-    recordImagesAct->setDisabled(true);
-    recordAct->setDisabled(true);
-    // GB added begin
-    //streamAct->setDisabled(true);
-    forceResetTrialAct->setDisabled(true);
-    manualIncTrialAct->setDisabled(true);
-    streamingSettingsAct->setDisabled(true);
+
+    resetStatus(false);
     // GB added end
 
     
@@ -1306,28 +1345,19 @@ void MainWindow::singleCameraSelected(QAction *action) {
 
     connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), singleCameraChildWidget, SLOT (updateForPupilDetectionProcMode()));
     // GB added end
-
-    cameraAct->setDisabled(true);
-
-    cameraActDisconnectAct->setDisabled(false);
-    // cameraSettingsAct->setDisabled(false);
-    calibrateAct->setDisabled(false);
-    sharpnessAct->setDisabled(false);
-    trackAct->setDisabled(false);
-    logFileAct->setDisabled(false);
-    // GB added begin
-    //streamAct->setDisabled(false);
-    forceResetTrialAct->setDisabled(false);
-    manualIncTrialAct->setDisabled(false);
-    outputDirectoryAct->setDisabled(false);
-    streamingSettingsAct->setDisabled(false); 
-    trialWidget->setVisible(true);
+    resetStatus(true);
     // GB added end
+
 }
 
+
+
 void MainWindow::singleWebcamSelected() {
+
     int deviceID = webcamDeviceBox->value();
+
     
+
     try {
         selectedCamera = new SingleWebcam(deviceID, "Webcam", this);
     } catch (const QException &e) {
@@ -1369,20 +1399,7 @@ void MainWindow::singleWebcamSelected() {
 
     connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), singleCameraChildWidget, SLOT (updateForPupilDetectionProcMode()));
 
-    cameraAct->setDisabled(true);
-    cameraActDisconnectAct->setDisabled(false);
-    cameraSettingsAct->setDisabled(false);
-    calibrateAct->setDisabled(false);
-    sharpnessAct->setDisabled(false);
-    trackAct->setDisabled(false);
-    logFileAct->setDisabled(false);
-    outputDirectoryAct->setDisabled(false);
-    // GB added begin
-    //streamAct->setDisabled(false);
-    forceResetTrialAct->setDisabled(false);
-    manualIncTrialAct->setDisabled(false);
-    streamingSettingsAct->setDisabled(false);
-    trialWidget->setVisible(true);
+    resetStatus(true);
     // GB added end
 }
 
@@ -1405,6 +1422,7 @@ void MainWindow::stereoCameraSelected() {
     // GB added end
 
     stereoCameraSettingsDialog = new StereoCameraSettingsDialog(dynamic_cast<StereoCamera*>(selectedCamera), serialSettingsDialog, this);
+    stereoCameraSettingsDialog->installEventFilter(this);
     //auto *child = new RestorableQMdiSubWindow(childWidget, "StereoCameraSettingsDialog", this);
     stereoCameraSettingsDialog->show();
 
@@ -1452,20 +1470,7 @@ void MainWindow::stereoCameraSelected() {
     connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), stereoCameraChildWidget, SLOT (updateForPupilDetectionProcMode()));
     // GB added end
 
-    cameraAct->setDisabled(true);
-
-    cameraActDisconnectAct->setDisabled(false);
-    cameraSettingsAct->setDisabled(false);
-    calibrateAct->setDisabled(false);
-    trackAct->setDisabled(false);
-    outputDirectoryAct->setDisabled(false);
-    logFileAct->setDisabled(false);
-    // GB added begin
-    //streamAct->setDisabled(false);
-    forceResetTrialAct->setDisabled(false);
-    manualIncTrialAct->setDisabled(false);
-    streamingSettingsAct->setDisabled(false); 
-    trialWidget->setVisible(true);
+    resetStatus(true);
     // GB added end
 }
 
@@ -1486,7 +1491,7 @@ void MainWindow::cameraViewClick() {
         selectedCamera->getType() == CameraImageType::LIVE_SINGLE_WEBCAM
         ) ) {
         //SingleCameraView *childWidget = new SingleCameraView(selectedCamera, pupilDetectionWorker, this);
-        singleCameraChildWidget = new SingleCameraView(selectedCamera, pupilDetectionWorker, this); // changed by kheki4 on 2022.10.24, NOTE: to be able to pass singlecameraview instance pointer to sindglecamerasettingsdialog constructor
+        singleCameraChildWidget = new SingleCameraView(selectedCamera, pupilDetectionWorker, !cameraPlaying, this); // changed by kheki4 on 2022.10.24, NOTE: to be able to pass singlecameraview instance pointer to sindglecamerasettingsdialog constructor
         connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), singleCameraChildWidget, SLOT (onSettingsChange()));
 
         RestorableQMdiSubWindow *child = new RestorableQMdiSubWindow(singleCameraChildWidget, "SingleCameraView", this);
@@ -1503,7 +1508,7 @@ void MainWindow::cameraViewClick() {
         selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE
         ) ) {
         //StereoCameraView *childWidget = new StereoCameraView(selectedCamera, pupilDetectionWorker, this); // GB modified: now it is in a global pointer
-        stereoCameraChildWidget = new StereoCameraView(selectedCamera, pupilDetectionWorker, this);
+        stereoCameraChildWidget = new StereoCameraView(selectedCamera, pupilDetectionWorker, !cameraPlaying, this);
         connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), stereoCameraChildWidget, SLOT (onSettingsChange()));
 
         RestorableQMdiSubWindow *child = new RestorableQMdiSubWindow(stereoCameraChildWidget, "StereoCameraView", this);
@@ -1513,6 +1518,7 @@ void MainWindow::cameraViewClick() {
         connect(child, SIGNAL (onCloseSubWindow()), this, SLOT (updateWindowMenu()));
         cameraViewWindow = child;
     }
+    connectCameraPlaybackChangedSlots();
 }
 
 void MainWindow::onCameraSettingsClick() {
@@ -1534,6 +1540,7 @@ void MainWindow::onSingleCameraSettingsClick() {
 
     // GB NOTE: to be able to pass singlecameraview instance pointer to sindglecamerasettingsdialog constructor
     singleCameraSettingsDialog = new SingleCameraSettingsDialog(dynamic_cast<SingleCamera*>(selectedCamera), serialSettingsDialog, this); 
+    singleCameraSettingsDialog->installEventFilter(this);
     //auto *child = new RestorableQMdiSubWindow(childWidget, "SingleCameraSettingsDialog", this);
     singleCameraSettingsDialog->show();
 
@@ -1735,20 +1742,7 @@ void MainWindow::onOpenImageDirectory() {
         // GB added end
     }
     onCameraCalibrationDisabled();
-
-    cameraAct->setDisabled(true);
-    cameraSettingsAct->setDisabled(true);
-    outputDirectoryAct->setDisabled(true);
-
-    calibrateAct->setDisabled(false);
-
-    trackAct->setDisabled(false);
-    cameraActDisconnectAct->setDisabled(false);
-    logFileAct->setDisabled(false);
-    // GB added begin
-    //streamAct->setDisabled(false);
-    streamingSettingsAct->setDisabled(false);
-    trialWidget->setVisible(false); // this feature is in ImagePlaybackControlDialog in case of file camera
+    resetStatus(true);
     // GB added end
 
 
@@ -1809,6 +1803,7 @@ void MainWindow::onOpenImageDirectory() {
         // this line below is to ensure if an erroneous value was found in the QSettings ini, a good one gets in place
         applicationSettings->setValue("PupilDetectionSettingsDialog.stereoCam.procMode", pmStereo);
     }
+    this->cameraPlaying = false;
     cameraViewClick(); // GB: moved here. Had to ensure that proc mode is correctly set before creating camera view (as not it relies on pupilDetection instance too)
     onCalibrateClick();
 
@@ -1867,7 +1862,10 @@ void MainWindow::onOpenImageDirectory() {
     connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStarted()), this, SLOT(onPlaybackSafelyStarted()));
     connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyPaused()), this, SLOT(onPlaybackSafelyPaused()));
     connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), this, SLOT(onPlaybackSafelyStopped()));
-    
+
+    connectCameraPlaybackChangedSlots();
+
+
     // GB NOTE:
     // I could have done this in a way that the camera child widgets only receive a cv::Mat to display.. 
     // but we are actually not displaying anything else in the views, just fileCamera frames, 
@@ -2181,3 +2179,106 @@ void MainWindow::loadSharpnessWindow(){
 //    }
 }
 
+void MainWindow::stopCamera()
+{
+    if (selectedCamera){
+        selectedCamera->stopGrabbing();
+        cameraPlaying = false;
+    }
+}
+
+void MainWindow::startCamera()
+{
+    if (selectedCamera){
+        selectedCamera->startGrabbing();
+        cameraPlaying = true;
+    }
+}
+
+void MainWindow::resetStatus(bool isConnect)
+{
+    if (isConnect){
+        cameraAct->setDisabled(true);
+        cameraSettingsAct->setDisabled(false);
+        cameraActDisconnectAct->setDisabled(false);
+        calibrateAct->setDisabled(false);
+        sharpnessAct->setDisabled(false);
+        trackAct->setDisabled(false);
+        outputDirectoryAct->setDisabled(false);
+        logFileAct->setDisabled(false);
+        // GB added begin
+        //streamAct->setDisabled(false);
+        forceResetTrialAct->setDisabled(false);
+        manualIncTrialAct->setDisabled(false);
+        streamingSettingsAct->setDisabled(false); 
+        trialWidget->setVisible(true);
+    }
+    else {
+        cameraAct->setDisabled(false);
+        cameraSettingsAct->setDisabled(true);
+        cameraActDisconnectAct->setDisabled(true);
+        calibrateAct->setDisabled(true);
+        sharpnessAct->setDisabled(true);
+        trackAct->setDisabled(true);
+        outputDirectoryAct->setDisabled(true);
+        logFileAct->setDisabled(true);
+        // GB added begin
+        //streamAct->setDisabled(true);
+        forceResetTrialAct->setDisabled(true);
+        manualIncTrialAct->setDisabled(true);
+        streamingSettingsAct->setDisabled(true);
+        trialWidget->setVisible(false);
+
+        // Disconnect only
+        recordImagesAct->setDisabled(true);
+        recordAct->setDisabled(true);
+        cameraPlaying = true;
+        }
+}
+
+void MainWindow::connectCameraPlaybackChangedSlots()
+{
+    /*    if (imagePlaybackControlDialog && cameraViewWindow){
+        connect(imagePlaybackControlDialog, &ImagePlaybackControlDialog::cameraPlaybackChanged, cameraViewWindow, &SingleCameraView::onCameraPlaybackChanged);
+        connect(cameraViewWindow, &SingleCameraView::cameraPlaybackChanged, imagePlaybackControlDialog, &ImagePlaybackControlDialog::onCameraPlaybackChanged);        
+    }
+    else if (imagePlaybackControlDialog){
+        connect(this, cameraPlaybackChanged, imagePlaybackControlDialog, &ImagePlaybackControlDialog::onCameraPlaybackChanged);
+        connect(imagePlaybackControlDialog, &ImagePlaybackControlDialog::cameraPlaybackChanged, this, onCameraPlaybackChanged);
+        connect(imagePlaybackControlDialog, &ImagePlaybackControlDialog::cameraPlaybackChanged, imagePlaybackControlDialog, &ImagePlaybackControlDialog::onCameraPlaybackChanged);
+    }
+    else if (cameraViewWindow){
+        connect(this, cameraPlaybackChanged, cameraViewWindow, &SingleCameraView::onCameraPlaybackChanged);
+        connect(cameraViewWindow, &SingleCameraView::cameraPlaybackChanged, this, onCameraPlaybackChanged);
+        connect(cameraViewWindow, &SingleCameraView::cameraPlaybackChanged, cameraViewWindow, &SingleCameraView::onCameraPlaybackChanged);
+    }
+    connect(this, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()));*/
+
+    if (imagePlaybackControlDialog != nullptr && singleCameraChildWidget != nullptr){
+        connect(imagePlaybackControlDialog, SIGNAL(cameraPlaybackChanged()), singleCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(singleCameraChildWidget, SIGNAL(cameraPlaybackChanged()), imagePlaybackControlDialog, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);        
+    }
+    if (imagePlaybackControlDialog != nullptr && stereoCameraChildWidget != nullptr){
+        connect(imagePlaybackControlDialog, SIGNAL(cameraPlaybackChanged()), stereoCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(stereoCameraChildWidget, SIGNAL(cameraPlaybackChanged()), imagePlaybackControlDialog, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);        
+    }
+
+    if (imagePlaybackControlDialog != nullptr){
+        connect(this, SIGNAL(cameraPlaybackChanged()), imagePlaybackControlDialog, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(imagePlaybackControlDialog, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(imagePlaybackControlDialog, SIGNAL(cameraPlaybackChanged()), imagePlaybackControlDialog, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+    }
+
+    if (singleCameraChildWidget != nullptr){
+        connect(this, SIGNAL(cameraPlaybackChanged()), singleCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(singleCameraChildWidget, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(singleCameraChildWidget, SIGNAL(cameraPlaybackChanged()), singleCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+    }
+
+    if (stereoCameraChildWidget != nullptr){
+        connect(this, SIGNAL(cameraPlaybackChanged()), stereoCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(stereoCameraChildWidget, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+        connect(stereoCameraChildWidget, SIGNAL(cameraPlaybackChanged()), stereoCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+    }
+    connect(this, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+}

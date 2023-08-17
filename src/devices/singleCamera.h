@@ -63,6 +63,9 @@ public:
     void close() override;
     CameraImageType getType() override;
 
+    void startGrabbing() override;
+    void stopGrabbing() override;
+
     void autoGainOnce();
     void autoExposureOnce();
 
@@ -100,6 +103,7 @@ public:
     int getImageROIheightMax(); // both setImageROI and setImageResize depends on this
     int getBinningVal();
     double getTemperature();
+    bool isGrabbing() override;
     // GB added end
 
 private:

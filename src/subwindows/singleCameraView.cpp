@@ -7,7 +7,7 @@
 
 // Create new single camera view given a single camera object and a pupil detection process
 // The pupil detection is used to display the detected pupils and show detection information such as processing fps
-SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetection, QWidget *parent) :
+SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetection,  bool playbackFrozen, QWidget *parent) :
         QWidget(parent),
         camera(camera),
         pupilDetection(pupilDetection),
@@ -15,6 +15,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
         plotPupilCenter(false),
         plotROIContour(true),
         initPupilViewSize(false),
+        playbackFrozen(playbackFrozen),
         //pupilViewSize(0, 0),
         currentCameraFPS(0.0),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
@@ -31,7 +32,14 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     toolBar->addSeparator();
     toolBar->addAction("+Zoom", this, &SingleCameraView::onZoomPlusClick);
     toolBar->addAction("-Zoom", this, &SingleCameraView::onZoomMinusClick);
+    if (playbackFrozen)
+        freezeText = "Unfreeze";
+    else 
+        freezeText = "Freeze";
+
+    freezeAct = toolBar->addAction(freezeText, this, &SingleCameraView::onFreezeClicked);
     toolBar->addSeparator();
+    
 
     QMenu *plotMenu = new QMenu("Show");
     plotMenuAct = plotMenu->menuAction();
@@ -767,6 +775,23 @@ void SingleCameraView::onAutoParamPupSize(int value) {
 
     applicationSettings->setValue("autoParamPupSizePercent", value); 
     videoView->drawOverlay();
+}
+
+void SingleCameraView::onFreezeClicked()
+{
+    emit cameraPlaybackChanged();
+}
+
+void SingleCameraView::onCameraPlaybackChanged()
+{
+    if (playbackFrozen)
+        freezeText = "Freeze";
+    else 
+        freezeText = "Unfreeze";
+
+    freezeAct->setText(freezeText);
+
+    playbackFrozen = !playbackFrozen;
 }
 
 void SingleCameraView::updateForPupilDetectionProcMode() {

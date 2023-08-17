@@ -34,7 +34,7 @@ Q_OBJECT
 
 public:
 
-    explicit StereoCameraView(Camera *camera, PupilDetection *pupilDetection, QWidget *parent = 0);
+    explicit StereoCameraView(Camera *camera, PupilDetection *pupilDetection,bool playbackFrozen, QWidget *parent = 0);
 
     ~StereoCameraView() override;
 
@@ -55,6 +55,9 @@ private:
     int updateDelay;
 
     QToolBar *toolBar;
+    QAction *freezeAct;
+    QString freezeText;
+    bool playbackFrozen;
     QAction *saveROI;
     QAction *resetROI;
     QAction *discardROISelection;
@@ -115,6 +118,7 @@ private:
 
     void loadSettings();
     bool isAutoParamModificationEnabled();
+    
 
 public slots:
 
@@ -126,6 +130,7 @@ public slots:
     void updateProcessingFPS(double fps);
     //void updatePupilView(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filename);
     void updatePupilView(const CameraImage &cimg, const int &procMode, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils);
+    void updateAlgorithmLabel();
 
     void onFitClick();
     void on100pClick();
@@ -135,14 +140,15 @@ public slots:
     void onSaveROIClick();
     void onResetROIClick();
     void onDiscardROISelectionClick();
-    void onPupilDetectionStart();
-    void onPupilDetectionStop();
-
     void onDisplayPupilViewClick(bool value);
     void onPlotPupilCenterClick(bool value);
     void onPlotROIClick(bool value);
+
+    void onPupilDetectionStart();
+    void onPupilDetectionStop();
+
+
     void onSettingsChange();
-    void updateAlgorithmLabel();
     void onPupilDetectionConfigChanged(QString config);
 
     // GB modified/added begin
@@ -163,6 +169,9 @@ public slots:
 
     void onShowAutoParamOverlay(bool state);
     void onAutoParamPupSize(int value);
+
+    void onFreezeClicked();
+    void onCameraPlaybackChanged();
     // GB modified/added end
 
 signals:
@@ -173,6 +182,7 @@ signals:
     void onChangePupilColorFill(int colorFill);
     void onChangePupilColorFillThreshold(float value);
     void onChangeShowAutoParamOverlay(bool state);
+    void cameraPlaybackChanged();
     // GÁBOR end
 
 };

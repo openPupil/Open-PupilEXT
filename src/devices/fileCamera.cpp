@@ -45,6 +45,13 @@ FileCamera::FileCamera(const QString &directory, int playbackSpeed, bool playbac
 
 FileCamera::~FileCamera() = default;
 
+void FileCamera::startGrabbing(){
+    start();
+}
+void FileCamera::stopGrabbing(){
+    pause();        
+}
+
 bool FileCamera::isOpen() {
     return open;
 }

@@ -61,6 +61,9 @@ public:
     void close() override;
     CameraImageType getType() override;
 
+    void startGrabbing() override;
+    void stopGrabbing() override;
+
     std::vector<QString> getFriendlyNames();
 
     void autoGainOnce();
@@ -104,6 +107,8 @@ public:
     QRectF getImageROI() override;
     int getBinningVal();
     std::vector<double> getTemperatures();
+
+    bool isGrabbing() override;
     // BG added end
 
 private:
