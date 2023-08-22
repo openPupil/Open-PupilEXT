@@ -407,9 +407,9 @@ void SingleCameraView::loadSettings() {
     } else if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
         roi1 = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilA.rational", QRectF()).toRectF();
         roi2 = applicationSettings->value("SingleCameraView.ROIsingleImageTwoPupilB.rational", QRectF()).toRectF();
-    } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-        roi1 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil1.rational", QRectF()).toRectF();
-        roi2 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil2.rational", QRectF()).toRectF();
+    // } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+    //     roi1 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil1.rational", QRectF()).toRectF();
+    //     roi2 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil2.rational", QRectF()).toRectF();
     }
     QRectF initRoi = camera->getImageROI();
     if(!roi1.isEmpty()) {
@@ -738,9 +738,9 @@ void SingleCameraView::saveROI1Selection(QRectF roiR) {
     } else if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
         applicationSettings->setValue("SingleCameraView.ROIsingleImageTwoPupilA.rational", roiR);
         applicationSettings->setValue("SingleCameraView.ROIsingleImageTwoPupilA.discrete", roiD);
-    } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-        applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil1.rational", roiR);
-        applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil1.discrete", roiD);
+    // } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+    //     applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil1.rational", roiR);
+    //     applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil1.discrete", roiD);
     } 
     // GB modified end
 }
@@ -755,9 +755,9 @@ void SingleCameraView::saveROI2Selection(QRectF roiR) {
     if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
         applicationSettings->setValue("SingleCameraView.ROIsingleImageTwoPupilB.rational", roiR);
         applicationSettings->setValue("SingleCameraView.ROIsingleImageTwoPupilB.discrete", roiD);
-    } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-        applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil2.rational", roiR);
-        applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil2.discrete", roiD);
+    // } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+    //     applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil2.rational", roiR);
+    //     applicationSettings->setValue("SingleCameraView.ROImirrImageOnePupil2.discrete", roiD);
     } 
 }
 
@@ -831,16 +831,16 @@ void SingleCameraView::updateForPupilDetectionProcMode() {
         connect(videoView, SIGNAL (onROI2SelectionD(QRectF)), pupilDetection, SLOT (setROIsingleImageTwoPupilB(QRectF)));
         connect(videoView, SIGNAL (onROI2SelectionR(QRectF)), this, SLOT (saveROI2Selection(QRectF)));
         
-    } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-        //qDebug() << "MIRR_IMAGE_ONE_PUPIL" << Qt::endl;
-        videoView->setDoubleROI(true);
-        videoView->setROI1AllowedArea(VideoView::ROIAllowedArea::LEFT_HALF);
-        videoView->setROI2AllowedArea(VideoView::ROIAllowedArea::RIGHT_HALF);
+    // } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+    //     //qDebug() << "MIRR_IMAGE_ONE_PUPIL" << Qt::endl;
+    //     videoView->setDoubleROI(true);
+    //     videoView->setROI1AllowedArea(VideoView::ROIAllowedArea::LEFT_HALF);
+    //     videoView->setROI2AllowedArea(VideoView::ROIAllowedArea::RIGHT_HALF);
 
-        connect(videoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROImirrImageOnePupil1(QRectF)));
-        connect(videoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
-        connect(videoView, SIGNAL (onROI2SelectionD(QRectF)), pupilDetection, SLOT (setROImirrImageOnePupil2(QRectF)));
-        connect(videoView, SIGNAL (onROI2SelectionR(QRectF)), this, SLOT (saveROI2Selection(QRectF)));
+    //     connect(videoView, SIGNAL (onROI1SelectionD(QRectF)), pupilDetection, SLOT (setROImirrImageOnePupil1(QRectF)));
+    //     connect(videoView, SIGNAL (onROI1SelectionR(QRectF)), this, SLOT (saveROI1Selection(QRectF)));
+    //     connect(videoView, SIGNAL (onROI2SelectionD(QRectF)), pupilDetection, SLOT (setROImirrImageOnePupil2(QRectF)));
+    //     connect(videoView, SIGNAL (onROI2SelectionR(QRectF)), this, SLOT (saveROI2Selection(QRectF)));
         
     } else {
         //qDebug() << "Processing mode is undetermined" << Qt::endl;
@@ -870,8 +870,8 @@ void SingleCameraView::updateProcModeLabel() {
         processingModeLabel->setText("Single image one pupil");
     } else if(val == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
         processingModeLabel->setText("Single image two pupil");
-    } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-        processingModeLabel->setText("Mirrored image one pupil");
+    // } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+    //     processingModeLabel->setText("Mirrored image one pupil");
     } else {
         processingModeLabel->setText("Error");
     }

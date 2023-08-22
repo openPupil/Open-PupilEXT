@@ -137,13 +137,13 @@ void PupilDetection::startDetection() {
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage)));
         } else if(currentProcMode == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
-        } else if(currentProcMode == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
         } else if(currentProcMode == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
             //runtimeHistory.clear();
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage)));
         } else if(currentProcMode == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
+        // } else if(currentProcMode == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+        //     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
         } else {
             // error
             std::cout << "Could not determine pupilDetection proc mode or it is still undetermined" << std::endl;
@@ -161,9 +161,9 @@ void PupilDetection::stopDetection() {
 
         disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
         disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
-        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
         disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
         disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
+        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
         
         /*
         // BG: code bits found here: I left as a block comment
@@ -192,9 +192,9 @@ void PupilDetection::setAlgorithm(QString method) {
     if(camera && trackingOn) {
         disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
         disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
-        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
         disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
         disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
+        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
     }
 
     frameCounter->reset();
@@ -220,12 +220,12 @@ void PupilDetection::setAlgorithm(QString method) {
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
         } else if(currentProcMode == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
-        } else if(currentProcMode == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
         } else if(currentProcMode == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
         } else if(currentProcMode == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
+        // } else if(currentProcMode == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+        //     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
         } else {
             // error
             //std::cout << "Could not determine pupilDetection proc mode or it is still undetermined" << std::endl;
@@ -1076,12 +1076,6 @@ QRect PupilDetection::getROIsingleImageTwoPupilA() {
 QRect PupilDetection::getROIsingleImageTwoPupilB() {
     return QRect(ROIsingleImageTwoPupilB.x, ROIsingleImageTwoPupilB.y, ROIsingleImageTwoPupilB.width, ROIsingleImageTwoPupilB.height);
 }
-QRect PupilDetection::getROImirrImageOnePupil1() {
-    return QRect(ROImirrImageOnePupil1.x, ROImirrImageOnePupil1.y, ROImirrImageOnePupil1.width, ROImirrImageOnePupil1.height);
-}
-QRect PupilDetection::getROImirrImageOnePupil2() {
-    return QRect(ROImirrImageOnePupil2.x, ROImirrImageOnePupil2.y, ROImirrImageOnePupil2.width, ROImirrImageOnePupil2.height);
-}
 QRect PupilDetection::getROIstereoImageOnePupil1() {
     return QRect(ROIstereoImageOnePupil1.x, ROIstereoImageOnePupil1.y, ROIstereoImageOnePupil1.width, ROIstereoImageOnePupil1.height);
 }
@@ -1100,6 +1094,12 @@ QRect PupilDetection::getROIstereoImageTwoPupilB1() {
 QRect PupilDetection::getROIstereoImageTwoPupilB2() {
     return QRect(ROIstereoImageTwoPupilB2.x, ROIstereoImageTwoPupilB2.y, ROIstereoImageTwoPupilB2.width, ROIstereoImageTwoPupilB2.height);
 }
+QRect PupilDetection::getROImirrImageOnePupil1() {
+    return QRect(ROImirrImageOnePupil1.x, ROImirrImageOnePupil1.y, ROImirrImageOnePupil1.width, ROImirrImageOnePupil1.height);
+}
+QRect PupilDetection::getROImirrImageOnePupil2() {
+    return QRect(ROImirrImageOnePupil2.x, ROImirrImageOnePupil2.y, ROImirrImageOnePupil2.width, ROImirrImageOnePupil2.height);
+}
 
 void PupilDetection::setROIsingleImageOnePupil(QRectF roi) {
     if(!roi.isEmpty())
@@ -1112,14 +1112,6 @@ void PupilDetection::setROIsingleImageTwoPupilA(QRectF roi) {
 void PupilDetection::setROIsingleImageTwoPupilB(QRectF roi) {
     if(!roi.isEmpty())
         ROIsingleImageTwoPupilB = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
-}
-void PupilDetection::setROImirrImageOnePupil1(QRectF roi) {
-    if(!roi.isEmpty())
-        ROImirrImageOnePupil1 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
-}
-void PupilDetection::setROImirrImageOnePupil2(QRectF roi) {
-    if(!roi.isEmpty())
-        ROImirrImageOnePupil2 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
 }
 void PupilDetection::setROIstereoImageOnePupil1(QRectF roi) {
     if(!roi.isEmpty())
@@ -1145,6 +1137,14 @@ void PupilDetection::setROIstereoImageTwoPupilB2(QRectF roi) {
     if(!roi.isEmpty())
         ROIstereoImageTwoPupilB2 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
 }
+void PupilDetection::setROImirrImageOnePupil1(QRectF roi) {
+    if(!roi.isEmpty())
+        ROImirrImageOnePupil1 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+}
+void PupilDetection::setROImirrImageOnePupil2(QRectF roi) {
+    if(!roi.isEmpty())
+        ROImirrImageOnePupil2 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+}
 
 ProcMode PupilDetection::getCurrentProcMode() {
     return (ProcMode)currentProcMode;
@@ -1159,8 +1159,6 @@ void PupilDetection::setCurrentProcMode(int val) {
             disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage))); // GB refactored
         } else if(currentProcMode == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
             disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
-        } else if(currentProcMode == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-            disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
         } else if(currentProcMode == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
             // For debugging, measuring times
             //auto timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
@@ -1168,6 +1166,8 @@ void PupilDetection::setCurrentProcMode(int val) {
             disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage))); // GB refactored
         } else if(currentProcMode == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
             disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
+        // } else if(currentProcMode == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+        //     disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
         } else {
             // error
             std::cout << "Could not determine pupilDetection proc mode or it is still undetermined" << std::endl;
@@ -1181,12 +1181,12 @@ void PupilDetection::setCurrentProcMode(int val) {
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage))); // GB refactored
         } else if(currentProcMode == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
-        } else if(currentProcMode == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
         } else if(currentProcMode == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage))); // GB refactored
         } else if(currentProcMode == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
+        // } else if(currentProcMode == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+        //     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
         } else {
             // error
             //std::cout << "Could not determine pupilDetection proc mode or it is still undetermined" << std::endl;
@@ -1242,12 +1242,6 @@ void PupilDetection::performAutoParam() {
             rois.push_back(ROIsingleImageTwoPupilA);
             rois.push_back(ROIsingleImageTwoPupilB);
             break;
-        case MIRR_IMAGE_ONE_PUPIL:
-            algInstances.push_back(getCurrentMethod1());
-            algInstances.push_back(getCurrentMethod2());
-            rois.push_back(ROImirrImageOnePupil1);
-            rois.push_back(ROImirrImageOnePupil2);
-            break;
         case STEREO_IMAGE_ONE_PUPIL:
             algInstances.push_back(getCurrentMethod1());
             algInstances.push_back(getCurrentMethod2());
@@ -1264,6 +1258,12 @@ void PupilDetection::performAutoParam() {
             rois.push_back(ROIstereoImageTwoPupilB1);
             rois.push_back(ROIstereoImageTwoPupilB2);
             break;
+        // case MIRR_IMAGE_ONE_PUPIL:
+        //     algInstances.push_back(getCurrentMethod1());
+        //     algInstances.push_back(getCurrentMethod2());
+        //     rois.push_back(ROImirrImageOnePupil1);
+        //     rois.push_back(ROImirrImageOnePupil2);
+        //     break;
         default:
             return;
     } 

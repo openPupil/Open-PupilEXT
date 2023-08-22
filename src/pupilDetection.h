@@ -32,9 +32,9 @@ enum ProcMode {
     UNDETERMINED = 0,
     SINGLE_IMAGE_ONE_PUPIL = 1,
     SINGLE_IMAGE_TWO_PUPIL = 2,
-    MIRR_IMAGE_ONE_PUPIL = 3,
-    STEREO_IMAGE_ONE_PUPIL = 4,
-    STEREO_IMAGE_TWO_PUPIL = 5
+    STEREO_IMAGE_ONE_PUPIL = 3,
+    STEREO_IMAGE_TWO_PUPIL = 4 //,
+    // MIRR_IMAGE_ONE_PUPIL = 3
 };
 
 /**
@@ -46,9 +46,6 @@ enum ProcMode {
         SINGLE_IMAGE_TWO_PUPIL :
             [0] = pupilA (eye A)
             [1] = pupilB (eye B)
-        MIRR_IMAGE_ONE_PUPIL :
-            [0] = pupil1 (view 1)
-            [1] = pupil2 (view 2)
         STEREO_IMAGE_ONE_PUPIL :
             [0] = pupil (view 1)
             [1] = pupilSecondary (view 2)
@@ -57,20 +54,23 @@ enum ProcMode {
             [1] = pupilA2 (eye A view 2)
             [2] = pupilB1 (eye B view 1)
             [3] = pupilB2 (eye B view 2)
+        MIRR_IMAGE_ONE_PUPIL :
+            [0] = pupil1 (view 1)
+            [1] = pupil2 (view 2)
      
 */
 enum PupilVecIdx {
     SINGLE_IMAGE_ONE_PUPIL_MAIN = 0,
     SINGLE_IMAGE_TWO_PUPIL_A = 0,
     SINGLE_IMAGE_TWO_PUPIL_B = 1,
-    MIRR_IMAGE_ONE_PUPIL_MAIN = 0,
-    MIRR_IMAGE_ONE_PUPIL_SEC = 1,
     STEREO_IMAGE_ONE_PUPIL_MAIN = 0,
     STEREO_IMAGE_ONE_PUPIL_SEC = 1,
     STEREO_IMAGE_TWO_PUPIL_A_MAIN = 0,
     STEREO_IMAGE_TWO_PUPIL_A_SEC = 1,
     STEREO_IMAGE_TWO_PUPIL_B_MAIN = 2,
-    STEREO_IMAGE_TWO_PUPIL_B_SEC = 3
+    STEREO_IMAGE_TWO_PUPIL_B_SEC = 3,
+    MIRR_IMAGE_ONE_PUPIL_MAIN = 0,
+    MIRR_IMAGE_ONE_PUPIL_SEC = 1
 };
 // GB added end
 
@@ -96,9 +96,9 @@ slots:
     // On each new camera image, pupil detection is performed:
     onNewSingleImageForOnePupil(): formerly onNewImage
     onNewSingleImageForTwoPupil()
-    onNewMirrImageForOnePupil()
     onNewStereoImageForOnePupil(): formerly onNewStereoImage
     onNewStereoImageForTwoPupil()
+    onNewMirrImageForOnePupil()
 
     setAlgorithm(): select the algorithm to apply
     setCurrentProcMode(): set current processing mode
@@ -106,14 +106,14 @@ slots:
     setROIsingleImageOnePupil() // formerly void setROI(QRectF roi);
     setROIsingleImageTwoPupilA()
     setROIsingleImageTwoPupilB()
-    setROImirrImageOnePupil1()
-    setROImirrImageOnePupil2()
     setROIstereoImageOnePupil1() // formerly void setROI(QRectF roi);
     setROIstereoImageOnePupil2() // formerly void setSecondaryROI(QRectF roi);
     setROIstereoImageTwoPupilA1()
     setROIstereoImageTwoPupilA2()
     setROIstereoImageTwoPupilB1()
     setROIstereoImageTwoPupilB2()
+    setROImirrImageOnePupil1()
+    setROImirrImageOnePupil2()
 
 signals:
 
@@ -294,14 +294,14 @@ private:
     cv::Rect ROIsingleImageOnePupil; // formerly cv::Rect ROI;
     cv::Rect ROIsingleImageTwoPupilA;
     cv::Rect ROIsingleImageTwoPupilB;
-    cv::Rect ROImirrImageOnePupil1;
-    cv::Rect ROImirrImageOnePupil2;
     cv::Rect ROIstereoImageOnePupil1; // formerly cv::Rect ROI;
     cv::Rect ROIstereoImageOnePupil2; // formerly cv::Rect ROISecondary;
     cv::Rect ROIstereoImageTwoPupilA1;
     cv::Rect ROIstereoImageTwoPupilA2;
     cv::Rect ROIstereoImageTwoPupilB1;
     cv::Rect ROIstereoImageTwoPupilB2;
+    cv::Rect ROImirrImageOnePupil1;
+    cv::Rect ROImirrImageOnePupil2;
     // GB end
 
     QElapsedTimer processingTimer;
@@ -350,9 +350,9 @@ public slots:
     // GB added/modified:
     void onNewSingleImageForOnePupil(const CameraImage &img); // formerly onNewImage
     void onNewSingleImageForTwoPupil(const CameraImage &img); // formerly did not exist
-    void onNewMirrImageForOnePupil(const CameraImage &simg); // formerly did not exist
     void onNewStereoImageForOnePupil(const CameraImage &simg); // formerly onNewStereoImage
     void onNewStereoImageForTwoPupil(const CameraImage &simg); // formerly did not exist
+    void onNewMirrImageForOnePupil(const CameraImage &simg); // formerly did not exist
 
     void setAutoParamEnabled(bool state);
     void setAutoParamPupSizePercent(float value);
@@ -369,26 +369,26 @@ public slots:
     QRect getROIsingleImageOnePupil();
     QRect getROIsingleImageTwoPupilA();
     QRect getROIsingleImageTwoPupilB();
-    QRect getROImirrImageOnePupil1();
-    QRect getROImirrImageOnePupil2();
     QRect getROIstereoImageOnePupil1();
     QRect getROIstereoImageOnePupil2();
     QRect getROIstereoImageTwoPupilA1();
     QRect getROIstereoImageTwoPupilA2();
     QRect getROIstereoImageTwoPupilB1();
     QRect getROIstereoImageTwoPupilB2();
+    QRect getROImirrImageOnePupil1();
+    QRect getROImirrImageOnePupil2();
     
     void setROIsingleImageOnePupil(QRectF roi); // formerly void setROI(QRectF roi);
     void setROIsingleImageTwoPupilA(QRectF roi);
     void setROIsingleImageTwoPupilB(QRectF roi);
-    void setROImirrImageOnePupil1(QRectF roi);
-    void setROImirrImageOnePupil2(QRectF roi);
     void setROIstereoImageOnePupil1(QRectF roi); // formerly void setROI(QRectF roi);
     void setROIstereoImageOnePupil2(QRectF roi); // formerly void setSecondaryROI(QRectF roi);
     void setROIstereoImageTwoPupilA1(QRectF roi);
     void setROIstereoImageTwoPupilA2(QRectF roi);
     void setROIstereoImageTwoPupilB1(QRectF roi);
     void setROIstereoImageTwoPupilB2(QRectF roi);
+    void setROImirrImageOnePupil1(QRectF roi);
+    void setROImirrImageOnePupil2(QRectF roi);
     // GB end
 
 signals:

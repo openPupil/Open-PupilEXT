@@ -710,7 +710,7 @@ void VideoView::resetROISelection() {
 
     QRectF roiR;
 
-    float defSf = 0.7;
+    float defSf = 0.7f;
 
     // GB modified begin
     // GB NOTE: modified to work with rational number size ROIs. ALso added code to use roi1SelectionRectLastR and roi2SelectionRectLastR

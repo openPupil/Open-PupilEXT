@@ -158,8 +158,9 @@ MainWindow::MainWindow():
     ProcMode pmSingle = (ProcMode)applicationSettings->value("PupilDetectionSettingsDialog.singleCam.procMode", ProcMode::UNDETERMINED).toInt();
     ProcMode pmStereo = (ProcMode)applicationSettings->value("PupilDetectionSettingsDialog.stereoCam.procMode", ProcMode::UNDETERMINED).toInt();
     if( pmSingle != ProcMode::SINGLE_IMAGE_ONE_PUPIL ||
-        pmSingle != ProcMode::SINGLE_IMAGE_TWO_PUPIL ||
-        pmSingle != ProcMode::MIRR_IMAGE_ONE_PUPIL ) {
+        pmSingle != ProcMode::SINGLE_IMAGE_TWO_PUPIL // ||
+        // pmSingle != ProcMode::MIRR_IMAGE_ONE_PUPIL 
+        ) {
 
         applicationSettings->setValue("PupilDetectionSettingsDialog.singleCam.procMode", ProcMode::SINGLE_IMAGE_ONE_PUPIL);
     }
@@ -924,13 +925,6 @@ void MainWindow::onTrackActClick() {
                 pupilDetectionWorker->setROIsingleImageTwoPupilA(roiA);
             if(!roiB.isEmpty())
                 pupilDetectionWorker->setROIsingleImageTwoPupilB(roiB);
-        } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-            QRectF roi1 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil1.discrete", QRectF()).toRectF();
-            QRectF roi2 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil2.discrete", QRectF()).toRectF();
-            if(!roi1.isEmpty())
-                pupilDetectionWorker->setROImirrImageOnePupil1(roi1);
-            if(!roi2.isEmpty())
-                pupilDetectionWorker->setROImirrImageOnePupil2(roi2);
         } else if(val == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
             QRectF roiMain1 = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil1.discrete", QRectF()).toRectF();
             QRectF roiSecondary1 = applicationSettings->value("StereoCameraView.ROIstereoImageOnePupil2.discrete", QRectF()).toRectF();
@@ -951,6 +945,13 @@ void MainWindow::onTrackActClick() {
                 pupilDetectionWorker->setROIstereoImageTwoPupilA2(roiSecondary1);
             if(!roiSecondary2.isEmpty())
                 pupilDetectionWorker->setROIstereoImageTwoPupilB2(roiSecondary2);
+        // } else if(val == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+        //     QRectF roi1 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil1.discrete", QRectF()).toRectF();
+        //     QRectF roi2 = applicationSettings->value("SingleCameraView.ROImirrImageOnePupil2.discrete", QRectF()).toRectF();
+        //     if(!roi1.isEmpty())
+        //         pupilDetectionWorker->setROImirrImageOnePupil1(roi1);
+        //     if(!roi2.isEmpty())
+        //         pupilDetectionWorker->setROImirrImageOnePupil2(roi2);
         }
         // BG: NOTE: This needs to be called AFTER all pupil detection ROIs are loaded and set in the current
         // pupilDetection instance, otherwise autoParam will not be done
@@ -1784,8 +1785,10 @@ void MainWindow::onOpenImageDirectory() {
         
         int pmSingle = applicationSettings->value("PupilDetectionSettingsDialog.singleCam.procMode", ProcMode::SINGLE_IMAGE_ONE_PUPIL).toInt();
         if( pmSingle != ProcMode::SINGLE_IMAGE_ONE_PUPIL ||
-            pmSingle != ProcMode::SINGLE_IMAGE_TWO_PUPIL ||
-            pmSingle != ProcMode::MIRR_IMAGE_ONE_PUPIL )
+            pmSingle != ProcMode::SINGLE_IMAGE_TWO_PUPIL // ||
+            // pmSingle != ProcMode::MIRR_IMAGE_ONE_PUPIL 
+            )
+            
             pmSingle = ProcMode::SINGLE_IMAGE_ONE_PUPIL;
         pupilDetectionWorker->setCurrentProcMode(pmSingle);
         // this line below is to ensure if an erroneous value was found in the QSettings ini, a good one gets in place

@@ -63,7 +63,7 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
             numCols=1;
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-        case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             numCols=2;
             break;
@@ -81,7 +81,7 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
             tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Eye A"));
             tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Eye B"));
-        case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Main"));
             tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Sec."));
@@ -130,7 +130,7 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
             tableModel->horizontalHeaderItem(0)->setForeground(Qt::blue);
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-        case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             tableModel->horizontalHeaderItem(0)->setForeground(Qt::blue);
             tableModel->horizontalHeaderItem(1)->setForeground(Qt::green);
@@ -188,7 +188,7 @@ void DataTable::onPupilData(quint64 timestamp, int procMode, const std::vector<P
         tableModel->setItem(0, 0, item);
 
         // GB: modified to work with new Pupil vector signals
-        for(std::size_t i=0; i<Pupils.size(); i++)
+        for(int i=0; i<Pupils.size(); i++)
             if(Pupils[i].valid(-2))
                 setPupilData(Pupils[i], i);
         // GB NOTE: this only works, because we defined the columns in the exact same order 

@@ -63,9 +63,10 @@ void PupilDetectionSettingsDialog::createForm() {
     procModeBox->addItem(QString::fromStdString("(Undetermined)"));
     procModeBox->addItem(QString::fromStdString("Single camera image for one pupil"));
     procModeBox->addItem(QString::fromStdString("Single camera image for two pupils"));
-    procModeBox->addItem(QString::fromStdString("Mirrored single camera image for one pupil"));
-    procModeBox->addItem(QString::fromStdString("Stereo camera images for one pupil"));
-    procModeBox->addItem(QString::fromStdString("Stereo camera images for two pupils"));
+    procModeBox->addItem(QString::fromStdString("Stereo camera images for one pupil (stereoscopic)"));
+    procModeBox->addItem(QString::fromStdString("Stereo camera images for two pupils (stereoscopic)"));
+    // procModeBox->addItem(QString::fromStdString("Mirrored single camera image for one pupil"));
+    // TODO: add monoscopic processing of stereo camera
     
     procModeBox->setCurrentIndex(pupilDetection->getCurrentProcMode());
     //procModeBox->setCurrentIndex(0);
@@ -381,15 +382,16 @@ void PupilDetectionSettingsDialog::onProcModeSelection(int idx) {
         iLabel->setPixmap(procModePixmap_1cam2pup);
         procModeInfoLabel->setText("Detecting both pupils from a single camera viewpoint. \n(Medium CPU load)"); // This way no eye distance can be measured optically.
     } else if(idx == 3) {
-        iLabel->setPixmap(procModePixmap_1Mcam1pup);
-        procModeInfoLabel->setText("Detecting one pupil from a single camera, but through two different \nviewpoints via an image splitter arrangement of a knife edge prism and \ntwo mirrors. (Medium CPU load)");
-    } else if(idx == 4) {
         iLabel->setPixmap(procModePixmap_2cam1pup);
         procModeInfoLabel->setText("Detecting one pupil from two cameras, producing a stereoscopic \npair of viewpoints. (Medium CPU load)");
-    } else if(idx == 5) {
+    } else if(idx == 4) {
         iLabel->setPixmap(procModePixmap_2cam2pup);
         procModeInfoLabel->setText("Detecting both pupils from two cameras, producing stereoscopic \npairs of viewpoints. (High CPU load)");
-    } //else {}
+    } 
+    // else if(idx == 5) {
+    //     iLabel->setPixmap(procModePixmap_1Mcam1pup);
+    //     procModeInfoLabel->setText("Detecting one pupil from a single camera, but through two different \nviewpoints via an image splitter arrangement of a knife edge prism and \ntwo mirrors. (Medium CPU load)");
+    // } //else {}
 }
 
 // Show and hide the algorithm specific settings depending on the current algorithm selection
@@ -493,17 +495,17 @@ void PupilDetectionSettingsDialog::updateProcModeCompatibility() {
         procModeBox->addItem(QString::fromStdString("(Undetermined)"));
         procModeBox->addItem(QString::fromStdString("Single camera image for one pupil"));
         procModeBox->addItem(QString::fromStdString("Single camera image for two pupils"));
+        procModeBox->addItem(QString::fromStdString("Stereo camera images for one pupil (stereoscopic)"));
+        procModeBox->addItem(QString::fromStdString("Stereo camera images for two pupils (stereoscopic)"));
         procModeBox->addItem(QString::fromStdString("Mirrored single camera image for one pupil"));
-        procModeBox->addItem(QString::fromStdString("Stereo camera images for one pupil"));
-        procModeBox->addItem(QString::fromStdString("Stereo camera images for two pupils"));
         */
         
-        std::vector<bool> stateArr = {false, true, true, true, false, false}; // TODO: bug: valamiért az első elem disabled lesz mindig. miért?
+        std::vector<bool> stateArr = {false, true, true, false, false}; // TODO: bug: valamiért az első elem disabled lesz mindig. miért?
         
         QStandardItem *item;
         QStandardItemModel *model = qobject_cast<QStandardItemModel *>(procModeBox->model());
 
-        for(std::size_t idx = 0; idx < stateArr.size(); idx++) {
+        for(int idx = 0; idx < stateArr.size(); idx++) {
             item = model->item(idx);
             //std::cout << item->text().toStdString() << std::endl;
             item->setFlags(stateArr[idx] ? item->flags() | Qt::ItemIsEnabled : item->flags() & ~Qt::ItemIsEnabled);
@@ -511,12 +513,12 @@ void PupilDetectionSettingsDialog::updateProcModeCompatibility() {
 
     } else {
 
-        std::vector<bool> stateArr = {false, false, false, false, true, true};
+        std::vector<bool> stateArr = {false, false, false, true, true};
         
         QStandardItem *item;
         QStandardItemModel *model = qobject_cast<QStandardItemModel *>(procModeBox->model());
 
-        for(std::size_t idx = 0; idx < stateArr.size(); idx++) {
+        for(int idx = 0; idx < stateArr.size(); idx++) {
             item = model->item(idx);
             //std::cout << item->text().toStdString() << std::endl;
             item->setFlags(stateArr[idx] ? item->flags() | Qt::ItemIsEnabled : item->flags() & ~Qt::ItemIsEnabled);

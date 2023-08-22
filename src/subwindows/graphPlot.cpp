@@ -53,7 +53,7 @@ GraphPlot::GraphPlot(QString plotValue, ProcMode procMode, bool legend, QWidget 
             //numCols=1;
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-        case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             customPlot->addGraph();
             customPlot->addGraph();
@@ -293,7 +293,7 @@ void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pu
             //numCols=1;
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-        case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             numCols=2;
             break;
@@ -304,7 +304,7 @@ void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pu
 
     // add data
     // GB: TODO: physical diameter is the same for two views, but is added as two different curves now..
-    for(std::size_t i=0; i<numCols; i++) {
+    for(int i=0; i<numCols; i++) {
         if(plotValue == DataTable::PUPIL_CENTER_X) {
             customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].center.x);
         } else if(plotValue == DataTable::PUPIL_CENTER_Y) {
@@ -343,7 +343,7 @@ void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pu
                 // rescale value (vertical) axis to fit the current data:
             //    customPlot->graph(0)->rescaleValueAxis(false, true);
             //    customPlot->graph(1)->rescaleValueAxis(false, true);
-                for(std::size_t i=0; i<numCols; i++) {
+                for(int i=0; i<numCols; i++) {
                     customPlot->graph(i)->rescaleValueAxis(false, true);
                 }
             }
@@ -357,7 +357,7 @@ void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pu
         if((m_timestamp/1000.0) - customPlot->graph(0)->dataMainKey (0) > 240) {
         //    customPlot->graph(0)->data()->removeBefore((m_timestamp/1000.0)-120);
         //    customPlot->graph(1)->data()->removeBefore((m_timestamp/1000.0)-120);
-            for(std::size_t i=0; i<numCols; i++) {
+            for(int i=0; i<numCols; i++) {
                 customPlot->graph(i)->data()->removeBefore((m_timestamp/1000.0)-120);
             }
         }

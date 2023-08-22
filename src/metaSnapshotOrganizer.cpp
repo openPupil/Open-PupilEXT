@@ -199,12 +199,12 @@ void MetaSnapshotOrganizer::addPupilDetectionNode(QDomDocument &document, QDomEl
         procMode = "SINGLE_IMAGE_ONE_PUPIL";
     } else if(val == SINGLE_IMAGE_TWO_PUPIL) {
         procMode = "SINGLE_IMAGE_TWO_PUPIL";
-    } else if(val == MIRR_IMAGE_ONE_PUPIL) {
-        procMode = "MIRR_IMAGE_ONE_PUPIL";
     } else if(val == STEREO_IMAGE_ONE_PUPIL) {
         procMode = "STEREO_IMAGE_ONE_PUPIL";
     } else if(val == STEREO_IMAGE_TWO_PUPIL) {
         procMode = "STEREO_IMAGE_TWO_PUPIL";
+    // } else if(val == MIRR_IMAGE_ONE_PUPIL) {
+    //     procMode = "MIRR_IMAGE_ONE_PUPIL";
     } 
 
     QMap<QString, QString> pupilDetectionMap;
@@ -294,25 +294,25 @@ void MetaSnapshotOrganizer::addPupilDetectionNode(QDomDocument &document, QDomEl
             pupilObjA.appendChild(viewObjAMain);
             pupilObjB.appendChild(viewObjBMain);
             break;
-        case ProcMode::MIRR_IMAGE_ONE_PUPIL:
-            pupilObjA = document.createElement("A");
-            pdROIs.appendChild(pupilObjA);
-            viewObjAMain = document.createElement("Main");
-            viewObjASec = document.createElement("Sec");
+        // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        //     pupilObjA = document.createElement("A");
+        //     pdROIs.appendChild(pupilObjA);
+        //     viewObjAMain = document.createElement("Main");
+        //     viewObjASec = document.createElement("Sec");
             
-            viewObjAMain.setAttribute("x", pupilDetection->getROImirrImageOnePupil1().x()); 
-            viewObjAMain.setAttribute("y", pupilDetection->getROImirrImageOnePupil1().y()); 
-            viewObjAMain.setAttribute("width", pupilDetection->getROImirrImageOnePupil1().width()); 
-            viewObjAMain.setAttribute("height", pupilDetection->getROImirrImageOnePupil1().height()); 
+        //     viewObjAMain.setAttribute("x", pupilDetection->getROImirrImageOnePupil1().x()); 
+        //     viewObjAMain.setAttribute("y", pupilDetection->getROImirrImageOnePupil1().y()); 
+        //     viewObjAMain.setAttribute("width", pupilDetection->getROImirrImageOnePupil1().width()); 
+        //     viewObjAMain.setAttribute("height", pupilDetection->getROImirrImageOnePupil1().height()); 
 
-            viewObjASec.setAttribute("x", pupilDetection->getROImirrImageOnePupil2().x()); 
-            viewObjASec.setAttribute("y", pupilDetection->getROImirrImageOnePupil2().y()); 
-            viewObjASec.setAttribute("width", pupilDetection->getROImirrImageOnePupil2().width()); 
-            viewObjASec.setAttribute("height", pupilDetection->getROImirrImageOnePupil2().height()); 
+        //     viewObjASec.setAttribute("x", pupilDetection->getROImirrImageOnePupil2().x()); 
+        //     viewObjASec.setAttribute("y", pupilDetection->getROImirrImageOnePupil2().y()); 
+        //     viewObjASec.setAttribute("width", pupilDetection->getROImirrImageOnePupil2().width()); 
+        //     viewObjASec.setAttribute("height", pupilDetection->getROImirrImageOnePupil2().height()); 
 
-            pupilObjA.appendChild(viewObjAMain);
-            pupilObjA.appendChild(viewObjASec);
-            break;
+        //     pupilObjA.appendChild(viewObjAMain);
+        //     pupilObjA.appendChild(viewObjASec);
+        //     break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             pupilObjA = document.createElement("A");
             pdROIs.appendChild(pupilObjA);

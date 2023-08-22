@@ -58,16 +58,6 @@ QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std
             pupilObjA.appendChild(viewObjAMain);
             pupilObjB.appendChild(viewObjBMain);
             break;
-        case ProcMode::MIRR_IMAGE_ONE_PUPIL:
-            pupilObjA = document.createElement("A");
-            root.appendChild(pupilObjA);
-            viewObjAMain = document.createElement("Main");
-            viewObjASec = document.createElement("Sec");
-            populatePupilNodeXML(timestamp, viewObjAMain, MIRR_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, temperatures[0]);
-            populatePupilNodeXML(timestamp, viewObjASec, MIRR_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, temperatures[0]);
-            pupilObjA.appendChild(viewObjAMain);
-            pupilObjA.appendChild(viewObjASec);
-            break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             pupilObjA = document.createElement("A");
             root.appendChild(pupilObjA);
@@ -96,6 +86,17 @@ QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std
             pupilObjB.appendChild(viewObjBMain);
             pupilObjB.appendChild(viewObjBSec);
             break;
+        // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        //     pupilObjA = document.createElement("A");
+        //     root.appendChild(pupilObjA);
+        //     viewObjAMain = document.createElement("Main");
+        //     viewObjASec = document.createElement("Sec");
+        //     populatePupilNodeXML(timestamp, viewObjAMain, MIRR_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, temperatures[0]);
+        //     populatePupilNodeXML(timestamp, viewObjASec, MIRR_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, temperatures[0]);
+        //     pupilObjA.appendChild(viewObjAMain);
+        //     pupilObjA.appendChild(viewObjASec);
+        //     break;
+
         //default:
             //break;
     }
@@ -153,13 +154,6 @@ QString EyeDataSerializer::pupilToJSON(quint64 timestamp, int procMode, const st
             pupilObjB["Main"] = viewObjBMain;
             root["B"] = pupilObjB;
             break;
-        case ProcMode::MIRR_IMAGE_ONE_PUPIL:
-            populatePupilNodeJSON(timestamp, viewObjAMain, MIRR_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, temperatures[0]);
-            populatePupilNodeJSON(timestamp, viewObjASec, MIRR_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, temperatures[0]);
-            pupilObjA["Main"] = viewObjAMain;
-            pupilObjA["Sec"] = viewObjASec;
-            root["A"] = pupilObjA;
-            break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             populatePupilNodeJSON(timestamp, viewObjAMain, STEREO_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, temperatures[0]);
             populatePupilNodeJSON(timestamp, viewObjASec, STEREO_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, temperatures[1]);
@@ -179,6 +173,14 @@ QString EyeDataSerializer::pupilToJSON(quint64 timestamp, int procMode, const st
             pupilObjB["Sec"] = viewObjBSec;
             root["B"] = pupilObjB;
             break;
+        // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        //     populatePupilNodeJSON(timestamp, viewObjAMain, MIRR_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, temperatures[0]);
+        //     populatePupilNodeJSON(timestamp, viewObjASec, MIRR_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, temperatures[0]);
+        //     pupilObjA["Main"] = viewObjAMain;
+        //     pupilObjA["Sec"] = viewObjASec;
+        //     root["A"] = pupilObjA;
+        //     break;
+        
         //default:
             //break;
     }
@@ -246,9 +248,6 @@ QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim) {
                 QString::fromStdString("temperature_c")
             ; // GB TODO: check temp
     //        //break;
-        case ProcMode::MIRR_IMAGE_ONE_PUPIL:
-            // NOTE: even though mirr image data comes from one camera, now we have different fields for temperature checks, 
-            // no problem, just use the same value
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
             return
                 QString::fromStdString("filename") + delim +
@@ -357,6 +356,11 @@ QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim) {
             ;
             // GB TODO: TEMP CHECK
     //        break;
+        
+        // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        //     // NOTE: even though mirr image data comes from one camera, now we have different fields for temperature checks, 
+        //     // no problem, just use the same value
+        
         default:
             return QString("PROCESSING MODE UNDETERMINED");
     }
@@ -422,40 +426,6 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
                 QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].confidence) + delim + 
                 QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].outline_confidence) + delim + 
                 QString::number(trialNum) + delim +
-                QString::number(temperatures[0])
-            ;
-            // GB TODO: TEMP CHECK!
-            //break;
-        case ProcMode::MIRR_IMAGE_ONE_PUPIL:
-            return 
-                filename + delim + 
-                QString::number(timestamp) + delim + 
-                QString::fromStdString(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].algorithmName) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].diameter()) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].diameter()) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].undistortedDiameter) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].undistortedDiameter) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].physicalDiameter) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].width()) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].height()) + delim + 
-                QString::number((double)Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].width() / Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].height()) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].width()) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].height()) + delim + 
-                QString::number((double)Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].width() / Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].height()) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].center.x) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].center.y) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].center.x) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].center.y) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].angle) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].angle) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].circumference()) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].circumference()) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].confidence) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].outline_confidence) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].confidence) + delim + 
-                QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].outline_confidence) + delim + 
-                QString::number(trialNum) + delim +
-                QString::number(temperatures[0]) + delim +
                 QString::number(temperatures[0])
             ;
             // GB TODO: TEMP CHECK!
@@ -568,6 +538,42 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
             ;
             // GB TODO: TEMP CHECK
             //break;
+        
+        // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+        //     return 
+        //         filename + delim + 
+        //         QString::number(timestamp) + delim + 
+        //         QString::fromStdString(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].algorithmName) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].diameter()) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].diameter()) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].undistortedDiameter) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].undistortedDiameter) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].physicalDiameter) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].width()) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].height()) + delim + 
+        //         QString::number((double)Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].width() / Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].height()) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].width()) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].height()) + delim + 
+        //         QString::number((double)Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].width() / Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].height()) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].center.x) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].center.y) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].center.x) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].center.y) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].angle) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].angle) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].circumference()) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].circumference()) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].confidence) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_MAIN].outline_confidence) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].confidence) + delim + 
+        //         QString::number(Pupils[MIRR_IMAGE_ONE_PUPIL_SEC].outline_confidence) + delim + 
+        //         QString::number(trialNum) + delim +
+        //         QString::number(temperatures[0]) + delim +
+        //         QString::number(temperatures[0])
+        //     ;
+        //     // GB TODO: TEMP CHECK!
+        //     //break;
+        
         default:
             return QString(" ");
     }
@@ -602,15 +608,6 @@ QString EyeDataSerializer::pupilToYAML(quint64 timestamp, int procMode, const st
             addRowYAML(obj, "Main", "", 2, false);
             populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_TWO_PUPIL_B, Pupils, filename, trialNum, temperatures[0]);
             break;
-        case ProcMode::MIRR_IMAGE_ONE_PUPIL:
-
-            addRowYAML(obj, "A", "", 1, false);
-            addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, MIRR_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, temperatures[0]);
-            addRowYAML(obj, "A", "", 1, false);
-            addRowYAML(obj, "Sec", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, MIRR_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, temperatures[0]);
-            break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
 
             addRowYAML(obj, "A", "", 1, false);
@@ -636,6 +633,17 @@ QString EyeDataSerializer::pupilToYAML(quint64 timestamp, int procMode, const st
             addRowYAML(obj, "Sec", "", 2, false);
             populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_B_SEC, Pupils, filename, trialNum, temperatures[1]);
             break;
+            
+        // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+
+        //     addRowYAML(obj, "A", "", 1, false);
+        //     addRowYAML(obj, "Main", "", 2, false);
+        //     populatePupilNodeYAML(timestamp, obj, 3, MIRR_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, temperatures[0]);
+        //     addRowYAML(obj, "A", "", 1, false);
+        //     addRowYAML(obj, "Sec", "", 2, false);
+        //     populatePupilNodeYAML(timestamp, obj, 3, MIRR_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, temperatures[0]);
+        //     break;
+        
         //default:
             //break;
     }
