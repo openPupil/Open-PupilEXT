@@ -8,6 +8,7 @@
 #include <QtWidgets/QGroupBox>
 #include <QtWidgets/qmessagebox.h>
 #include <iostream>
+#include "../SVGIconColorAdjuster.h"
 
 static const char* blankString = "N/A";
 
@@ -193,7 +194,7 @@ void SerialSettingsDialog::createForm() {
 
     serialPortInfoListLayout->addWidget(serialPortInfoListBox);
 
-    const QIcon refreshIcon = QIcon(":/icons/Breeze/actions/22/view-refresh.svg");
+    const QIcon refreshIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/view-refresh.svg"), applicationSettings);
     refreshButton = new QPushButton(""); // view-refresh.svg
     refreshButton->setIcon(refreshIcon);
     refreshButton->setFixedWidth(22);

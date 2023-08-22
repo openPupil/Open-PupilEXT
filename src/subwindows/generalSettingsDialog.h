@@ -58,6 +58,9 @@ private:
 
     QString delimiterToUse;
     QComboBox *delimiterBox;
+
+    int darkAdaptMode;
+    QComboBox *darkAdaptBox;
     QCheckBox *metaSnapshotBox;
     QCheckBox *saveOfflineEventLogBox;
     // GB added end
@@ -78,6 +81,7 @@ private slots:
 
     // GB added begin
     void onDelimiterChange(int index); 
+    void onDarkAdaptChange(int index);
     void setMetaSnapshotEnabled(int m_state);
     void setSaveOfflineEventLog(int m_state);
     // GB added end

@@ -4,6 +4,7 @@
 #include <QtWidgets/QtWidgets>
 #include "../supportFunctions.h"
 #include "singleCameraView.h"
+#include "../SVGIconColorAdjuster.h"
 
 // Create new single camera view given a single camera object and a pupil detection process
 // The pupil detection is used to display the detected pupils and show detection information such as processing fps
@@ -225,15 +226,15 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     // GB added/modified end
 
 
-    const QIcon okIcon = QIcon(":/icons/Breeze/actions/22/dialog-ok-apply.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon okIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/dialog-ok-apply.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     saveROI = new QAction(okIcon, tr("Set ROI"), this);
     connect(saveROI, &QAction::triggered, this, &SingleCameraView::onSaveROIClick);
 
-    const QIcon discardIcon = QIcon(":/icons/Breeze/actions/22/dialog-cancel.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon discardIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/dialog-cancel.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     discardROISelection = new QAction(discardIcon, tr("Cancel ROI Selection"), this);
     connect(discardROISelection, &QAction::triggered, this, &SingleCameraView::onDiscardROISelectionClick);
 
-    const QIcon resetIcon = QIcon(":/icons/Breeze/actions/22/gtk-convert.svg");
+    const QIcon resetIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/gtk-convert.svg"), applicationSettings);
     resetROI = new QAction(resetIcon, tr("Reset ROI"), this);
     connect(resetROI, &QAction::triggered, this, &SingleCameraView::onResetROIClick);
 

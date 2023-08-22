@@ -11,6 +11,7 @@
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QtWidgets>
 #include <QtWidgets/QLabel>
+#include "../../SVGIconColorAdjuster.h"
 
 #include "json.h"
 #include <fstream>
@@ -45,7 +46,7 @@ public:
 
         QGridLayout *infoLayout = new QGridLayout(infoBox);
 
-        QIcon trackOnIcon = QIcon(":/icons/Breeze/status/22/dialog-information.svg");
+        QIcon trackOnIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings);
         QLabel *iLabel = new QLabel();
         iLabel->setPixmap(trackOnIcon.pixmap(QSize(32, 32)));
         infoLayout->addWidget(iLabel, 0, 0);

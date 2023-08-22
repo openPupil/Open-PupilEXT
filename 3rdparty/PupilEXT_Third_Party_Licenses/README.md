@@ -2,6 +2,8 @@
 
 PupilEXT integrates several open source libraries. This document provides a list of the used libraries. The respective licenses of the libraries are provided as *.txt file in in the subfolder `3rdparty/PupilEXT_Third_Party_Licenses`.
 
+The following icon files are modifications of existing icons from the KDE Breeze icon set: 1cam1pup.svg, 1cam2pup.svg, 1cam1pup.svg, 1Mcam1pup.svg, 2cam1pup.svg, 2cam2pup.svg, 2cam2pupNS.svg, media-record-green.svg. These modified files were made by contributor Gábor Bényei, and can be found in the icons folder as resources, licensed in accordance to KDE Breeze license (GNU LESSER GENERAL PUBLIC LICENSE Version 3).
+
 ### Table of Content
 
 **List of Pupil Detection Libraries**

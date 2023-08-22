@@ -6,6 +6,7 @@
 #include <QtWidgets/QtWidgets>
 
 #include "streamingSettingsDialog.h"
+#include "../SVGIconColorAdjuster.h"
 
 
 StreamingSettingsDialog::StreamingSettingsDialog(
@@ -107,7 +108,7 @@ void StreamingSettingsDialog::createForm() {
     serialPortInfoListBox = new QComboBox();
     //comPortLayout->addWidget(serialPortInfoListBox);
 
-    const QIcon refreshIcon = QIcon(":/icons/Breeze/actions/22/view-refresh.svg");
+    const QIcon refreshIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/view-refresh.svg"), applicationSettings);
     refreshButton = new QPushButton(""); // view-refresh.svg
     refreshButton->setIcon(refreshIcon);
     refreshButton->setFixedWidth(22);

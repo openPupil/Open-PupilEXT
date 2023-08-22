@@ -37,6 +37,7 @@
 #include "subwindows/singleWebcamCalibrationView.h"
 //#include <QCameraInfo> // Qt 5.3 would be necessary. For OpenCV device enumeration
 #include "recEventTracker.h"
+#include "SVGIconColorAdjuster.h"
 // GB added end
 
 

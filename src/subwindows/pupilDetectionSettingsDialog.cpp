@@ -12,6 +12,7 @@
 #include "pupil-detection-methods/StarburstSettings.h"
 #include "pupil-detection-methods/Swirski2DSettings.h"
 #include "pupil-detection-methods/PuReSTSettings.h"
+#include "../SVGIconColorAdjuster.h"
 
 // Create the pupil detection settings dialog
 // Given a pupil detection object to communicate to the detection algorithm objects there
@@ -74,12 +75,19 @@ void PupilDetectionSettingsDialog::createForm() {
     procModeBoxLayout->addWidget(procModeLabel);
     procModeBoxLayout->addWidget(procModeBox);
 
-    procModePixmap_undetermined = QIcon(":/icons/Breeze/status/22/dialog-information.svg").pixmap(QSize(50, 50));
-    procModePixmap_1cam1pup = QIcon(":/icons/1cam1pup.png").pixmap(QSize(50, 50));
-    procModePixmap_1cam2pup = QIcon(":/icons/1cam2pup.png").pixmap(QSize(50, 50));
-    procModePixmap_1Mcam1pup = QIcon(":/icons/1Mcam1pup.png").pixmap(QSize(50, 50));
-    procModePixmap_2cam1pup = QIcon(":/icons/2cam1pup.png").pixmap(QSize(50, 50));
-    procModePixmap_2cam2pup = QIcon(":/icons/2cam2pup.png").pixmap(QSize(50, 50));
+    // procModePixmap_undetermined = QIcon(":/icons/Breeze/status/22/dialog-information.svg").pixmap(QSize(50, 50));
+    // procModePixmap_1cam1pup = QIcon(":/icons/1cam1pup.png").pixmap(QSize(50, 50));
+    // procModePixmap_1cam2pup = QIcon(":/icons/1cam2pup.png").pixmap(QSize(50, 50));
+    // procModePixmap_1Mcam1pup = QIcon(":/icons/1Mcam1pup.png").pixmap(QSize(50, 50));
+    // procModePixmap_2cam1pup = QIcon(":/icons/2cam1pup.png").pixmap(QSize(50, 50));
+    // procModePixmap_2cam2pup = QIcon(":/icons/2cam2pup.png").pixmap(QSize(50, 50));
+
+    procModePixmap_undetermined = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings).pixmap(QSize(50, 50));
+    procModePixmap_1cam1pup = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/1cam1pup.svg"), applicationSettings).pixmap(QSize(50, 50));
+    procModePixmap_1cam2pup = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/1cam2pup.svg"), applicationSettings).pixmap(QSize(50, 50));
+    procModePixmap_1Mcam1pup = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/1Mcam1pup.svg"), applicationSettings).pixmap(QSize(50, 50));
+    procModePixmap_2cam1pup = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/2cam1pup.svg"), applicationSettings).pixmap(QSize(50, 50));
+    procModePixmap_2cam2pup = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/2cam2pup.svg"), applicationSettings).pixmap(QSize(50, 50));
 
     //QIcon procModeIcon = QIcon(":/icons/Breeze/status/22/dialog-information.svg");
     iLabel = new QLabel();

@@ -6,6 +6,7 @@
 #include <iostream>
 #include "imagePlaybackControlDialog.h"
 #include "timestampSpinBox.h"
+#include "../SVGIconColorAdjuster.h"
 
 
 // TODO: readSettings and updateForm calls necessary when someone changes settings through remote control command, via QSettings
@@ -135,12 +136,12 @@ void ImagePlaybackControlDialog::createForm() {
     controlLayout->addWidget(slider, 0, 0, 1, 3);
     controlLayout->addWidget(dial, 1, 2, 6, 1);
 
-    const QIcon startIcon = QIcon(":/icons/Breeze/actions/22/media-playback-start.svg");
+    const QIcon startIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
     startPauseButton = new QPushButton();
     startPauseButton->setToolTip("Start/Pause image playback");
     startPauseButton->setIcon(startIcon);
 
-    const QIcon stopIcon = QIcon(":/icons/Breeze/actions/22/media-playback-stop.svg");
+    const QIcon stopIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-stop.svg"), applicationSettings);
     stopButton = new QPushButton();
     stopButton->setToolTip("Stop image playback");
     stopButton->setIcon(stopIcon);
@@ -368,7 +369,7 @@ void ImagePlaybackControlDialog::onStopButtonClick() {
     //stalledFrameNumber = fileCamera->getLastCommissionedFrameNumber();
     //playbackStalled = true;
 
-    const QIcon icon = QIcon(":/icons/Breeze/actions/22/media-playback-start.svg");
+    const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
     startPauseButton->setIcon(icon);
 
     this->update(); // invalidate 
@@ -377,7 +378,7 @@ void ImagePlaybackControlDialog::onStopButtonClick() {
 void ImagePlaybackControlDialog::onFinish() {
     // NOTE: gets called whenever imageReader is finished with reading and sending images
     if(playImagesOn) {
-        const QIcon icon = QIcon(":/icons/Breeze/actions/22/media-playback-start.svg");
+        const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
         startPauseButton->setIcon(icon);
         playImagesOn = false;
         enableWidgets(true);
@@ -564,7 +565,7 @@ void ImagePlaybackControlDialog::onCameraPlaybackChanged()
             dial->setEnabled(true); 
         }
 
-        const QIcon icon = QIcon(":/icons/Breeze/actions/22/media-playback-start.svg");
+        const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
         startPauseButton->setIcon(icon);
         playImagesOn = false;
         enableWidgets(false);
@@ -581,7 +582,7 @@ void ImagePlaybackControlDialog::onCameraPlaybackChanged()
         std::cout<<"Starting FileCamera Click"<<std::endl;
         fileCamera->start();
 
-        const QIcon icon = QIcon(":/icons/Breeze/actions/22/media-playback-pause.svg");
+        const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-pause.svg"), applicationSettings);
         startPauseButton->setIcon(icon);
         playImagesOn = true;
         enableWidgets(true);

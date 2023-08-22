@@ -29,6 +29,7 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
     connect(formatBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onFormatChange(int)));
 
     connect(delimiterBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDelimiterChange(int)));
+    connect(darkAdaptBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDarkAdaptChange(int)));
     connect(metaSnapshotBox, SIGNAL(stateChanged(int)), this, SLOT(setMetaSnapshotEnabled(int)));
     connect(saveOfflineEventLogBox, SIGNAL(stateChanged(int)), this, SLOT(setSaveOfflineEventLog(int)));
     // GB added/modified end
@@ -65,6 +66,11 @@ void GeneralSettingsDialog::readSettings() {
         else
             saveOfflineEventLog = false;
     }
+
+    const int m_darkAdaptMode = applicationSettings->value("GUIDarkAdaptMode", "2").toInt();
+    darkAdaptMode = m_darkAdaptMode;
+    // GUIDarkAdaptMode: 0 = no, 1 = yes, 2 = let PupilEXT guess
+        
     // GB end
 }
 
@@ -90,6 +96,8 @@ void GeneralSettingsDialog::updateForm() {
         delimiterBox->setCurrentIndex(2);
     //qDebug() << delimiterToUse << "\n";
 
+    darkAdaptBox->setCurrentIndex(darkAdaptMode);
+
     metaSnapshotBox->setChecked(metaSnapshotsEnabled);
     saveOfflineEventLogBox->setChecked(saveOfflineEventLog);
     // GB modified end
@@ -100,6 +108,7 @@ void GeneralSettingsDialog::saveSettings() {
     applicationSettings->setValue("writerFormat", writerFormat);
     // GB begin
     applicationSettings->setValue("delimiterToUse", delimiterToUse );
+    applicationSettings->setValue("GUIDarkAdaptMode", darkAdaptMode );
     applicationSettings->setValue("metaSnapshotsEnabled", metaSnapshotsEnabled );
     applicationSettings->setValue("saveOfflineEventLog", saveOfflineEventLog );
     // GB end
@@ -151,6 +160,25 @@ void GeneralSettingsDialog::createForm() {
 
     // GB NOTE: removed playback speed and playback loop settings, as these are yet in ImagePlaybackSettingsDialog
 
+    QGroupBox *appearanceGroup = new QGroupBox("Appearance");
+    QFormLayout *appearanceLayout = new QFormLayout;
+
+    QLabel *darkAdaptLabel = new QLabel(tr("GUI dark mode:"));
+
+    darkAdaptBox = new QComboBox();
+    darkAdaptBox->addItem(QString("Light"));
+    darkAdaptBox->addItem(QString("Dark"));
+    darkAdaptBox->addItem(QString("Auto-detect"));
+    darkAdaptBox->setCurrentIndex(darkAdaptMode);
+    appearanceLayout->addRow(darkAdaptLabel, darkAdaptBox);
+
+    // TODO: add "always on top" checkbox
+
+    appearanceGroup->setLayout(appearanceLayout);
+    mainLayout->addWidget(appearanceGroup);
+
+
+
     QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
     applyButton = new QPushButton(tr("Apply and Close"));
@@ -171,6 +199,8 @@ void GeneralSettingsDialog::createForm() {
 void GeneralSettingsDialog::apply() {
     saveSettings();
     emit onSettingsChange();
+    
+    // this->parentWidget()->repaint(); // todo: maybe do this via receiving onSettingChange from mainwindow?
 
     close();
 }
@@ -219,6 +249,11 @@ void GeneralSettingsDialog::onFormatChange(int index) {
 // Event handler on the change of the combobox selection in the dialog
 void GeneralSettingsDialog::onDelimiterChange(int index) {
     delimiterToUse = delimiterBox->itemData(index).toString();
+}
+
+// Event handler on the change of the combobox selection in the dialog
+void GeneralSettingsDialog::onDarkAdaptChange(int index) {
+    darkAdaptMode = index;
 }
 
 GeneralSettingsDialog::~GeneralSettingsDialog() = default;

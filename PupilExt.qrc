@@ -34,11 +34,12 @@
         <file>icons/sym_circle.jpg</file>
         <file>icons/asym_circle.jpg</file>
 
-        <file>icons/1cam1pup.png</file>
-        <file>icons/1cam2pup.png</file>
-        <file>icons/2cam1pup.png</file>
-        <file>icons/2cam2pup.png</file>
-        <file>icons/1Mcam1pup.png</file>
+        <file>icons/1cam1pup.svg</file>
+        <file>icons/1cam2pup.svg</file>
+        <file>icons/2cam1pup.svg</file>
+        <file>icons/2cam2pup.svg</file>
+        <file>icons/1Mcam1pup.svg</file>
+        <file>icons/2cam2pupNS.svg</file>
 
         <file>icons/media-record-green.svg</file>
 

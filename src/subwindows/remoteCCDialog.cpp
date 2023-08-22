@@ -5,6 +5,7 @@
 #include <QtWidgets/QtWidgets>
 
 #include "remoteCCDialog.h"
+#include "../SVGIconColorAdjuster.h"
 
 #include "../mainwindow.h" // Can only be placed here
 
@@ -89,7 +90,7 @@ void RemoteCCDialog::createForm() {
     serialPortInfoListBox = new QComboBox();
     //comPortLayout->addWidget(serialPortInfoListBox);
 
-    const QIcon refreshIcon = QIcon(":/icons/Breeze/actions/22/view-refresh.svg");
+    const QIcon refreshIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/view-refresh.svg"), applicationSettings);
     refreshButton = new QPushButton(""); // view-refresh.svg
     refreshButton->setIcon(refreshIcon);
     refreshButton->setFixedWidth(22);

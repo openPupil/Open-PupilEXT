@@ -6,6 +6,7 @@
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QtWidgets>
 #include "../supportFunctions.h"
+#include "../SVGIconColorAdjuster.h"
 
 // Creates a new stereo camera view widget, taking a stereo based camera (StereoCamera or FileCamera with stero mode)
 // Pupil detection process is used to get detection results and display them, communicate ROI selection
@@ -222,15 +223,15 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
 
 
 
-    const QIcon okIcon = QIcon(":/icons/Breeze/actions/22/dialog-ok-apply.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon okIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/dialog-ok-apply.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     saveROI = new QAction(okIcon, tr("Set ROI"), this);
     connect(saveROI, &QAction::triggered, this, &StereoCameraView::onSaveROIClick);
 
-    const QIcon discardIcon = QIcon(":/icons/Breeze/actions/22/dialog-cancel.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon discardIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/dialog-cancel.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     discardROISelection = new QAction(discardIcon, tr("Cancel ROI Selection"), this);
     connect(discardROISelection, &QAction::triggered, this, &StereoCameraView::onDiscardROISelectionClick);
 
-    const QIcon resetIcon = QIcon(":/icons/Breeze/actions/22/gtk-convert.svg"); //QIcon::fromTheme("camera-video");
+    const QIcon resetIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/gtk-convert.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
     resetROI = new QAction(resetIcon, tr("Reset ROI"), this);
     connect(resetROI, &QAction::triggered, this, &StereoCameraView::onResetROIClick);
 
