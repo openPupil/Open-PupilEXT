@@ -1,13 +1,15 @@
 
-# Build environment troubleshooting notes (FAQ):
-(For building and development using Visual Studio Code)
+## Build environment troubleshooting notes (FAQ):
+
+For building and development using Visual Studio Code
 
 ---
 ---
-## Any operating system:
+### Any operating system:
 
 ---
 ---
+
 PROBLEM: 
 
 Miscellaneous
@@ -70,8 +72,9 @@ SOLUTION:
 
 ---
 ---
-## Windows-specific:
-(By default, in case if you want to build it on an x64 PC using MSVC.)
+### Windows-specific:
+
+By default, in case if you want to build it on an x64 PC using MSVC.
 
 ---
 ---
@@ -140,8 +143,9 @@ The libraries and Qt components that PupilEXT uses use .dll files from Qt, for r
 
 ---
 ---
+
 ## Ubuntu-specific: 
-(By default, in case if you want to build it on an x64 PC using G++.)
+By default, in case if you want to build it on an x64 PC using G++.
 
 ---
 ---
@@ -157,18 +161,21 @@ SOLUTION:
 
 ---
 ---
+
 ## MacOS-specific:
-(By default, in case if you want to build it on an x64 Mac using Clang.)
+
+By default, in case if you want to build it on an x64 Mac using Clang.
+
+---
+---
 
 PROBLEM:
 
 Build does not start because CMake or Ninja are missing, or spurious "cannot find" problems arise.
 
 SOLUTION:
-- Ensure that the necessary packages exist on your system:
-"********"
+- Ensure that the necessary packages exist on your system, and download them if not.
 - Ensure that cmake path is correctly set in settings.json (to find out e.g. where CMake is located on your machine, just type "which cmake" in the terminal)
 - Note that there may be a Clang supplied with your XCode already, also one that is installed alongside Qt if you put a checkbox for that in the Qt downloader manager.
 
----
----
+
