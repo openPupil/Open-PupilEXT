@@ -20,6 +20,7 @@
 
 // BG added
 #include "../devices/singleWebcam.h"
+#include "../camImageRegionsWidget.h"
 
 using namespace Pylon;
 
@@ -102,6 +103,8 @@ private:
     QSpinBox *imageROIoffsetYInputBox;
     QComboBox *binningBox;
 
+    CamImageRegionsWidget *camImageRegionsWidget;
+
     int lastUsedBinningVal = 0;
     //when binning value is 1. Must be divisible by 4 (camera dependent). 4*16
     const int minImageSize = 64; 
@@ -142,6 +145,7 @@ private slots:
     void updateImageROISettingsMin(int binningVal);
     void updateImageROISettingsMax();
     void updateImageROISettingsValues();
+    void updateCamImageRegionsWidget();
 
     void setExposureTimeValue(int value);
     void setAcquisitionFPSValue(int value);

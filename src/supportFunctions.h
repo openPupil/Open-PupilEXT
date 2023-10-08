@@ -11,6 +11,7 @@
 #include <QtCore/qfileinfo.h>
 #include <cmath>
 #include <QRectF>
+#include <QColor>
 
 /**
 
@@ -206,4 +207,21 @@ public:
         return QRectF(rationalROI.x() * size.width(), rationalROI.y() * size.height(),
                       rationalROI.width() * size.width(), rationalROI.height() * size.height());
     }
+
+    static QColor changeColors(QColor color, bool doLighten, bool isEnabled) {
+
+        // invert only the HSV "value"/intensity value (mirror it to 0.5 on a 0.0-1.0 range)
+        if(doLighten && color.valueF() <= 0.5f) {
+            color = QColor::fromHsvF(color.hsvHueF(), color.hsvSaturationF(), 1.0f-color.valueF());
+            if(!isEnabled) {
+                color = QColor::fromHsvF(color.hsvHueF(), 0.8, 0.5);
+            }
+        } else {
+            if(!isEnabled) {
+                color = QColor::fromHsvF(color.hsvHueF(), 0.1, 0.7);
+            }
+        }
+
+        return color;
+    };
 };

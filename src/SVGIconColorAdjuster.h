@@ -79,16 +79,19 @@ public:
 
         QByteArray dataBA;
 
+        // TODO: move these to a separate function as the same lines are used in CamImageRegionsWidget class too !!
+        // -- begin 
         // NOTE: These 4 lines below are from a SO post: https://stackoverflow.com/a/21024983
         QLabel label("something");
         int text_hsv_value = label.palette().color(QPalette::WindowText).value();
-        int bg_hsv_value = label.palette().color(QPalette::Background).value();
+        int bg_hsv_value = label.palette().color(QPalette::Window).value();
         // bool dark_theme_found = text_hsv_value > bg_hsv_value;
-
+        //
         // basically the icon set we use is for light theme, so we only need to decide whether to lighten colors or not
         // GUIDarkAdaptMode: 0 = no, 1 = yes, 2 = let PupilEXT guess
         bool doLighten = applicationSettings->value("GUIDarkAdaptMode", "0") == "1" || (applicationSettings->value("GUIDarkMode", "0") == "2" && text_hsv_value > bg_hsv_value);
-        
+        // end --
+
         // TODO: run this only if there was any change that we can really react to (doLighten or disabled mode, but nothing else)
         dataBA = changeColors(data, doLighten, mode).toUtf8();
 

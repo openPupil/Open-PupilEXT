@@ -21,8 +21,7 @@ StereoCameraSettingsDialog::StereoCameraSettingsDialog(StereoCamera *camera, Ser
         settingsDirectory.mkdir(".");
     }
 
-    setMinimumSize(420, 630);
-    //setMinimumSize(600, 450); // BG
+    setMinimumSize(430, 680);
 
     setWindowTitle(QString("Stereo Camera Settings"));
 
@@ -89,6 +88,7 @@ void StereoCameraSettingsDialog::createForm() {
     for(int i=1; i<7;i++) {
         lineSourceBox->addItem(QString("Line") + QString::number(i));
     }
+    lineSourceBox->setFixedWidth(80); // BG
     serialConfigButton = new QPushButton("Serial Connection");
 
     QHBoxLayout *trigConfigRow1 = new QHBoxLayout;
@@ -103,7 +103,7 @@ void StereoCameraSettingsDialog::createForm() {
     triggerFramerateInputBox->setMaximum(999);
     triggerFramerateInputBox->setSingleStep(1);
     triggerFramerateInputBox->setEnabled(false);
-    triggerFramerateInputBox->setFixedWidth(50); // BG
+    triggerFramerateInputBox->setFixedWidth(80); // BG
 
     QLabel *triggerTimeSpanLabel = new QLabel(tr("Trigger Runtime [min]:"));
     triggerTimeSpanInputBox = new QDoubleSpinBox();
@@ -111,7 +111,7 @@ void StereoCameraSettingsDialog::createForm() {
     triggerTimeSpanInputBox->setMaximum(std::numeric_limits<double>::max());
     triggerTimeSpanInputBox->setSingleStep(0.1);
     triggerTimeSpanInputBox->setEnabled(false);
-    triggerTimeSpanInputBox->setFixedWidth(50); // BG
+    triggerTimeSpanInputBox->setFixedWidth(70); // BG
 
     QHBoxLayout *trigConfigRow2 = new QHBoxLayout;
     trigConfigRow2->addWidget(triggerFramerateInputBox);
@@ -145,7 +145,7 @@ void StereoCameraSettingsDialog::createForm() {
     QHBoxLayout *gainInputLayout = new QHBoxLayout();
 
     QLabel *gainLabel = new QLabel(tr("Gain [dB]:"));
-    gainLabel->setMinimumWidth(50);
+    gainLabel->setMinimumWidth(80);
 
     // BG modified begin
     // BG NOTE: Modified to fit on smaller screens too
@@ -168,106 +168,140 @@ void StereoCameraSettingsDialog::createForm() {
 
 
     acquisitionGroup = new QGroupBox("Acquisition Control");
-    QFormLayout *acquisitionLayout = new QFormLayout;
+    QVBoxLayout *acquisitionLayout = new QVBoxLayout;
     
-    // BG modified begin
-    // BG NOTE: Modified to fit on smaller screens too
     QHBoxLayout *exposureInputLayout = new QHBoxLayout;
     // BG: we are in unicode, so can use greek mu sign. Previously it was written as "Exposure [us]"
     exposureLabel = new QLabel(tr("Exposure [µs]:")); 
-    exposureLabel->setMinimumWidth(50);
+    exposureLabel->setFixedWidth(80);
     exposureInputBox = new QSpinBox();
-    exposureInputBox->setMinimum(1);
-    exposureInputBox->setMaximum(10000000);
-    exposureInputBox->setSingleStep(100);
-    //exposureInputBox->setValue(camera->getExposureTimeValue());
-    exposureInputBox->setFixedWidth(50);
+    exposureInputBox->setMinimum(camera->getExposureTimeMin());
+    exposureInputBox->setMaximum(camera->getExposureTimeMax());
+    exposureInputBox->setSingleStep(1);
+    exposureInputBox->setValue(camera->getExposureTimeValue());
+    exposureInputBox->setFixedWidth(70);
 
+    // BG modified begin
+    // BG NOTE: Modified to fit on smaller screens too
     exposureAutoOnceButton = new QPushButton("Auto Exposure (Once)");
+    exposureInputLayout->addWidget(exposureLabel);
     exposureInputLayout->addWidget(exposureInputBox);
     exposureInputLayout->addWidget(exposureAutoOnceButton);
-    acquisitionLayout->addRow(exposureLabel, exposureInputLayout);
+    acquisitionLayout->addLayout(exposureInputLayout);
     // BG modified end
+
+    QHBoxLayout *imageROIlayoutHBlock = new QHBoxLayout;
+
+    QVBoxLayout *imageROIlayoutNestedVBlock1 = new QVBoxLayout;
 
     // BG added begin
 //    QSpacerItem *sp2 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum); 
 //    imageROIlayoutRow2->addSpacerItem(sp2);
     QHBoxLayout *imageROIlayoutRow1 = new QHBoxLayout;
     imageROIwidthLabel = new QLabel(tr("Image ROI width [px]:"));
-    imageROIwidthLabel->setMinimumWidth(50);
+    imageROIwidthLabel->setMinimumWidth(120);
     imageROIwidthInputBox = new QSpinBox();
-    imageROIwidthInputBox->setFixedWidth(50);
+    imageROIwidthInputBox->setFixedWidth(60);
     imageROIwidthMaxLabel = new QLabel(tr("/ 0"));
+    imageROIlayoutRow1->addWidget(imageROIwidthLabel);
     imageROIlayoutRow1->addWidget(imageROIwidthInputBox);
     imageROIlayoutRow1->addWidget(imageROIwidthMaxLabel);
-    acquisitionLayout->addRow(imageROIwidthLabel, imageROIlayoutRow1);
+    imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow1);
 
     QHBoxLayout *imageROIlayoutRow2 = new QHBoxLayout;
     imageROIheightLabel = new QLabel(tr("Image ROI height [px]:"));
-    imageROIheightLabel->setMinimumWidth(50);
+    imageROIheightLabel->setMinimumWidth(120);
     imageROIheightInputBox = new QSpinBox();
-    imageROIheightInputBox->setFixedWidth(50);
+    imageROIheightInputBox->setFixedWidth(60);
     imageROIheightMaxLabel = new QLabel(tr("/ 0"));
+    imageROIlayoutRow2->addWidget(imageROIheightLabel);
     imageROIlayoutRow2->addWidget(imageROIheightInputBox);
     imageROIlayoutRow2->addWidget(imageROIheightMaxLabel);
-    acquisitionLayout->addRow(imageROIheightLabel, imageROIlayoutRow2);
+    imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow2);
 
     QHBoxLayout *imageROIlayoutRow3 = new QHBoxLayout;
     imageROIoffsetXLabel = new QLabel(tr("Image ROI offsetX [px]:"));
-    imageROIoffsetXLabel->setMinimumWidth(50);
+    imageROIoffsetXLabel->setMinimumWidth(120);
     imageROIoffsetXInputBox = new QSpinBox();
-    imageROIoffsetXInputBox->setFixedWidth(50);
+    imageROIoffsetXInputBox->setFixedWidth(60);
     imageROIoffsetXMaxLabel = new QLabel(tr("/ 0"));
+    imageROIlayoutRow3->addWidget(imageROIoffsetXLabel);
     imageROIlayoutRow3->addWidget(imageROIoffsetXInputBox);
     imageROIlayoutRow3->addWidget(imageROIoffsetXMaxLabel);
-    acquisitionLayout->addRow(imageROIoffsetXLabel, imageROIlayoutRow3);
+    imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow3);
 
     QHBoxLayout *imageROIlayoutRow4 = new QHBoxLayout;
-    QHBoxLayout *imageROIoffsetYInputLayout = new QHBoxLayout;
+    //QHBoxLayout *imageROIoffsetYInputLayout = new QHBoxLayout;
     imageROIoffsetYLabel = new QLabel(tr("Image ROI offsetY [px]:"));
-    imageROIoffsetYLabel->setMinimumWidth(50);
+    imageROIoffsetYLabel->setMinimumWidth(120);
     imageROIoffsetYInputBox = new QSpinBox();
-    imageROIoffsetYInputBox->setFixedWidth(50);
+    imageROIoffsetYInputBox->setFixedWidth(60);
     imageROIoffsetYMaxLabel = new QLabel(tr("/ 0"));
+    imageROIlayoutRow4->addWidget(imageROIoffsetYLabel);
     imageROIlayoutRow4->addWidget(imageROIoffsetYInputBox);
     imageROIlayoutRow4->addWidget(imageROIoffsetYMaxLabel);
-    acquisitionLayout->addRow(imageROIoffsetYLabel, imageROIlayoutRow4);
+    imageROIlayoutNestedVBlock1->addLayout(imageROIlayoutRow4);
 
+    
+    QVBoxLayout *imageROIlayoutNestedVBlock2 = new QVBoxLayout;
+    imageROIlayoutNestedVBlock2->setMargin(0);
+
+    camImageRegionsWidget = new CamImageRegionsWidget(this);
+    camImageRegionsWidget->setFixedHeight(80);
+    imageROIlayoutNestedVBlock2->addWidget(camImageRegionsWidget);
+
+    imageROIlayoutHBlock->addLayout(imageROIlayoutNestedVBlock1);
+    imageROIlayoutHBlock->addLayout(imageROIlayoutNestedVBlock2);
+    acquisitionLayout->addLayout(imageROIlayoutHBlock);
+
+
+
+    QHBoxLayout *imageROIlayoutRow5 = new QHBoxLayout;
     binningLabel = new QLabel(tr("Binning:"));
-    binningLabel->setMinimumWidth(50);
+    binningLabel->setFixedWidth(70);
     binningBox = new QComboBox();
     binningBox->addItem(QString("1 (no binning)"));
     binningBox->addItem(QString("2"));
     binningBox->addItem(QString("4"));
     binningBox->setFixedWidth(100);
-    acquisitionLayout->addRow(binningLabel, binningBox);
+    imageROIlayoutRow5->addWidget(binningLabel);
+    imageROIlayoutRow5->addWidget(binningBox);
+    imageROIlayoutRow5->addStretch();
+    acquisitionLayout->addLayout(imageROIlayoutRow5);
     // BG added end
 
     // BG modified begin
     frameRateLabel = new QLabel("Resulting Framerate:");
-    frameRateValueLabel = new QLabel(QString::number(0));
+    frameRateValueLabel = new QLabel(QString::number(camera->getResultingFrameRateValue()));
 
-    acquisitionLayout->addRow(frameRateLabel, frameRateValueLabel);
+    //lineSourceBox->setCurrentText(QString::fromStdString(camera->getLineSource().c_str()));
+    //lineSourceBox->setEnabled(false);
+    //connect(hwTriggerEnabled, SIGNAL(toggled(bool)), lineSourceBox, SLOT(setEnabled(bool)));
 
     // BG NOTE: migrated the checkbox and spinbox into a single line to fit better on small screens
     framerateEnabled = new QCheckBox("Limit framerate to:");
     framerateEnabled->setChecked(camera->isEnabledAcquisitionFrameRate());
     framerateInputBox = new QSpinBox();
     framerateInputLayout = new QHBoxLayout;
+    framerateInputLayout->addWidget(frameRateLabel);
     framerateInputLayout->addWidget(frameRateValueLabel);
     QSpacerItem *sp4 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum); 
     framerateInputLayout->addSpacerItem(sp4);
     framerateInputLayout->addWidget(framerateEnabled);
     framerateInputLayout->addWidget(framerateInputBox);
+    framerateInputLayout->addStretch();
    // framerateInputLayout->addSpacerItem(sp);
-    framerateInputBox->setMinimum(1);
-    framerateInputBox->setMaximum(999);
+    framerateInputBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin()));
+    framerateInputBox->setMaximum(camera->getAcquisitionFPSMax());
     framerateInputBox->setSingleStep(1);
-    //framerateInputBox->setValue(camera->getAcquisitionFPSValue());
-    //framerateInputBox->setEnabled(camera->isEnabledAcquisitionFrameRate());
-    framerateInputBox->setFixedWidth(50); // BG
-    //acquisitionGroup->setDisabled(true); // BG
-    // BG modified end
+    framerateInputBox->setValue(camera->getAcquisitionFPSValue());
+    framerateInputBox->setEnabled(camera->isEnabledAcquisitionFrameRate());
+    framerateInputBox->setFixedWidth(60);
+
+    acquisitionLayout->addLayout(framerateInputLayout);
+
+
+
 
     acquisitionGroup->setLayout(acquisitionLayout);
     mainLayout->addWidget(acquisitionGroup);
@@ -657,11 +691,11 @@ void StereoCameraSettingsDialog::saveSettings() {
     applicationSettings->setValue("StereoCameraSettingsDialog.acquisitionFramerate", framerateInputBox->value());
 
     // BG added begin
-    applicationSettings->setValue("SingleCameraSettingsDialog.binningVal", lastUsedBinningVal);
-    applicationSettings->setValue("SingleCameraSettingsDialog.imageROIwidth", imageROIwidthInputBox->value());
-    applicationSettings->setValue("SingleCameraSettingsDialog.imageROIheight", imageROIheightInputBox->value());
-    applicationSettings->setValue("SingleCameraSettingsDialog.imageROIoffsetX", imageROIoffsetXInputBox->value());
-    applicationSettings->setValue("SingleCameraSettingsDialog.imageROIoffsetY", imageROIoffsetYInputBox->value());
+    applicationSettings->setValue("StereoCameraSettingsDialog.binningVal", lastUsedBinningVal);
+    applicationSettings->setValue("StereoCameraSettingsDialog.imageROIwidth", imageROIwidthInputBox->value());
+    applicationSettings->setValue("StereoCameraSettingsDialog.imageROIheight", imageROIheightInputBox->value());
+    applicationSettings->setValue("StereoCameraSettingsDialog.imageROIoffsetX", imageROIoffsetXInputBox->value());
+    applicationSettings->setValue("StereoCameraSettingsDialog.imageROIoffsetY", imageROIoffsetYInputBox->value());
     // BG added end
 
     applicationSettings->setValue("StereoCameraSettingsDialog.settingsDirectory", settingsDirectory.path());
@@ -681,24 +715,28 @@ void StereoCameraSettingsDialog::onSetImageROIwidth(int val) {
     // NOTE: qt will not consider the programmatic change of the value as a user event to handle
     updateImageROISettingsMax();
     updateImageROISettingsValues();
+    updateCamImageRegionsWidget();
 }
 
 void StereoCameraSettingsDialog::onSetImageROIheight(int val) {
     camera->setImageROIheight(val);
     updateImageROISettingsMax();
     updateImageROISettingsValues();
+    updateCamImageRegionsWidget();
 }
 
 void StereoCameraSettingsDialog::onSetImageROIoffsetX(int val) {
     camera->setImageROIoffsetX(val);
     updateImageROISettingsMax();
     updateImageROISettingsValues();
+    updateCamImageRegionsWidget();
 }
 
 void StereoCameraSettingsDialog::onSetImageROIoffsetY(int val) {
     camera->setImageROIoffsetY(val);
     updateImageROISettingsMax();
     updateImageROISettingsValues();
+    updateCamImageRegionsWidget();
 }
 
 void StereoCameraSettingsDialog::updateImageROISettingsMin(int binningVal) {
@@ -760,7 +798,18 @@ void StereoCameraSettingsDialog::onBinningModeChange(int index) {
 
     // GB NOTE: here we could tell cameraview that it should expect different image size. But it is now programmed to be adaptive
     lastUsedBinningVal = binningVal;
+    updateCamImageRegionsWidget();
     updateFrameRateValue(); // only update when camera has updated too
+}
+
+void StereoCameraSettingsDialog::updateCamImageRegionsWidget() {
+    camImageRegionsWidget->setImageMaxSize( QSize(
+        camera->getImageROIwidthMax(), camera->getImageROIheightMax()
+        ) );
+    camImageRegionsWidget->setImageAcqROI1Rect( QRect(
+        camera->getImageROIoffsetX(), camera->getImageROIoffsetY(),
+        camera->getImageROIwidth(), camera->getImageROIheight()
+        ) );
 }
 
 void StereoCameraSettingsDialog::setLimitationsWhileTracking(bool state) {
