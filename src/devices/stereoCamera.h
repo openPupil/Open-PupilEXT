@@ -74,6 +74,7 @@ public:
     int getExposureTimeMax();
 
     bool isEnabledAcquisitionFrameRate();
+    bool isEmulated();
     double getResultingFrameRateValue();
 
     int getAcquisitionFPSValue();
@@ -101,7 +102,7 @@ public:
     int getImageROIwidth() override; 
     int getImageROIheight() override; 
     int getImageROIoffsetX() override; 
-    int getImageROIoffsetY() override;  
+    int getImageROIoffsetY() override;
     int getImageROIwidthMax(); // both setImageROI and setImageResize depends on this
     int getImageROIheightMax(); // both setImageROI and setImageResize depends on this
     QRectF getImageROI() override;
@@ -148,6 +149,11 @@ public slots:
     bool setImageROIheight(int height);
     bool setImageROIoffsetX(int offsetX);
     bool setImageROIoffsetY(int offsetY);
+
+    bool setImageROIwidthEmu(int width);
+    bool setImageROIheightEmu(int height);
+    bool setImageROIoffsetXEmu(int offsetX);
+    bool setImageROIoffsetYEmu(int offsetY); 
     // BG added end
 
 signals:

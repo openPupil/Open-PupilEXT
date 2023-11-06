@@ -29,7 +29,7 @@ StereoCamera::StereoCamera(QObject* parent) : Camera(parent),
 
     connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), this, SIGNAL(onNewGrabResult(CameraImage)));
     connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), frameCounter, SLOT(count(CameraImage)));
-    connect(cameraImageEventHandler, SIGNAL(needsTimeSynchronization()), this, SLOT(resynchronizeTime()));
+    //connect(cameraImageEventHandler, SIGNAL(needsTimeSynchronization()), this, SLOT(resynchronizeTime()));
 
     connect(frameCounter, SIGNAL(fps(double)), this, SIGNAL(fps(double)));
     connect(frameCounter, SIGNAL(framecount(int)), this, SIGNAL(framecount(int)));
@@ -99,8 +99,8 @@ void StereoCamera::open() {
 
     try {
         // Register the configurations of the cameras, setting both to receive hardware trigger signals on the given line source
-        cameras[0].RegisterConfiguration(new HardwareTriggerConfiguration(lineSource), RegistrationMode_ReplaceAll, Cleanup_Delete);
-        cameras[1].RegisterConfiguration(new HardwareTriggerConfiguration(lineSource), RegistrationMode_ReplaceAll, Cleanup_Delete);
+        //cameras[0].RegisterConfiguration(new HardwareTriggerConfiguration(lineSource), RegistrationMode_ReplaceAll, Cleanup_Delete);
+        //cameras[1].RegisterConfiguration(new HardwareTriggerConfiguration(lineSource), RegistrationMode_ReplaceAll, Cleanup_Delete);
 
         // Register the image event handler
         // IMPORTANT: For both cameras the same handler object is registered, as the handler must receive both main and secondary images to create a single stereo camera image
@@ -111,6 +111,7 @@ void StereoCamera::open() {
 
         // Synchronize the camera time to the system time
         synchronizeTime();
+        
         cameraImageEventHandler->setTimeSynchronization(cameraMainTime, cameraSecondaryTime, systemTime);
 
         cameras[0].PixelFormat.SetValue(PixelFormat_Mono8);
@@ -153,14 +154,23 @@ void StereoCamera::synchronizeTime() {
         return;
     }
 
-    cameras[0].TimestampLatch.Execute();
-    cameras[1].TimestampLatch.Execute();
-
+    if (!isEmulated()){
+        cameras[0].TimestampLatch.Execute();
+        cameras[1].TimestampLatch.Execute();
+    }
     std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
     std::chrono::time_point<std::chrono::system_clock> epoche = std::chrono::time_point<std::chrono::system_clock>{};
 
-    cameraMainTime = static_cast<uint64>(cameras[0].TimestampLatchValue.GetValue());
-    cameraSecondaryTime = static_cast<uint64>(cameras[1].TimestampLatchValue.GetValue());
+
+    if (!isEmulated()){
+        cameraMainTime = static_cast<uint64>(cameras[0].TimestampLatchValue.GetValue());
+        cameraSecondaryTime = static_cast<uint64>(cameras[1].TimestampLatchValue.GetValue());
+    }
+    else {
+        cameraMainTime = static_cast<uint64>(start.time_since_epoch().count());
+        cameraSecondaryTime = static_cast<uint64>(start.time_since_epoch().count());
+    }
+    
 
     systemTime  = std::chrono::duration_cast<std::chrono::nanoseconds>(start.time_since_epoch()).count();
     std::time_t startTime = std::chrono::system_clock::to_time_t(start);
@@ -201,6 +211,9 @@ int StereoCamera::getExposureTimeValue() {
     if (cameras.GetSize() > 0 && cameras[0].ExposureTime.IsReadable()) {
         return cameras[0].ExposureTime.GetValue();
     }
+    if (cameras.GetSize() > 0 && cameras[0].ExposureTimeAbs.IsReadable()) {
+        return cameras[0].ExposureTimeAbs.GetValue();
+    }
     return 0;
 }
 
@@ -208,6 +221,9 @@ int StereoCamera::getExposureTimeValue() {
 int StereoCamera::getExposureTimeMin() {
     if (cameras.GetSize() > 0 && cameras[0].ExposureTime.IsReadable()) {
         return cameras[0].ExposureTime.GetMin();
+    }
+    if (cameras.GetSize() > 0 && cameras[0].ExposureTimeAbs.IsReadable()) {
+        return cameras[0].ExposureTimeAbs.GetMin();
     }
     return 0;
 }
@@ -217,6 +233,9 @@ int StereoCamera::getExposureTimeMax() {
     if (cameras.GetSize() > 0 && cameras[0].ExposureTime.IsReadable()) {
         return cameras[0].ExposureTime.GetMax();
     }
+    if (cameras.GetSize() > 0 && cameras[0].ExposureTimeAbs.IsReadable()) {
+        return cameras[0].ExposureTimeAbs.GetMax();
+    }
     return 0;
 }
 
@@ -224,6 +243,9 @@ int StereoCamera::getExposureTimeMax() {
 double StereoCamera::getGainValue() {
     if (cameras.GetSize() > 0 && cameras[0].Gain.IsReadable()) {
         return cameras[0].Gain.GetValue();
+    }
+    if (cameras.GetSize() > 0 && cameras[0].GainRaw.IsReadable()) {
+        return cameras[0].GainRaw.GetValue();
     }
     return 0;
 }
@@ -233,6 +255,9 @@ double StereoCamera::getGainMin() {
     if (cameras.GetSize() > 0 && cameras[0].Gain.IsReadable()) {
         return cameras[0].Gain.GetMin();
     }
+    if (cameras.GetSize() > 0 && cameras[0].GainRaw.IsReadable()) {
+        return cameras[0].GainRaw.GetMin();
+    }
     return 0;
 }
 
@@ -241,23 +266,49 @@ double StereoCamera::getGainMax() {
     if (cameras.GetSize() > 0 && cameras[0].Gain.IsReadable()) {
         return cameras[0].Gain.GetMax();
     }
+    if (cameras.GetSize() > 0 && cameras[0].GainRaw.IsReadable()) {
+        return cameras[0].GainRaw.GetMax();
+    }
     return 0;
 }
 
 // Sets the Gain value of the main and secondary camera
 void StereoCamera::setGainValue(double value) {
-    if (cameras.GetSize() == 2 && cameras[0].Gain.IsWritable() && cameras[1].Gain.IsWritable()) {
-        cameras[0].Gain.TrySetValue(value);
-        cameras[1].Gain.TrySetValue(value);
+    if (isEmulated()){
+        if (cameras.GetSize() == 2 && cameras[0].GainRaw.IsWritable() && cameras[1].GainRaw.IsWritable() &&  value >= getGainMin() && value <= getGainMax()) {
+            qDebug() << cameras[0].GainRaw.GetMin();
+            qDebug() << cameras[1].GainRaw.GetMin();
+            qDebug() << cameras[0].GainRaw.GetMax();
+            qDebug() << cameras[1].GainRaw.GetMax();
+            int intValue = static_cast<int>(value);
+            cameras[0].GainRaw.TrySetValue(intValue);
+            cameras[1].GainRaw.TrySetValue(intValue);
+        }
     }
+    else {
+        if (cameras.GetSize() == 2 && cameras[0].Gain.IsWritable() && cameras[1].Gain.IsWritable()) {
+            cameras[0].Gain.TrySetValue(value);
+            cameras[1].Gain.TrySetValue(value);
+        }
+    }
+
 }
 
 // Sets the exposure time value of the main and secondary camera
 void StereoCamera::setExposureTimeValue(int value) {
-    if (cameras.GetSize() == 2 && cameras[0].ExposureTime.IsWritable() && cameras[1].ExposureTime.IsWritable()) {
-        std::cout<<"Writing exposure value: " << value <<std::endl;
-        cameras[0].ExposureTime.TrySetValue(value);
-        cameras[1].ExposureTime.TrySetValue(value);
+    if (isEmulated()){
+        if (cameras.GetSize() == 2 && cameras[0].ExposureTimeAbs.IsWritable() && cameras[1].ExposureTimeAbs.IsWritable() && value != 0) {
+            std::cout<<"Writing exposure value: " << value <<std::endl;
+            cameras[0].ExposureTimeAbs.TrySetValue(value);
+            cameras[1].ExposureTimeAbs.TrySetValue(value);
+        } 
+    }
+    else {
+        if (cameras.GetSize() == 2 && cameras[0].ExposureTime.IsWritable() && cameras[1].ExposureTime.IsWritable()) {
+            std::cout<<"Writing exposure value: " << value <<std::endl;
+            cameras[0].ExposureTime.TrySetValue(value);
+            cameras[1].ExposureTime.TrySetValue(value);
+        }
     }
 }
 
@@ -311,6 +362,18 @@ bool StereoCamera::isEnabledAcquisitionFrameRate() {
     return false;
 }
 
+bool StereoCamera::isEmulated()
+{
+    if (cameras.GetSize() == 2){
+        String_t device1_name = cameras[0].GetDeviceInfo().GetModelName();
+        String_t device2_name = cameras[1].GetDeviceInfo().GetModelName();
+        qDebug() << QString(device1_name) << QString(device2_name);
+        return ((device1_name.find("Emu") != String_t::npos) || (device2_name.find("Emu") != String_t::npos));    
+    }
+    else return false;
+    
+}
+
 // Enables image acquisition frame rate for both cameras
 void StereoCamera::enableAcquisitionFrameRate(bool enabled) {
     if (cameras.GetSize() == 2 && cameras[0].AcquisitionFrameRateEnable.IsWritable() && cameras[1].AcquisitionFrameRateEnable.IsWritable()) {
@@ -321,10 +384,20 @@ void StereoCamera::enableAcquisitionFrameRate(bool enabled) {
 
 // Sets the value of the image acquisition frame rate for both cameras
 void StereoCamera::setAcquisitionFPSValue(int value) {
-    if (cameras.GetSize() == 2 && cameras[0].AcquisitionFrameRate.IsWritable() && cameras[1].AcquisitionFrameRate.IsWritable()) {
-        cameras[0].AcquisitionFrameRate.TrySetValue(value);
-        cameras[1].AcquisitionFrameRate.TrySetValue(value);
+    if (isEmulated()){
+        if (cameras.GetSize() == 2 && cameras[0].AcquisitionFrameRateAbs.IsWritable() && cameras[1].AcquisitionFrameRateAbs.IsWritable()) {
+            if (value <= 0 )
+                value = 10;
+            cameras[0].AcquisitionFrameRateAbs.TrySetValue(value);
+            cameras[1].AcquisitionFrameRateAbs.TrySetValue(value);
+        }
+    } else{
+        if (cameras.GetSize() == 2 && cameras[0].AcquisitionFrameRate.IsWritable() && cameras[1].AcquisitionFrameRate.IsWritable()) {
+            cameras[0].AcquisitionFrameRate.TrySetValue(value);
+            cameras[1].AcquisitionFrameRate.TrySetValue(value);
+        }
     }
+    
 }
 
 // Reads and returns the value of the image acquisition frame rate for the main camera
@@ -333,6 +406,9 @@ int StereoCamera::getAcquisitionFPSValue() {
     if (cameras.GetSize() > 0 && cameras[0].AcquisitionFrameRate.IsReadable()) {
         return cameras[0].AcquisitionFrameRate.GetValue();
     }
+    if (cameras.GetSize() > 0 && cameras[0].AcquisitionFrameRateAbs.IsReadable()) {
+        return cameras[0].AcquisitionFrameRateAbs.GetValue();
+    }
     return 0;
 }
 
@@ -340,6 +416,9 @@ int StereoCamera::getAcquisitionFPSValue() {
 int StereoCamera::getAcquisitionFPSMin() {
     if (cameras.GetSize() > 0 && cameras[0].AcquisitionFrameRate.IsReadable()) {
         return cameras[0].AcquisitionFrameRate.GetMin();
+    }
+    else if(cameras.GetSize() > 0 && cameras[0].AcquisitionFrameRateAbs.IsReadable()) {
+        return cameras[0].AcquisitionFrameRateAbs.GetMin();
     }
     return 0;
 }
@@ -350,6 +429,9 @@ int StereoCamera::getAcquisitionFPSMax() {
     if (cameras.GetSize() > 0 && cameras[0].AcquisitionFrameRate.IsReadable()) {
         return cameras[0].AcquisitionFrameRate.GetMax();
     }
+    if (cameras.GetSize() > 0 && cameras[0].AcquisitionFrameRateAbs.IsReadable()) {
+        return cameras[0].AcquisitionFrameRateAbs.GetMax();
+    }
     return 0;
 }
 
@@ -357,6 +439,9 @@ int StereoCamera::getAcquisitionFPSMax() {
 double StereoCamera::getResultingFrameRateValue() {
     if (cameras.GetSize() > 0 && cameras[0].ResultingFrameRate.IsReadable()) {
         return cameras[0].ResultingFrameRate.GetValue();
+    }
+        if (cameras.GetSize() > 0 && cameras[0].ResultingFrameRateAbs.IsReadable()) {
+        return cameras[0].ResultingFrameRateAbs.GetValue();
     }
     return 0;
 }
@@ -1075,6 +1160,193 @@ bool StereoCamera::setImageROIoffsetX(int offsetX) {
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool StereoCamera::setImageROIoffsetY(int offsetY) {
     if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || cameras[1].BinningHorizontal.IsReadable()) {
+        return false;
+    }
+    
+    //std::cout << "Setting Image ROI offsetY=" << std::to_string(offsetY) << std::endl;
+    bool success = false;
+
+    if(cameras[0].IsGrabbing())
+        cameras[0].StopGrabbing();
+    if(cameras[1].IsGrabbing())
+        cameras[1].StopGrabbing();
+
+    // ace Classic/U/L GigE Cameras
+   // int maxWidth = cameras[0].Width.GetMax();
+   // int maxHeight = cameras[0].Height.GetMax();
+    // other cameras
+    int maxHeight = cameras[0].HeightMax.GetValue();
+    int height = cameras[0].Height.GetValue();
+
+    if(maxHeight - offsetY < 16)
+        offsetY = maxHeight - 16;
+    //if(height + offsetY > maxHeight)
+    //    return;
+
+    int modVal=offsetY%4;
+    if(modVal != 0)
+        offsetY -= modVal;
+
+    if (height + offsetY <= maxHeight && cameras[0].OffsetY.IsWritable() && cameras[1].OffsetY.IsWritable() ) {
+        cameras[0].OffsetY.TrySetValue(offsetY);
+        cameras[1].OffsetY.TrySetValue(offsetY);
+        success = true;
+    } 
+    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    return success;
+}
+
+bool StereoCamera::setImageROIwidthEmu(int width) {
+    if (cameras.GetSize() != 2) {
+        return false;
+    }
+
+    //std::cout << "Setting both cameras Image ROI width=" << std::to_string(width) << std::endl;
+    bool success = false;
+
+    if(cameras[0].IsGrabbing())
+        cameras[0].StopGrabbing();
+    if(cameras[1].IsGrabbing())
+        cameras[1].StopGrabbing();
+
+    // ace Classic/U/L GigE Cameras
+   // int maxWidth = camera.Width.GetMax();
+   // int maxHeight = camera.Height.GetMax();
+    // other cameras
+    int mw0 = cameras[0].WidthMax.GetValue();
+    int mw1 = cameras[1].WidthMax.GetValue();
+    if(mw0!=mw1) {
+        std::cout << "Max px width size of the two cameras to not match." << std::endl;
+    }
+    int maxWidth = mw0 > mw1 ? mw0 : mw1;
+
+    int offsetX0 = cameras[0].OffsetX.GetValue();
+    int offsetX1 = cameras[1].OffsetX.GetValue();
+
+    if(width < 16)
+        width=16;
+
+    int modVal=width%4;
+    if(modVal != 0)
+        width -= modVal;
+    
+    int wc0, wc1, bestWidth;
+    wc0 = wc1 = bestWidth = width;
+    
+    if (offsetX0 >= maxWidth-16)
+        wc0 = maxWidth-offsetX0;
+    if (offsetX1 >= maxWidth-16)
+        wc1 = maxWidth-offsetX1;
+    bestWidth = wc0 > wc1 ? wc0 : wc1;
+
+    if (bestWidth + offsetX0 <= maxWidth && cameras[0].Width.IsWritable() && cameras[1].Width.IsWritable() ) {
+        cameras[0].Width.TrySetValue(bestWidth);
+        cameras[1].Width.TrySetValue(bestWidth);
+        success = true;
+    }
+    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    return success;
+}
+
+// NOTE: grabbing "pause" is necessary for setting image ROI
+bool StereoCamera::setImageROIheightEmu(int height) {
+    if (cameras.GetSize() != 2) {
+        return false;
+    }
+
+    //std::cout << "Setting both cameras Image ROI height=" << std::to_string(height) << std::endl;
+    bool success = false;
+
+    if(cameras[0].IsGrabbing())
+        cameras[0].StopGrabbing();
+    if(cameras[1].IsGrabbing())
+        cameras[1].StopGrabbing();
+
+    // ace Classic/U/L GigE Cameras
+   // int maxWidth = camera.Width.GetMax();
+   // int maxHeight = camera.Height.GetMax();
+    // other cameras
+    int mh0 = cameras[0].HeightMax.GetValue();
+    int mh1 = cameras[1].HeightMax.GetValue();
+    if(mh0!=mh1) {
+        std::cout << "Max px height size of the two cameras to not match." << std::endl;
+    }
+    int maxHeight = mh0 > mh1 ? mh0 : mh1;
+
+    int offsetY0 = cameras[0].OffsetY.GetValue();
+    int offsetY1 = cameras[1].OffsetY.GetValue();
+
+    if(height < 16)
+        height=16;
+
+    int modVal=height%4;
+    if(modVal != 0)
+        height -= modVal;
+    
+    int hc0, hc1, bestHeight;
+    hc0 = hc1 = bestHeight = height;
+    
+    if (offsetY0 >= maxHeight-16)
+        hc0 = maxHeight-offsetY0;
+    if (offsetY1 >= maxHeight-16)
+        hc1 = maxHeight-offsetY1;
+    bestHeight = hc0 > hc1 ? hc0 : hc1;
+
+    if (bestHeight + offsetY0 <= maxHeight && cameras[0].Height.IsWritable() && cameras[1].Height.IsWritable() ) {
+        cameras[0].Height.TrySetValue(bestHeight);
+        cameras[1].Height.TrySetValue(bestHeight);
+        success = true;
+    }
+    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    return success;
+}
+
+// NOTE: grabbing "pause" is necessary for setting image ROI
+bool StereoCamera::setImageROIoffsetXEmu(int offsetX) {
+    if (cameras.GetSize() != 2) {
+        return false;
+    }
+
+    //std::cout << "Setting Image ROI offsetX=" << std::to_string(offsetX) << std::endl;
+    bool success = false;
+
+    if(cameras[0].IsGrabbing())
+        cameras[0].StopGrabbing();
+    if(cameras[1].IsGrabbing())
+        cameras[1].StopGrabbing();
+
+    // ace Classic/U/L GigE Cameras
+   // int maxWidth = cameras[0].Width.GetMax();
+   // int maxHeight = cameras[0].Height.GetMax();
+    // other cameras
+    int maxWidth = cameras[0].WidthMax.GetValue();
+    int width = cameras[0].Width.GetValue();
+
+    if(maxWidth - offsetX < 16)
+        offsetX = maxWidth - 16;
+    //if(width + offsetX > maxWidth)
+    //    return;
+    
+    int modVal=offsetX%4;
+    if(modVal != 0)
+        offsetX -= modVal;
+
+    if (width + offsetX <= maxWidth && cameras[0].OffsetX.IsWritable() && cameras[1].OffsetX.IsWritable() ) {
+        cameras[0].OffsetX.TrySetValue(offsetX);
+        cameras[1].OffsetX.TrySetValue(offsetX);
+        success = true;
+    }
+    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    return success;
+}
+
+// NOTE: grabbing "pause" is necessary for setting image ROI
+bool StereoCamera::setImageROIoffsetYEmu(int offsetY) {
+    if (cameras.GetSize() != 2) {
         return false;
     }
     

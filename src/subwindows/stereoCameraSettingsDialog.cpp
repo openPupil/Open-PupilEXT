@@ -338,10 +338,7 @@ void StereoCameraSettingsDialog::createForm() {
     connect(exposureInputBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameRateValue()));
     connect(gainInputBox, SIGNAL(valueChanged(double)), this, SLOT(updateFrameRateValue()));
 
-    connect(imageROIwidthInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIwidth(int)));
-    connect(imageROIheightInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIheight(int)));
-    connect(imageROIoffsetXInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIoffsetX(int)));
-    connect(imageROIoffsetYInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIoffsetY(int)));
+    connect(imageROIwidthInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIwidth(int)));    connect(imageROIheightInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIheight(int)));    connect(imageROIoffsetXInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIoffsetX(int)));    connect(imageROIoffsetYInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIoffsetY(int)));
 
     connect(framerateEnabled, SIGNAL(toggled(bool)), framerateInputBox, SLOT(setEnabled(bool)));
 
@@ -362,7 +359,7 @@ void StereoCameraSettingsDialog::createForm() {
     connect(serialConfigButton, &QPushButton::clicked, this, &StereoCameraSettingsDialog::onSerialConfig);
 
     connect(updateDevicesButton, SIGNAL(clicked()), this, SLOT(updateDevicesBox()));
-    connect(openButton, SIGNAL(clicked()), this, SLOT(openStereoCamera()));
+    connect(openButton, SIGNAL(clicked()), this, SLOT(onOpen()));
     connect(closeButton, SIGNAL(clicked()), this, SLOT(closeStereoCamera()));
     // GB modified/added end
 }
@@ -552,13 +549,13 @@ void StereoCameraSettingsDialog::openStereoCamera(const QString &camName1, const
     mainCameraBox->setCurrentIndex(idx1);
     secondaryCameraBox->setCurrentIndex(idx2);
 
-    openStereoCamera();
+    onOpen();
 }
 
 // Opens the stereo camera system, which means that both selected cameras are attached to the stereo camera object and opened, started to fetch images
 // Beware that the opening of the stereo camera must happen BEFORE the start of the hardware trigger signal to ensure a sync image signal
 // This is ensured in this form by disabling the start hardware trigger buttons until the cameras are opened
-void StereoCameraSettingsDialog::openStereoCamera() {
+void StereoCameraSettingsDialog::onOpen() {
 
     int mainCameraIndex = mainCameraBox->currentIndex();
     int secondaryCameraIndex = secondaryCameraBox->currentIndex();
@@ -710,8 +707,11 @@ void StereoCameraSettingsDialog::saveSettings() {
 }
 
 
-void StereoCameraSettingsDialog::onSetImageROIwidth(int val) {
-    camera->setImageROIwidth(val);
+void StereoCameraSettingsDialog::onSetImageROIwidth(int val) {    
+    if (camera->isEmulated())
+        camera->setImageROIwidthEmu(val);
+    else
+        camera->setImageROIwidth(val);
     // NOTE: qt will not consider the programmatic change of the value as a user event to handle
     updateImageROISettingsMax();
     updateImageROISettingsValues();
@@ -719,20 +719,29 @@ void StereoCameraSettingsDialog::onSetImageROIwidth(int val) {
 }
 
 void StereoCameraSettingsDialog::onSetImageROIheight(int val) {
-    camera->setImageROIheight(val);
+    if (camera->isEmulated())
+        camera->setImageROIheightEmu(val);
+    else
+        camera->setImageROIheight(val);
     updateImageROISettingsMax();
     updateImageROISettingsValues();
     updateCamImageRegionsWidget();
 }
 
 void StereoCameraSettingsDialog::onSetImageROIoffsetX(int val) {
-    camera->setImageROIoffsetX(val);
+    if (camera->isEmulated())
+        camera->setImageROIoffsetXEmu(val);
+    else    
+        camera->setImageROIoffsetX(val);
     updateImageROISettingsMax();
     updateImageROISettingsValues();
     updateCamImageRegionsWidget();
 }
 
-void StereoCameraSettingsDialog::onSetImageROIoffsetY(int val) {
+void StereoCameraSettingsDialog::onSetImageROIoffsetY(int val) {    
+    if (camera->isEmulated())
+        camera->setImageROIoffsetYEmu(val);
+    else   
     camera->setImageROIoffsetY(val);
     updateImageROISettingsMax();
     updateImageROISettingsValues();
@@ -834,18 +843,32 @@ void StereoCameraSettingsDialog::setLimitationsWhileTracking(bool state) {
     imageROIoffsetXMaxLabel->setDisabled(state);
     imageROIoffsetYMaxLabel->setDisabled(state);
 
-    binningLabel->setDisabled(state);
-    binningBox->setDisabled(state);
+    if (!camera->isEmulated()){
+        binningLabel->setDisabled(state);
+        binningBox->setDisabled(state);
+    }
+    else {
+        binningLabel->setDisabled(true);
+        binningBox->setDisabled(true);
+    }
 
     loadButton->setDisabled(state);
     saveButton->setDisabled(state);
 }
 
 void StereoCameraSettingsDialog::setLimitationsWhileUnconnected(bool state) {
-    hwTriggerGroup->setDisabled(state);
+    if (!camera->isEmulated()){
+        hwTriggerGroup->setDisabled(state);
+        binningLabel->setDisabled(state);
+        binningBox->setDisabled(state);
+    }
+    else{
+        hwTriggerGroup->setDisabled(true);
+        binningLabel->setDisabled(true);
+        binningBox->setDisabled(true);
+    }
     analogGroup->setDisabled(state);
-    acquisitionGroup->setDisabled(state);
-    
+    acquisitionGroup->setDisabled(state);    
     loadButton->setDisabled(state);
     saveButton->setDisabled(state);
 }

@@ -130,7 +130,7 @@ public slots:
 private slots:
 
     void updateDevicesBox();
-    void openStereoCamera();
+    void onOpen();
     void closeStereoCamera();
 
     void saveButtonClick();

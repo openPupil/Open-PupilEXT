@@ -55,7 +55,9 @@ void StereoCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
 
         //int diff = std::abs((int)(timeStamp - stereoImage.timestamp));
         //std::cout<<"Grabresult diff: "<<diff<<std::endl;
-
+        if (camera.GetDeviceInfo().GetModelName().find("Emu") != String_t::npos){
+            stereoImage.timestamp += frameNumber;
+        }
         if(stereoImage.frameNumber == frameNumber) {
             // If framenumber matches the already contained image in the stereo image this means the missing second images is now found
             // Cameracontextvalue describes the index of the camera in a basler camera array (main or secondary)

@@ -58,8 +58,16 @@ public:
             }
 
             // Set the line source as Input mode
-            CEnumParameter(nodemap, "LineSelector").SetValue(lineSource);
-            CEnumParameter(nodemap, "LineMode").SetValue("Input");
+            CEnumParameter lineSelector(nodemap, "LineSelector");
+            CEnumParameter lineMode(nodemap, "LineMode");
+            if (!lineSelector.CanSetValue(lineSource))
+            {
+                throw RUNTIME_EXCEPTION("Could not select line.");
+            }
+            if (!lineMode.CanSetValue("Input"))
+            {
+                throw RUNTIME_EXCEPTION("Could not set LineMode.");
+            }
 
             // Get all enumeration entries of trigger selector.
             StringList_t triggerSelectorEntries;
@@ -80,10 +88,20 @@ public:
                     //// The Basler pylon Viewer tool can be used to test the selected settings first.
 
                     //// The trigger source must be set to the trigger input, e.g. 'Line1'.
-                    CEnumParameter(nodemap, "TriggerSource").SetValue(lineSource);
+                    
+                        CEnumParameter triggerSource(nodemap, "TriggerSource");
 
                     ////The trigger activation must be set to e.g. 'RisingEdge'.
-                    CEnumParameter(nodemap, "TriggerActivation").SetValue("RisingEdge");
+                    CEnumParameter triggerActivation(nodemap, "TriggerActivation");
+
+                    if (!triggerSource.CanSetValue(lineSource))
+                    {
+                        throw RUNTIME_EXCEPTION("Could not select line.");
+                    }
+                    if (!triggerActivation.CanSetValue("RisingEdge"))
+                    {
+                        throw RUNTIME_EXCEPTION("Could not set LineMode.");
+                    }
                 }
                 else
                 {
@@ -96,7 +114,7 @@ public:
             triggerSelector.SetValue(triggerName);
         }
 
-        //Set acquisition mode to "continuous"
+        // Set acquisition mode to "continuous"
         CEnumParameter(nodemap, "AcquisitionMode").SetValue("Continuous");
     }
 
@@ -122,4 +140,4 @@ public:
     }
 };
 
-#endif //PUPILEXT_HARDWARETRIGGERCONFIGURATION_H
+#endif // PUPILEXT_HARDWARETRIGGERCONFIGURATION_H
