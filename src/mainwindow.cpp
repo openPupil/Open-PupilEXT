@@ -1707,6 +1707,9 @@ void MainWindow::onOpenImageDirectory() {
     QDir imageDir(tempDir);
     if (imageDir.isEmpty())
         return;
+
+    if(tempDir[tempDir.length()-1]=='/')
+        tempDir.chop(1);
     
     imageDirectory = tempDir;
     
@@ -1734,6 +1737,11 @@ void MainWindow::onOpenImageDirectory() {
     else if(lst.count() == 1)
         currentDirectoryLabel->setText("Current directory: " + lst[lst.count()-1]);
     currentDirectoryLabel->setToolTip(recentPath);
+
+    if(lst.count() > 1) {
+        QString suggestedCSVLoc = imageDirectory.chopped(lst[lst.count()-1].length());
+        PRGsetCsvPathAndName(suggestedCSVLoc + '/' + lst[lst.count()-1] + ".csv");
+    }
 
     if(selectedCamera) {
         selectedCamera->close();

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <QtCore/qfileinfo.h>
+#include <QMessageBox>
 #include "dataWriter.h"
 #include "supportFunctions.h"
 
@@ -27,7 +28,12 @@ DataWriter::DataWriter(
 
     std::cout<<fileName.toStdString()<<std::endl;
 
-    SupportFunctions::preparePath(fileName); // GB added
+    bool pathWriteable = SupportFunctions::preparePath(fileName); // GB added
+    if(!pathWriteable) {
+        QMessageBox MsgBox;
+        MsgBox.setText("Recording failure. Could not create path.");
+        MsgBox.exec();
+    }
 
     dataFile = new QFile(fileName);
     bool exists = dataFile->exists();
@@ -35,10 +41,14 @@ DataWriter::DataWriter(
     // Open the file in append mode
     // GB: needed to double check, in case of writing to e.g. C:/ or other admin-only folder, 
     // if the exe was started without admin rights, open would fail, and the null-ed dataFile can cause exception later on
-    if (!dataFile->open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
-        std::cout << "Recording failure. Could not open: " << fileName.toStdString() << std::endl;
+    bool fileWriteable = dataFile->open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
+    if (!fileWriteable) {
+        //std::cout << "Recording failure. Could not open: " << fileName.toStdString() << std::endl;
         delete dataFile;
         dataFile = nullptr;
+        QMessageBox MsgBox;
+        MsgBox.setText(QString::fromStdString("Recording failure. Could not open: " + fileName.toStdString()));
+        MsgBox.exec();
     }
 
     textStream = new QTextStream(dataFile);
@@ -50,7 +60,9 @@ DataWriter::DataWriter(
     // To not write again a header line to the file when it already existed (appending), check it
     if(!exists)
         *textStream << header << Qt::endl;
-    
+
+    if(!pathWriteable || !fileWriteable)
+        this->deleteLater();
 }
 
 DataWriter::~DataWriter() {
@@ -67,6 +79,8 @@ void DataWriter::close() {
     delete dataFile;
     dataFile = nullptr;
     textStream = nullptr;
+
+    std::cout << "DataWriter object deleted." << std::endl;
 }
 
 // GB: replacing previous methods for single pupil detection from single or stereo cameras, 
