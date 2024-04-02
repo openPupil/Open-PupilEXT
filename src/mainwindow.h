@@ -35,6 +35,11 @@
 #include "devices/singleWebcam.h"
 #include "subwindows/singleWebcamSettingsDialog.h"
 #include "subwindows/singleWebcamCalibrationView.h"
+#include <QDragEnterEvent>
+#include <QDragLeaveEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
+#include <QMimeData>
 //#include <QCameraInfo> // Qt 5.3 would be necessary. For OpenCV device enumeration
 #include "recEventTracker.h"
 #include "SVGIconColorAdjuster.h"
@@ -75,6 +80,8 @@ protected:
     void closeEvent(QCloseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     bool eventFilter(QObject *obj, QEvent *event);
+    void dragEnterEvent(QDragEnterEvent* e);
+    void dropEvent(QDropEvent* e);
 
 private:
  
@@ -202,6 +209,8 @@ private:
     void startCamera();
 
     void resetStatus(bool isConnect);
+
+    void openImageDirectory(QString imageDirectory);
 
     void connectCameraPlaybackChangedSlots();
     // GB added end

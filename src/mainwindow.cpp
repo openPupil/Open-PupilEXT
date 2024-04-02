@@ -171,6 +171,9 @@ MainWindow::MainWindow():
     }
 
     connect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), pupilDetectionWorker, SLOT (setCurrentProcMode(int)));
+
+    setAcceptDrops(true);
+
     // GB added end
 }
 
@@ -1694,9 +1697,9 @@ void MainWindow::onCreateGraphPlot(const QString &value) {
 void MainWindow::onOpenImageDirectory() {
     QFileDialog dialog(this, tr("Image Directory"), recentPath,tr("Image Files (*.png *.jpg *.bmp *.tiff *.jpeg *.webp)"));
     dialog.setOptions(QFileDialog::DontUseNativeDialog | QFileDialog::DontResolveSymlinks);
-    
+
     dialog.setFileMode(QFileDialog::Directory);
-    
+
     if(!dialog.exec())
         return;
     QString tempDir = dialog.directory().absolutePath();
@@ -1708,12 +1711,13 @@ void MainWindow::onOpenImageDirectory() {
     if (imageDir.isEmpty())
         return;
 
-    if(tempDir[tempDir.length()-1]=='/')
-        tempDir.chop(1);
-    
-    imageDirectory = tempDir;
-    
+    openImageDirectory(tempDir);
+}
 
+void MainWindow::openImageDirectory(QString imageDirectory) {
+
+    if(imageDirectory[imageDirectory.length()-1]=='/')
+        imageDirectory.chop(1);
 
     // GB added begin
     // GB: added to disable/enable opening of a new directory when there is already one opened
@@ -1757,10 +1761,10 @@ void MainWindow::onOpenImageDirectory() {
 
     // GB modified begin
     //const int playbackSpeed = applicationSettings->value("playbackSpeed", generalSettingsDialog->getPlaybackSpeed()).toInt();
-    //const bool playbackLoop = (bool) applicationSettings->value("playbackLoop", (int) generalSettingsDialog->getPlaybackLoop()).toInt(); 
+    //const bool playbackLoop = (bool) applicationSettings->value("playbackLoop", (int) generalSettingsDialog->getPlaybackLoop()).toInt();
     const int playbackSpeed = applicationSettings->value("playbackSpeed", 30).toInt();
     bool playbackLoop = false;
-    if( applicationSettings->value("playbackLoop", "1") == "1" || 
+    if( applicationSettings->value("playbackLoop", "1") == "1" ||
         applicationSettings->value("playbackLoop", "1") == "true" )
         playbackLoop = true;
     // GB modified end
@@ -1786,17 +1790,17 @@ void MainWindow::onOpenImageDirectory() {
     connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL (onNewGrabResult(CameraImage)));
     connect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
     connect(selectedCamera, SIGNAL(framecount(int)), signalPubSubHandler, SIGNAL(cameraFramecount(int)));
-        
+
     if(selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE) {
         connect(dynamic_cast<FileCamera*>(selectedCamera)->getCameraCalibration(), SIGNAL (finishedCalibration()), this, SLOT (onCameraCalibrationEnabled()));
         connect(dynamic_cast<FileCamera*>(selectedCamera)->getCameraCalibration(), SIGNAL (unavailableCalibration()), this, SLOT (onCameraCalibrationDisabled()));
-        
+
         int pmSingle = applicationSettings->value("PupilDetectionSettingsDialog.singleCam.procMode", ProcMode::SINGLE_IMAGE_ONE_PUPIL).toInt();
         if( pmSingle != ProcMode::SINGLE_IMAGE_ONE_PUPIL ||
             pmSingle != ProcMode::SINGLE_IMAGE_TWO_PUPIL // ||
-            // pmSingle != ProcMode::MIRR_IMAGE_ONE_PUPIL 
-            )
-            
+            // pmSingle != ProcMode::MIRR_IMAGE_ONE_PUPIL
+                )
+
             pmSingle = ProcMode::SINGLE_IMAGE_ONE_PUPIL;
         pupilDetectionWorker->setCurrentProcMode(pmSingle);
         // this line below is to ensure if an erroneous value was found in the QSettings ini, a good one gets in place
@@ -1805,7 +1809,7 @@ void MainWindow::onOpenImageDirectory() {
     } else if(selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE) {
         connect(dynamic_cast<FileCamera*>(selectedCamera)->getStereoCameraCalibration(), SIGNAL (finishedCalibration()), this, SLOT (onCameraCalibrationEnabled()));
         connect(dynamic_cast<FileCamera*>(selectedCamera)->getStereoCameraCalibration(), SIGNAL (unavailableCalibration()), this, SLOT (onCameraCalibrationDisabled()));
-        
+
         int pmStereo = applicationSettings->value("PupilDetectionSettingsDialog.stereoCam.procMode", ProcMode::STEREO_IMAGE_ONE_PUPIL).toInt();
         if( pmStereo != ProcMode::STEREO_IMAGE_ONE_PUPIL ||
             pmStereo != ProcMode::STEREO_IMAGE_TWO_PUPIL )
@@ -1820,7 +1824,7 @@ void MainWindow::onOpenImageDirectory() {
 
     // Basically only that pupilDetectionSettingsDialog knows which type of camera is connected
     pupilDetectionWorker->setCamera(selectedCamera);
-    // GB NOTE: 
+    // GB NOTE:
     // this line below calls loadSettings too
     // NOTE: importantly, this call must lead to calls in pupilDetectionSettingsDialog for
     // updateProcModeEnabled() and updateProcModeCompatibility()
@@ -1845,7 +1849,7 @@ void MainWindow::onOpenImageDirectory() {
     // GB NOTE: does not work if play fps is set to longer intervals than 5ms. Possible solution below:
     */
     //QStringList images = QDir(imageDirectory).entryList(QStringList() << "*.jpg" << "*.JPG",QDir::Files);
-        
+
     if(selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE && singleCameraChildWidget) {
         //cv::Mat temp1 = dynamic_cast<FileCamera*>(selectedCamera)->getStillImageSingle(0);
         //singleCameraChildWidget->displayStillImage(temp1);
@@ -1854,19 +1858,19 @@ void MainWindow::onOpenImageDirectory() {
         //std::vector<cv::Mat> temp2 = dynamic_cast<FileCamera*>(selectedCamera)->getStillImageStereo(0);
         //stereoCameraChildWidget->displayStillImage(temp2);
         stereoCameraChildWidget->displayFileCameraFrame(0);
-    }  
-    
+    }
+
     imagePlaybackControlDialog = new ImagePlaybackControlDialog(dynamic_cast<FileCamera*>(selectedCamera), pupilDetectionWorker, recEventTracker, this);
     RestorableQMdiSubWindow *imagePlaybackControlWindow = new RestorableQMdiSubWindow(imagePlaybackControlDialog, "ImagePlaybackControlDialog", this);
     mdiArea->addSubWindow(imagePlaybackControlWindow);
-    imagePlaybackControlWindow->resize(650, 230); 
+    imagePlaybackControlWindow->resize(650, 230);
     // No "X" button on this window
     imagePlaybackControlWindow->setWindowFlags(Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint | Qt::WindowStaysOnTopHint);
     //imagePlaybackControlWindow->setWindowFlags(imagePlaybackControlWindow->windowFlags() & ~Qt::WindowCloseButtonHint);
     //imagePlaybackControlWindow->setWindowFlags( (Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint) & ~Qt::WindowCloseButtonHint );
     imagePlaybackControlWindow->show();
     //imagePlaybackControlWindow->restoreGeometry();
-        
+
     //connect(selectedCamera, SIGNAL(finished()), imagePlaybackControlDialog, SLOT(onPlaybackFinished()));
     // GB: right now, this only gets called when playbackLoop is false, and we need to finish playing (with possible overhead)
     connect(selectedCamera, SIGNAL(endReached()), imagePlaybackControlDialog, SLOT(onAutomaticFinish()));
@@ -1878,10 +1882,10 @@ void MainWindow::onOpenImageDirectory() {
 
 
     // GB NOTE:
-    // I could have done this in a way that the camera child widgets only receive a cv::Mat to display.. 
-    // but we are actually not displaying anything else in the views, just fileCamera frames, 
-    // so I dedicated separate functions for them, which only take the frameNumber, 
-    // implemented for both single and stereo camera views. This is ok too 
+    // I could have done this in a way that the camera child widgets only receive a cv::Mat to display..
+    // but we are actually not displaying anything else in the views, just fileCamera frames,
+    // so I dedicated separate functions for them, which only take the frameNumber,
+    // implemented for both single and stereo camera views. This is ok too
     if(selectedCamera->getType() == CameraImageType::SINGLE_IMAGE_FILE && singleCameraChildWidget) {
         connect(imagePlaybackControlDialog, SIGNAL(stillImageChange(int)), singleCameraChildWidget, SLOT(displayFileCameraFrame(int)));
     } else if(selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE && stereoCameraChildWidget) {
@@ -2294,4 +2298,49 @@ void MainWindow::connectCameraPlaybackChangedSlots()
         connect(stereoCameraChildWidget, SIGNAL(cameraPlaybackChanged()), stereoCameraChildWidget, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
     }
     connect(this, SIGNAL(cameraPlaybackChanged()), this, SLOT(onCameraPlaybackChanged()), Qt::UniqueConnection);
+}
+
+void MainWindow::dragEnterEvent(QDragEnterEvent* e)
+{
+    if (e->mimeData()->hasUrls())
+        e->acceptProposedAction();
+}
+
+void MainWindow::dropEvent(QDropEvent* e)
+{
+    QStringList pathList;
+    QList<QUrl> urlList = e->mimeData()->urls();
+
+    QString thingToOpen;
+    if(!urlList.empty())
+        thingToOpen = urlList.at(0).toLocalFile();
+
+    QFileInfo fileInfo(thingToOpen);
+    if(!fileInfo.isReadable()) {
+        QMessageBox MsgBox;
+        MsgBox.setText(QString::fromStdString("The folder you are trying to open is not readable. Please ensure sufficient permission of your user account and/or PupilEXT, and the availability of the location to be read."));
+        MsgBox.exec();
+    }
+
+    if(fileInfo.isDir()) {
+        if(selectedCamera && selectedCamera->isOpen()) {
+            onCameraDisconnectClick();
+        }
+        qDebug() << "Attempting to open: " << fileInfo.filePath();
+        openImageDirectory(fileInfo.filePath());
+    } else if(fileInfo.isFile()) {
+        // TODO: do this with a QMap that is stored in persistence/QSettings
+        if(fileInfo.completeSuffix() == "tiff" || fileInfo.completeSuffix() == "bmp" || fileInfo.completeSuffix() == "png" ||
+            fileInfo.fileName() == "imagerec-meta.xml" || fileInfo.fileName() == "offline-event-log.xml") {
+
+            if(selectedCamera && selectedCamera->isOpen()) {
+                onCameraDisconnectClick();
+            }
+            qDebug() << "Attempting to open: " << fileInfo.filePath().chopped(fileInfo.fileName().length());
+            openImageDirectory(fileInfo.filePath().chopped(fileInfo.fileName().length()));
+        }
+    }
+
+    // TODO: add further checks and event handling
+    e->acceptProposedAction();
 }
