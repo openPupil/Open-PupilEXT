@@ -1707,7 +1707,7 @@ void MainWindow::onCreateGraphPlot(const QString &value) {
 // GB: Repaired bug leading to crash when path was too short
 void MainWindow::onOpenImageDirectory() {
     QFileDialog dialog(this, tr("Image Directory"), recentPath,tr("Image Files (*.png *.jpg *.bmp *.tiff *.jpeg *.webp)"));
-    dialog.setOptions(QFileDialog::DontUseNativeDialog | QFileDialog::DontResolveSymlinks);
+    dialog.setOptions(QFileDialog::DontResolveSymlinks);
 
     dialog.setFileMode(QFileDialog::Directory);
 
@@ -1722,6 +1722,20 @@ void MainWindow::onOpenImageDirectory() {
     if (imageDir.isEmpty())
         return;
 
+    QStringList nameFilter = QStringList() << "*.png" << "*.jpg" << "*.bmp" << "*.tiff" << "*.jpeg" <<  "*.webp";
+    QStringList fileNames = imageDir.entryList(nameFilter, QDir::Files);
+    QStringList folderNames = imageDir.entryList(QStringList() << "0" << "1", QDir::Dirs);
+    if (fileNames.isEmpty() && folderNames.size() < 2)
+        return;
+
+    if (folderNames.size() == 2){
+        QDir stereo0Dir(imageDir.filePath("0"));
+        if (stereo0Dir.isEmpty() || stereo0Dir.entryList(nameFilter, QDir::Files).isEmpty())
+            return;
+        QDir stereo1Dir(imageDir.filePath("1"));
+        if (stereo1Dir.isEmpty() || stereo1Dir.entryList(nameFilter, QDir::Files).isEmpty())
+            return;
+    }
     openImageDirectory(tempDir);
 }
 
