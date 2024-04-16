@@ -8,15 +8,19 @@
 // Image files are read in alphabetically order, using the OpenCV function cv::glob()
 // Actual playback process is performed using Qts concurrent thread execution, to no block the GUI thread
 // First it is checked wherever a stereo directory structure exists or not, which
-ImageReader::ImageReader(QString directory, int playbackSpeed, bool playbackLoop, QObject *parent) :
-    QObject(parent), 
-    imageDirectory(directory), 
-    startTimestamp(0), 
-    playbackSpeed(playbackSpeed), 
-    noDelay(false), 
-    stereoMode(false), 
-    playbackLoop(playbackLoop), 
-    state(PlaybackState::STOPPED), 
+ImageReader::ImageReader(QString directory, QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed, bool playbackLoop, QObject *parent) :
+    QObject(parent),
+    imageDirectory(directory),
+    startTimestamp(0),
+    playbackSpeed(playbackSpeed),
+    noDelay(false),
+    stereoMode(false),
+    synchronised(false),
+    playbackLoop(playbackLoop),
+    state(PlaybackState::STOPPED),
+    imageMutex(imageMutex),
+    imagePublished(imagePublished),
+    imageProcessed(imageProcessed),
     currentImageIndex(0) {
 
     if(!imageDirectory.exists()) {
@@ -31,8 +35,8 @@ ImageReader::ImageReader(QString directory, int playbackSpeed, bool playbackLoop
     if(imageDirectory.exists("0") && imageDirectory.exists("1")) {
         stereoMode = true;
 
-        std::cout<<"ImageReader: Found stereo structure in directory, reading as stereo..." << std::endl;
-        std::cout<<"ImageReader: CAUTION: Make sure images in both directories have corresponding names and that no other files are present." << std::endl;
+        qDebug()<<"ImageReader: Found stereo structure in directory, reading as stereo..." ;
+        qDebug()<<"ImageReader: CAUTION: Make sure images in both directories have corresponding names and that no other files are present." ;
 
         // Read directory files into list
         // glob sorts the names alphabetically, so filenames without zeros like _19 come after _189
@@ -48,7 +52,7 @@ ImageReader::ImageReader(QString directory, int playbackSpeed, bool playbackLoop
         assert(filenames.size() == filenamesSecondary.size());
     } else {
 
-        std::cout<<"ImageReader: Found images in directory, reading..." << std::endl;
+        qDebug()<<"ImageReader: Found images in directory, reading..." ;
 
         // Read directory files into list
         // glob sorts the names alphabetically, so filenames without zeros like _19 come after _189
@@ -59,7 +63,7 @@ ImageReader::ImageReader(QString directory, int playbackSpeed, bool playbackLoop
         // GB added end
     }
 
-    std::cout<<"ImageReader: found " << filenames.size() << " images. Ready." << std::endl;
+    qDebug()<<"ImageReader: found " << filenames.size() << " images. Ready." ;
 
     // GB added begin
     bool ok;
@@ -83,7 +87,6 @@ ImageReader::ImageReader(QString directory, int playbackSpeed, bool playbackLoop
 
 ImageReader::~ImageReader() {
     if(state == PlaybackState::PLAYING) {
-        QMutexLocker locker(&mutex);
         state = PlaybackState::STOPPED;
 
         playbackProcess.waitForFinished();
@@ -93,7 +96,6 @@ ImageReader::~ImageReader() {
 // Sets the speed with which the images are played back
 // This may be limited by the disk read speed and may not reach speeds above 30fps depending on the file sizes etc.
 void ImageReader::setPlaybackSpeed(int fps) {
-    QMutexLocker locker(&mutex);
     if(fps <= 0) {
         noDelay = true;
         playbackSpeed = 0;
@@ -110,54 +112,51 @@ void ImageReader::setPlaybackSpeed(int fps) {
 // When the playback is finished, a finished signal is send (also send when stopping the play back early)
 void ImageReader::run() {
 
-    for(; currentImageIndex < filenames.size(); currentImageIndex++) {
-        std::chrono::steady_clock::time_point beginProcess = std::chrono::steady_clock::now();
-
-        if(state != PlaybackState::PLAYING) {
-            std::cout<<"Image Reader: Run Loop found Stop/Pause signal"<<std::endl;
+    std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
+    while(currentImageIndex < filenames.size()) {
+        if (state != PlaybackState::PLAYING) {
+            qDebug() << "Image Reader: Run Loop found Stop/Pause signal" ;
             break;
         }
 
-        //std::chrono::steady_clock::time_point beginRead = std::chrono::steady_clock::now();
+
+        std::chrono::steady_clock::time_point beginProcess = std::chrono::steady_clock::now();
+        std::chrono::duration<int, std::milli> elapsedDuration = std::chrono::duration_cast<std::chrono::milliseconds>(beginProcess - startTime);
+        int elapsedTime = elapsedDuration.count();
         cv::Mat img = cv::imread(filenames[currentImageIndex], cv::IMREAD_GRAYSCALE);
-        //std::cout<<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - beginRead).count()<<std::endl;
+        if(img.data && elapsedTime >= playbackDelay) {
 
-        startTimestamp += playbackDelay;
+            if (synchronised){
+                const QMutexLocker locker(imageMutex);
+                qDebug() << "imageReader locking";
+                qDebug() << "Current image index: " << currentImageIndex;
+                runImpl(startTime, elapsedDuration, img);
+                //qDebug() << "New Image generated, unlocking";
+                imageProcessed->wakeAll();
+                if (state == PlaybackState::PLAYING) {
+//                    qDebug() << "Waiting for processing";
+                    imagePublished->wait(imageMutex);
+                }
+            }
+            else {
+                qDebug() << "Current image index: " << currentImageIndex;
+                runImpl(startTime, elapsedDuration, img);
+            }
 
-        // Due to the continue in the next if, we check for end of the loop here
-        if(playbackLoop && currentImageIndex == filenames.size()-1) {
-            std::cout << "ImageReader: end reached, resetting playback, endless looping " << std::endl;
+
+            currentImageIndex++;
+        }
+        else if (!img.data){
+            std::cerr << "Image Reader: Image could not be read, skipping: " << filenames[currentImageIndex] ;
+            currentImageIndex++;
+        }
+        if (playbackLoop && currentImageIndex == filenames.size()) {
+            qDebug() << "ImageReader: end reached, resetting playback, endless looping " ;
             currentImageIndex = 0;
         }
-
-        if(!img.data) {
-            std::cerr << "Image Reader: Image could not be read, skipping: " << filenames[currentImageIndex] << std::endl;
-            continue;
-        }
-
-        //std::cout<<"Reading image: "<< filename << std::endl;
-
-        CameraImage cimg;
-        cimg.type = CameraImageType::SINGLE_IMAGE_FILE;
-        cimg.img = img.clone();
-        //cimg.timestamp = startTimestamp; // GB corrected /commented out
-        cimg.timestamp = acqTimestamps[currentImageIndex]; // GB: using the file name, not the time of image reading operation
-        cimg.frameNumber = currentImageIndex; // GB: added here too, as playbackControlDialog needs it
-        cimg.filename = filenames[currentImageIndex];
-        img.release();
-
-        if(!noDelay) {
-            int durProcess = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - beginProcess).count();
-            if(playbackDelay-durProcess > 0) {
-                QThread::msleep(playbackDelay-durProcess);
-            }
-        }
-
-        // GB added begin
-        lastCommissionedFrameNumber = currentImageIndex;
-        // GB adde end
-        emit onNewImage(cimg);
+        //qDebug() << "Looping";
     }
+    qDebug() << "Loop ended";
 
     // Playback loop finished, either due to end of files, or pause/stop action
     if(state != PlaybackState::PAUSED) {
@@ -170,9 +169,52 @@ void ImageReader::run() {
         }
         // GB added end
         currentImageIndex = 0;
+        qDebug() << "finished()";
+        emit finished();
     }
-    //qDebug() << "finished()";
-    emit finished();
+    else {
+        qDebug() << "paused()";
+        emit paused();
+    }
+    imageProcessed->wakeAll();
+    imagePublished->wakeAll();
+}
+
+void ImageReader::runImpl(std::chrono::steady_clock::time_point& startTime, std::chrono::duration<int, std::milli> elapsedDuration,
+                          cv::Mat& img){
+    startTime += elapsedDuration;
+    //std::chrono::steady_clock::time_point beginRead = std::chrono::steady_clock::now();
+
+    //std::cout<<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - beginRead).count();
+
+    startTimestamp += playbackDelay;
+
+    //std::cout<<"Reading image: "<< filename ;
+
+    CameraImage cimg;
+    cimg.type = CameraImageType::SINGLE_IMAGE_FILE;
+    cimg.img = img.clone();
+    //cimg.timestamp = startTimestamp; // GB corrected /commented out
+    cimg.timestamp = acqTimestamps[currentImageIndex]; // GB: using the file name, not the time of image reading operation
+    cimg.frameNumber = currentImageIndex; // GB: added here too, as playbackControlDialog needs it
+    cimg.filename = filenames[currentImageIndex];
+    img.release();
+
+    /*
+    if (!noDelay) {
+        int durProcess = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - beginProcess).count();
+        if (playbackDelay - durProcess > 0) {
+            QThread::msleep(playbackDelay - durProcess);
+        }
+    }
+    */
+    // GB added begin
+    qDebug() << "lastCommissionedFrameNumber: " << lastCommissionedFrameNumber;
+    lastCommissionedFrameNumber = currentImageIndex;
+    // GB adde end
+
+    emit onNewImage(cimg);
 }
 
 // Executes the play back of the stereo images through reading them in order, creating a CameraImage object and sending the onNewImage signal
@@ -181,15 +223,19 @@ void ImageReader::run() {
 // Stereo images are read using QTs concurrent run to (potentially) reduce file read time
 void ImageReader::runStereo() {
 
-    // We assume both lists filenames and filenamesSecondary are same length
-    for(; currentImageIndex < filenames.size(); currentImageIndex++) {
-        std::chrono::steady_clock::time_point beginProcess = std::chrono::steady_clock::now();
 
-        if(state != PlaybackState::PLAYING) {
-            std::cout<<"Image Reader: Run Loop found Stop/Pause signal"<<std::endl;
+    std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
+    // We assume both lists filenames and filenamesSecondary are same length
+    while(currentImageIndex < filenames.size()) {
+        if (state != PlaybackState::PLAYING) {
+            qDebug() << "Image Reader: Run Loop found Stop/Pause signal" ;
             break;
         }
 
+        //qDebug() << "imageReader locking";
+        std::chrono::steady_clock::time_point beginProcess = std::chrono::steady_clock::now();
+        std::chrono::duration<int, std::milli> elapsedDuration = std::chrono::duration_cast<std::chrono::milliseconds>(beginProcess - startTime);
+        int elapsedTime = elapsedDuration.count();
         QFutureSynchronizer<cv::Mat> synchronizer;
         // Read images from disk asynchronous to save time
         synchronizer.addFuture(QtConcurrent::run(cv::imread, filenames[currentImageIndex], cv::IMREAD_GRAYSCALE));
@@ -198,58 +244,93 @@ void ImageReader::runStereo() {
         cv::Mat img = synchronizer.futures().at(0).result();
         cv::Mat imgSecondary = synchronizer.futures().at(1).result();
 
-        startTimestamp += playbackDelay;
+        if(img.data && imgSecondary.data && elapsedTime >= playbackDelay) {
 
-        // Due to the continue in the next if, we check for end of the loop here
-        if(playbackLoop && currentImageIndex == filenames.size()-1) {
-            std::cout << "ImageReader: end reached, resetting playback, endless looping " << std::endl;
+            if (synchronised) {
+                const QMutexLocker locker(imageMutex);
+                qDebug() << "imageReader locking";
+                qDebug() << "Current image index: " << currentImageIndex;
+                runStereoImpl(startTime, elapsedDuration, img, imgSecondary);
+                imageProcessed->wakeAll();
+                if (state == PlaybackState::PLAYING) {
+                    imagePublished->wait(imageMutex);
+                }
+            } else {
+                qDebug() << "Current image index: " << currentImageIndex;
+                runStereoImpl(startTime, elapsedDuration, img, imgSecondary);
+            }
+            currentImageIndex++;
+        }
+        else if (!img.data || !imgSecondary.data){
+            std::cerr << "Image Reader: Image could not be read, skipping: " << filenames[currentImageIndex] ;
+            currentImageIndex++;
+        }
+        if (playbackLoop && currentImageIndex == filenames.size()) {
+            qDebug() << "ImageReader: end reached, resetting playback, endless looping " ;
             currentImageIndex = 0;
         }
-
-        if(!img.data || !imgSecondary.data) {
-            std::cerr << "Image Reader: StereoImage could not be read, skipping: " << filenames[currentImageIndex] << " and " << filenamesSecondary[currentImageIndex] << std::endl;
-            continue;
-        }
-
-        //std::cout<<"Reading image "<< filename << std::endl;
-
-        CameraImage cimg;
-        cimg.type = CameraImageType::STEREO_IMAGE_FILE;
-        cimg.img = img.clone();
-        cimg.imgSecondary = imgSecondary.clone();
-        //cimg.timestamp = startTimestamp; // GB corrected /commented out
-        cimg.timestamp = acqTimestamps[currentImageIndex]; // GB: using the file name, not the time of image reading operation
-        cimg.frameNumber = currentImageIndex;
-        cimg.filename = filenames[currentImageIndex];
-        img.release();
-        imgSecondary.release();
-
-        if(!noDelay) {
-            int durProcess = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - beginProcess).count();
-            if(playbackDelay-durProcess > 0) {
-                QThread::msleep(playbackDelay-durProcess);
-            }
-        }
-
-        // GB added begin
-        lastCommissionedFrameNumber = currentImageIndex;
-        // GB adde end
-        emit onNewImage(cimg);
     }
+    qDebug() << "Loop ended";
 
     // Playback loop finished, either due to end of files, or pause/stop action
     if(state != PlaybackState::PAUSED) {
         state = PlaybackState::STOPPED;
         // GB added begin
         // GB: to signal when we automatically reached the end
-        if(currentImageIndex == filenames.size()) {
+        if(currentImageIndex == filenames.size()){
             emit endReached();
+            qDebug() << "endReached";
             lastCommissionedFrameNumber = -1; // corner case
         }
         // GB added end
         currentImageIndex = 0;
+        qDebug() << "finished()";
+        emit finished();
     }
-    emit finished();
+
+    imageProcessed->wakeAll();
+    imagePublished->wakeAll();
+
+}
+
+void
+ImageReader::runStereoImpl(std::chrono::steady_clock::time_point &startTime, std::chrono::duration<int, std::milli> elapsedDuration,
+                           cv::Mat &img, cv::Mat &imgSecondary) {
+
+    startTime += elapsedDuration;
+    //std::chrono::steady_clock::time_point beginRead = std::chrono::steady_clock::now();
+
+    //std::cout<<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - beginRead).count();
+
+    startTimestamp += playbackDelay;
+
+    //std::cout<<"Reading image: "<< filename ;
+
+    CameraImage cimg;
+    cimg.type = CameraImageType::STEREO_IMAGE_FILE;
+    cimg.img = img.clone();
+    cimg.imgSecondary = imgSecondary.clone();
+    //cimg.timestamp = startTimestamp; // GB corrected /commented out
+    cimg.timestamp = acqTimestamps[currentImageIndex]; // GB: using the file name, not the time of image reading operation
+    cimg.frameNumber = currentImageIndex;
+    cimg.filename = filenames[currentImageIndex];
+    img.release();
+    imgSecondary.release();
+
+    /*
+    if (!noDelay) {
+        int durProcess = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - beginProcess).count();
+        if (playbackDelay - durProcess > 0) {
+            QThread::msleep(playbackDelay - durProcess);
+        }
+    }
+    */
+    // GB added begin
+    lastCommissionedFrameNumber = currentImageIndex;
+    // GB adde end
+
+    emit onNewImage(cimg);
 }
 
 // Starts the image reader play back in another thread
@@ -258,10 +339,10 @@ void ImageReader::start() {
     if(state == PlaybackState::PLAYING)
         return;
 
-    std::cout<<"Image Reader: Starting ImageReader thread."<<std::endl;
+    qDebug()<<"Image Reader: Starting ImageReader thread.";
 
     state = PlaybackState::PLAYING;
-    startTimestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    startTimestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
     if(stereoMode) {
         playbackProcess = QtConcurrent::run(this, &ImageReader::runStereo);
@@ -276,11 +357,13 @@ void ImageReader::pause() {
     if(state != PlaybackState::PLAYING)
         return;
 
-    std::cout<<"-----------------------------------------------------------Image Reader: Pausing ImageReader thread."<<std::endl;
-    QMutexLocker locker(&mutex);
+    qDebug()<<"-----------------------------------------------------------Image Reader: Pausing ImageReader thread.";
     state = PlaybackState::PAUSED;
 
+    imageProcessed->wakeAll();
+    imagePublished->wakeAll();
     playbackProcess.waitForFinished();
+
 }
 
 // Stops the image play back and sets the play position back to start, calling start again will play the first image again
@@ -288,11 +371,12 @@ void ImageReader::stop() {
     if(state == PlaybackState::STOPPED)
         return;
 
-    std::cout<<"Image Reader: Stopping ImageReader thread."<<std::endl;
-    QMutexLocker locker(&mutex);
+    qDebug()<<"Image Reader: Stopping ImageReader thread.";
     state = PlaybackState::STOPPED;
-    currentImageIndex = 0;
+    //currentImageIndex = 0;
 
+    imageProcessed->wakeAll();
+    imagePublished->wakeAll();
     playbackProcess.waitForFinished();
 }
 
@@ -304,7 +388,7 @@ void ImageReader::purgeFilenamesVector(std::vector<cv::String> &filenames) {
 
     // we find the most frequent extension in the folder (which must be the image extension we use)
     std::vector<cv::String> fileExtensions;
-    std::vector<int> fileExtensionFreqencies; 
+    std::vector<int> fileExtensionFreqencies;
     size_t dotPos = cv::String::npos;
     cv::String currExt;
     //
@@ -317,7 +401,7 @@ void ImageReader::purgeFilenamesVector(std::vector<cv::String> &filenames) {
             if(whereInVector == fileExtensions.end()) { // if the extension can NOT be found in the vector, add it
                 fileExtensions.push_back(currExt);
                 fileExtensionFreqencies.push_back(1);
-                //std::cout << "Found files in the folder with the following extension = " << currExt << std::endl;
+                //std::cout << "Found files in the folder with the following extension = " << currExt ;
             } else {
                 fileExtensionFreqencies[(int)(whereInVector-fileExtensions.begin())]++;
             }
@@ -326,8 +410,8 @@ void ImageReader::purgeFilenamesVector(std::vector<cv::String> &filenames) {
         }
     }
     int mostFreqIndex = std::max_element(fileExtensionFreqencies.begin(), fileExtensionFreqencies.end())-fileExtensionFreqencies.begin();
-    //std::cout << "Freq of the most frequent extension = " << fileExtensionFreqencies[mostFreqIndex] << std::endl;
-    //std::cout << "The most frequent extension = " << fileExtensions[mostFreqIndex] << std::endl;
+    //std::cout << "Freq of the most frequent extension = " << fileExtensionFreqencies[mostFreqIndex] ;
+    //std::cout << "The most frequent extension = " << fileExtensions[mostFreqIndex] ;
 
 
     size_t iterUntil = filenames.size()-1;
@@ -340,7 +424,7 @@ void ImageReader::purgeFilenamesVector(std::vector<cv::String> &filenames) {
         dotPos = filenames[iterIndex].find_last_of('.');
         if(dotPos != cv::String::npos) {
             currExt = filenames[iterIndex].substr(dotPos, filenames[iterIndex].length()-(dotPos)); //also handles if the filename ends with dot but there are no characters afterwards
-            
+
             if(currExt != fileExtensions[mostFreqIndex]) {
                 flaggedForDeletion = true;
             }
@@ -349,14 +433,14 @@ void ImageReader::purgeFilenamesVector(std::vector<cv::String> &filenames) {
         }
 
         if(flaggedForDeletion) {
-            std::cout << "Deleting unusual filename from detected filenames vector = " << filenames[iterIndex] << std::endl;
+            std::cout << "Deleting unusual filename from detected filenames vector = " << filenames[iterIndex] ;
             filenames.erase(filenames.begin()+iterIndex); //no index increment, because element was deleted, but iter_until needs to decrease
             iterUntil--;
         } else {
             iterIndex++;
         }
     }
-    
+
 }
 
 cv::Mat ImageReader::getStillImageSingle(int frameNumber) {
@@ -378,7 +462,7 @@ std::vector<cv::Mat> ImageReader::getStillImageStereo(int frameNumber) {
 void ImageReader::step1frame(bool next) {
     if(state == PlaybackState::PLAYING)
         return;
-    
+
     state = PlaybackState::PAUSED;
 
     // GB NOTE: at this point, currentImageIndex is marking the NEXT (yet unplayed) frame for the run() method, so we keep that in respect
@@ -405,7 +489,7 @@ void ImageReader::step1frame(bool next) {
         cv::Mat imgSecondary = synchronizer.futures().at(1).result();
 
         if(!img.data || !imgSecondary.data) {
-            std::cerr << "Image Reader: StereoImage could not be read, skipping: " << filenames[currentImageIndex] << " and " << filenamesSecondary[currentImageIndex] << std::endl;
+            std::cerr << "Image Reader: StereoImage could not be read, skipping: " << filenames[currentImageIndex] << " and " << filenamesSecondary[currentImageIndex] ;
         }
 
         CameraImage cimg;
@@ -424,7 +508,7 @@ void ImageReader::step1frame(bool next) {
         cv::Mat img = cv::imread(filenames[currentImageIndex], cv::IMREAD_GRAYSCALE);
 
         if(!img.data) {
-            std::cerr << "Image Reader: Image could not be read, skipping: " << filenames[currentImageIndex] << std::endl;
+            std::cerr << "Image Reader: Image could not be read, skipping: " << filenames[currentImageIndex] ;
         }
 
         CameraImage cimg;
@@ -439,4 +523,10 @@ void ImageReader::step1frame(bool next) {
         emit onNewImage(cimg);
     }
 }
+
+void ImageReader::setSynchronised(bool synchronised) {
+    ImageReader::synchronised = synchronised;
+}
+
+
 

@@ -333,7 +333,8 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
 
     // In the normal state, images are shown from the camera directly, when pupil detection is activated,
     // this signal is stopped and images from the detection are displayed
-    connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateView(CameraImage)));
+    //connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateView(CameraImage)));
+    connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
     connect(camera, SIGNAL(fps(double)), this, SLOT(updateCameraFPS(double)));
     
 
@@ -448,7 +449,7 @@ void SingleCameraView::onPupilDetectionStart() {
     // GB added/modified begin
     updateProcModeLabel();
 
-    disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateView(CameraImage)));
+    disconnect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
     
     connect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updateView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
     connect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updatePupilView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
@@ -465,7 +466,7 @@ void SingleCameraView::onPupilDetectionStop() {
     disconnect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updateView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
     disconnect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updatePupilView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
 
-    connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateView(CameraImage)));
+    connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
 
     videoView->clearProcessedOverlayMemory();
     // GB added/modified end

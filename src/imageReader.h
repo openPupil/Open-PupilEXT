@@ -72,7 +72,7 @@ Q_OBJECT
 
 public:
 
-    explicit ImageReader(QString directory, int playbackSpeed = 30, bool playbackLoop=false, QObject *parent = 0);
+    explicit ImageReader(QString directory, QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed = 30, bool playbackLoop=false, QObject *parent = 0);
 
     ~ImageReader() override;
 
@@ -164,12 +164,17 @@ public:
             frameNumber=0;
         currentImageIndex = frameNumber;
     }
+
+    void setSynchronised(bool synchronised);
     // GB added end
 
 private:
 
     QFuture<void> playbackProcess;
     QMutex mutex;
+    QMutex *imageMutex;
+    QWaitCondition *imagePublished;
+    QWaitCondition *imageProcessed;
 
     QDir imageDirectory;
 
@@ -186,6 +191,7 @@ private:
     bool stereoMode;
     bool noDelay;
     bool playbackLoop;
+    bool synchronised;
 
     // GB added begin
     std::vector<quint64> acqTimestamps;
@@ -199,7 +205,10 @@ private:
     // GB added end
 
     void run();
+    void runImpl(std::chrono::steady_clock::time_point& startTime, std::chrono::duration<int, std::milli> elapsedDuration, cv::Mat &img);
     void runStereo();
+    void runStereoImpl(std::chrono::steady_clock::time_point& startTime, std::chrono::duration<int, std::milli> elapsedDuration, cv::Mat &img, cv::Mat &imgSecondary);
+
 
 
 public slots:
@@ -217,12 +226,15 @@ signals:
     void onNewImage(const CameraImage &image);
     void finished();
 
+    void paused();
+
     // GB added begin
     // GB NOTE: we need this specific signal, to let imagePlaybackControlDialog know 
     // that the playback finished automatically. The dialog alonw only knows about 
     // playback changes that were caused by GUI interactions. Without this signal, it would be clueless
     void endReached();
     // GB added end
+
 };
 
 

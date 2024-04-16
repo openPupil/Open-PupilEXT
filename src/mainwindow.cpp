@@ -24,7 +24,7 @@ MainWindow::MainWindow():
                           mdiArea(new QMdiArea(this)),
                           signalPubSubHandler(new SignalPubSubHandler(this)),
                           
-                          pupilDetectionWorker(new PupilDetection()),
+
                           subjectSelectionDialog(new SubjectSelectionDialog(this)),
                           singleCameraSettingsDialog(nullptr),
                           stereoCameraSettingsDialog(nullptr),
@@ -52,6 +52,10 @@ MainWindow::MainWindow():
 */
                           applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), this)) {
 
+    imageMutex = new QMutex();
+    imagePublished = new QWaitCondition();
+    imageProcessed = new QWaitCondition();
+    pupilDetectionWorker = new PupilDetection(imageMutex, imagePublished, imageProcessed);
     // GB added begin: needs to be instantiated here, as these use global instances of ConnPoolCOM
     serialSettingsDialog = new SerialSettingsDialog(connPoolCOM, this);
     remoteCCDialog = new RemoteCCDialog(connPoolCOM,this); //connPoolCOM, pupilDetectionWorker, dataWriter, imageWriter, dataStreamer, offlineEventLogWriter, 
@@ -1166,7 +1170,7 @@ void MainWindow::onCameraDisconnectClick() {
     // GB added begin
     if(imagePlaybackControlDialog) {
 //        disconnect(selectedCamera, SIGNAL(finished()), imagePlaybackControlDialog, SLOT(onPlaybackFinished()));
-        disconnect(selectedCamera, SIGNAL(endReached()), imagePlaybackControlDialog, SLOT(onAutomaticFinish()));
+        //disconnect(selectedCamera, SIGNAL(endReached()), imagePlaybackControlDialog, SLOT(onAutomaticFinish()));
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStarted()), this, SLOT(onPlaybackSafelyStarted()));
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyPaused()), this, SLOT(onPlaybackSafelyPaused()));
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), this, SLOT(onPlaybackSafelyStopped()));
@@ -1249,14 +1253,21 @@ void MainWindow::onCameraDisconnectClick() {
     // GB: take care of fileOpenAct
     fileOpenAct->setEnabled(true);
 
-    disconnect(selectedCamera, SIGNAL (onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL (onNewGrabResult(CameraImage)));
-    disconnect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
-    disconnect(selectedCamera, SIGNAL(framecount(int)), signalPubSubHandler, SIGNAL(cameraFramecount(int)));
+    if (selectedCamera && signalPubSubHandler) {
+        disconnect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler,
+                   SIGNAL(onNewGrabResult(CameraImage)));
+        disconnect(selectedCamera, SIGNAL(fps(double)), signalPubSubHandler, SIGNAL(cameraFPS(double)));
+        disconnect(selectedCamera, SIGNAL(framecount(int)), signalPubSubHandler, SIGNAL(cameraFramecount(int)));
+    }
 
     // GB begin
     pupilDetectionSettingsDialog->onSettingsChange();
-    disconnect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), singleCameraChildWidget, SLOT (updateForPupilDetectionProcMode()));
-    disconnect(pupilDetectionSettingsDialog, SIGNAL (pupilDetectionProcModeChanged(int)), stereoCameraChildWidget, SLOT (updateForPupilDetectionProcMode()));
+    if (pupilDetectionSettingsDialog && (singleCameraChildWidget || stereoCameraChildWidget)) {
+        disconnect(pupilDetectionSettingsDialog, SIGNAL(pupilDetectionProcModeChanged(int)), singleCameraChildWidget,
+                   SLOT(updateForPupilDetectionProcMode()));
+        disconnect(pupilDetectionSettingsDialog, SIGNAL(pupilDetectionProcModeChanged(int)), stereoCameraChildWidget,
+                   SLOT(updateForPupilDetectionProcMode()));
+    }
     // GB end
 
     if(hwTriggerOn) {
@@ -1784,7 +1795,7 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
     }
     safelyResetTrialCounter();
 
-    selectedCamera = new FileCamera(imageDirectory, playbackSpeed, playbackLoop, this);
+    selectedCamera = new FileCamera(imageDirectory, imageMutex, imagePublished, imageProcessed, playbackSpeed, playbackLoop, this);
     std::cout<<"FileCamera created using playbackspeed [fps]: "<<playbackSpeed <<std::endl;
 
     connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), signalPubSubHandler, SIGNAL (onNewGrabResult(CameraImage)));
@@ -1873,7 +1884,7 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
 
     //connect(selectedCamera, SIGNAL(finished()), imagePlaybackControlDialog, SLOT(onPlaybackFinished()));
     // GB: right now, this only gets called when playbackLoop is false, and we need to finish playing (with possible overhead)
-    connect(selectedCamera, SIGNAL(endReached()), imagePlaybackControlDialog, SLOT(onAutomaticFinish()));
+    //connect(selectedCamera, SIGNAL(endReached()), imagePlaybackControlDialog, SLOT(onAutomaticFinish()));
     connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStarted()), this, SLOT(onPlaybackSafelyStarted()));
     connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyPaused()), this, SLOT(onPlaybackSafelyPaused()));
     connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), this, SLOT(onPlaybackSafelyStopped()));
@@ -1892,6 +1903,19 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
         connect(imagePlaybackControlDialog, SIGNAL(stillImageChange(int)), stereoCameraChildWidget, SLOT(displayFileCameraFrame(int)));
     }
     // GB modified/added end
+
+    playbackSynchroniser = new PlaybackSynchroniser();
+    playbackSynchroniser->setCamera(selectedCamera);
+    playbackSynchroniser->setPupilDetection(pupilDetectionWorker);
+
+
+    connect(pupilDetectionWorker, SIGNAL(processingStarted()), playbackSynchroniser, SLOT(onPupilDetectionStarted()));
+    connect(pupilDetectionWorker, SIGNAL(processingFinished()), playbackSynchroniser, SLOT(onPupilDetectionStopped()));
+    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStarted()), playbackSynchroniser, SLOT(onPlaybackStarted()));
+    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), playbackSynchroniser, SLOT(onPlaybackStopped()));
+    connect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyPaused()), playbackSynchroniser, SLOT(onPlaybackStopped()));
+
+
 
 }
 

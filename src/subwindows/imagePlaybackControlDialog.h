@@ -87,9 +87,15 @@ private:
     
     int playbackSpeed = 1;
     int selectedFrameVal = 1;
+    int lastPlayedFrame = 0;
     bool playbackLoop = false;
     bool syncRecordCsv = false;
+    bool tempSyncRecordCsv = false;
     bool syncStream = false;
+    bool tempSyncStream = false;
+    bool endReached = false;
+    bool finished = false;
+    bool paused = true;
 
     QSpinBox* playbackFPSVal;
 
@@ -129,7 +135,9 @@ private:
     QCheckBox *syncStreamBox;
 
     void createForm();
-    void enableWidgets(bool enable);
+    void enableWidgets();
+    void disableWidgets();
+    void resetState();
  //   void saveSettings();
  //   void updateForm();
 
@@ -151,7 +159,9 @@ public slots:
 private slots:
     void onStartPauseButtonClick();
     void onStopButtonClick();
-    void onFinish();
+    void onEndReached();
+    void onFinished();
+
     
     void updateInfoInternal(int frameNumber);
 
@@ -165,9 +175,9 @@ private slots:
 
     
     void setPlaybackSpeed(int playbackSpeed);
-    void setPlaybackLoop(int m_state);
-    void setSyncRecordCsv(int m_state);
-    void setSyncStream(int m_state);
+    void setPlaybackLoop(bool m_state);
+    void setSyncRecordCsv(bool m_state);
+    void setSyncStream(bool m_state);
 
     //void onSettingsChange();
 

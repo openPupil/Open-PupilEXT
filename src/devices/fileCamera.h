@@ -35,7 +35,7 @@ class FileCamera : public Camera
     Q_OBJECT
 
 public:
-    explicit FileCamera(const QString &directory, int playbackSpeed = 30, bool playbackLoop = false, QObject *parent = 0);
+    explicit FileCamera(const QString &directory, QMutex *imageMutex,  QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed = 30, bool playbackLoop = false, QObject *parent = 0);
 
     ~FileCamera() override;
 
@@ -126,6 +126,8 @@ public:
     CameraCalibration *getCameraCalibration();
     StereoCameraCalibration *getStereoCameraCalibration();
 
+    ImageReader *getImageReader() const;
+
 private:
     FrameRateCounter *frameCounter;
     ImageReader *imageReader;
@@ -146,6 +148,7 @@ signals:
     void framecount(int framecount);
 
     void finished();
+    void paused();
 
     // GB added begin
     void endReached();

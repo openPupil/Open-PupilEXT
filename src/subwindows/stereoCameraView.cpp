@@ -334,7 +334,8 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
 
     pupilDetection->setUpdateFPS(1000/updateDelay);
 
-    connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateView(CameraImage)));
+    //connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateView(CameraImage)));
+    connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
     connect(camera, SIGNAL(fps(double)), this, SLOT(updateCameraFPS(double)));
 
 
@@ -475,7 +476,7 @@ void StereoCameraView::onPupilDetectionStart() {
     processingConfigLabel->setText(pupilDetection->getCurrentConfigLabel());
     processingAlgorithmLabel->setText(QString::fromStdString(pupilDetection->getCurrentMethod1()->title()));
 
-    disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateView(CameraImage)));
+    disconnect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
 
     // GB modified begin
     connect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updateView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
@@ -492,7 +493,7 @@ void StereoCameraView::onPupilDetectionStop() {
     disconnect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updateView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
     disconnect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updatePupilView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
 
-    connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateView(CameraImage)));
+    connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
 
     mainVideoView->clearProcessedOverlayMemory();
     secondaryVideoView->clearProcessedOverlayMemory();
