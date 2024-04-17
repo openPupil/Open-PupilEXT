@@ -66,6 +66,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     plotROIAct = plotMenu->addAction(tr("Visualize Pupil Detection ROI Contour"));
     plotROIAct->setCheckable(true);
     plotROIAct->setChecked(plotROIContour);
+    plotROIAct->setEnabled(pupilDetection->isROIPreProcessingEnabled());
     plotROIAct->setStatusTip(tr("Display the region of interest applied in detection in the camera image."));
     plotMenu->addAction(plotROIAct);
     connect(plotROIAct, SIGNAL(toggled(bool)), this, SLOT(onPlotROIClick(bool)));
@@ -73,8 +74,8 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     // GB added/modified begin
     showAutoParamAct = plotMenu->addAction(tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct->setCheckable(true);
-    showAutoParamAct->setEnabled(plotROIContour);
-    showAutoParamAct->setChecked(showAutoParamOverlay);
+    showAutoParamAct->setChecked(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    showAutoParamAct->setEnabled(plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
     showAutoParamAct->setStatusTip(tr("Display expected pupil size maximum and minimum values as currently set for Automatic Parametrization."));
     plotMenu->addAction(showAutoParamAct);
     connect(showAutoParamAct, SIGNAL(toggled(bool)), this, SLOT(onShowAutoParamOverlay(bool)));
@@ -142,8 +143,9 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     pupilDetectionMenuAct = pupilDetectionMenu->menuAction();
     connect(pupilDetectionMenuAct, &QAction::triggered, this, &SingleCameraView::onPupilDetectionMenuClick);
 
-    // GB: renamed to be pore descriptive (not to be confused with camera image acquisition ROI), also modified tooltips
-    QMenu *roiMenu = pupilDetectionMenu->addMenu(tr("&Pupil Detection ROI"));
+    // GB: renamed to be more descriptive (not to be confused with camera image acquisition ROI), also modified tooltips
+    roiMenu = pupilDetectionMenu->addMenu(tr("&Pupil Detection ROI"));
+    roiMenu->setEnabled(pupilDetection->isROIPreProcessingEnabled());
 
     customROIAct = roiMenu->addAction(tr("Custom"), this, [this]()
     {
@@ -555,6 +557,11 @@ void SingleCameraView::updateAlgorithmLabel() {
 void SingleCameraView::onPupilDetectionConfigChanged(QString config) {
     processingConfigLabel->setText(config);
     autoParamMenu->setEnabled(isAutoParamModificationEnabled());
+    roiMenu->setEnabled(pupilDetection->isROIPreProcessingEnabled());
+    showAutoParamAct->setEnabled(plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    plotROIAct->setEnabled(pupilDetection->isROIPreProcessingEnabled());
+    emit onChangeShowAutoParamOverlay(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    emit onShowROI(plotROIContour & pupilDetection->isROIPreProcessingEnabled());
 }
 
 
@@ -720,9 +727,9 @@ void SingleCameraView::onPlotPupilCenterClick(bool value) {
 void SingleCameraView::onPlotROIClick(bool value) {
     plotROIContour = value;
     applicationSettings->setValue("SingleCameraView.plotROIContour", plotROIContour);
-    showAutoParamAct->setEnabled(value);
-    emit onShowAutoParamOverlay(showAutoParamOverlay);
-    emit onShowROI(plotROIContour);
+    showAutoParamAct->setEnabled(plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    emit onShowAutoParamOverlay(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    emit onShowROI(plotROIContour & pupilDetection->isROIPreProcessingEnabled());
 }
 
 void SingleCameraView::saveROI1Selection(QRectF roiR) { 
@@ -860,7 +867,7 @@ void SingleCameraView::updateForPupilDetectionProcMode() {
 void SingleCameraView::onShowAutoParamOverlay(bool state) {
     showAutoParamOverlay = state;
     applicationSettings->setValue("SingleCameraView.showAutoParamOverlay", showAutoParamOverlay);
-    emit onChangeShowAutoParamOverlay(showAutoParamOverlay);
+    emit onChangeShowAutoParamOverlay(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
 }
 
 // GB TODO: STRINGS

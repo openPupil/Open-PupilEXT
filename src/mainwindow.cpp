@@ -1707,7 +1707,7 @@ void MainWindow::onCreateGraphPlot(const QString &value) {
 // GB: Repaired bug leading to crash when path was too short
 void MainWindow::onOpenImageDirectory() {
     QFileDialog dialog(this, tr("Image Directory"), recentPath,tr("Image Files (*.png *.jpg *.bmp *.tiff *.jpeg *.webp)"));
-    dialog.setOptions(QFileDialog::DontResolveSymlinks);
+    dialog.setOptions(QFileDialog::DontResolveSymlinks); // BG: tried QFileDialog::DontUseNativeDialog flag too but it is slow. TODO: make own dialog
 
     dialog.setFileMode(QFileDialog::Directory);
 
@@ -1888,7 +1888,7 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
     imagePlaybackControlDialog = new ImagePlaybackControlDialog(dynamic_cast<FileCamera*>(selectedCamera), pupilDetectionWorker, recEventTracker, this);
     RestorableQMdiSubWindow *imagePlaybackControlWindow = new RestorableQMdiSubWindow(imagePlaybackControlDialog, "ImagePlaybackControlDialog", this);
     mdiArea->addSubWindow(imagePlaybackControlWindow);
-    imagePlaybackControlWindow->resize(650, 230);
+    imagePlaybackControlWindow->resize(670, 275);
     // No "X" button on this window
     imagePlaybackControlWindow->setWindowFlags(Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint | Qt::WindowStaysOnTopHint);
     //imagePlaybackControlWindow->setWindowFlags(imagePlaybackControlWindow->windowFlags() & ~Qt::WindowCloseButtonHint);

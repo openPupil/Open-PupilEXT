@@ -22,7 +22,7 @@ ImagePlaybackControlDialog::ImagePlaybackControlDialog(FileCamera *fileCamera, P
  
 
     //this->setMinimumSize(500, 400); 
-    this->setMinimumSize(600, 240);
+    this->setMinimumSize(650, 240);
     this->setWindowTitle("Image Playback Control");
 
     drawDelay = 33; // ~30 fps
@@ -56,7 +56,7 @@ void ImagePlaybackControlDialog::createForm() {
     //timestampVal = new QLineEdit();
     timestampVal = new TimestampSpinBox(fileCamera);
     timestampVal->setReadOnly(false);
-    timestampVal->setMaximumWidth(100);
+    timestampVal->setMaximumWidth(110);
     timestampVal->setMinimum(0);
     uint64_t timestampMax = fileCamera->getTimestampForFrameNumber(fileCamera->getNumImagesTotal()-1);
     timestampVal->setMaximum(timestampMax);
@@ -66,7 +66,7 @@ void ImagePlaybackControlDialog::createForm() {
     QLabel *frameLabel = new QLabel(tr("Frame:"));
     selectedFrameBox = new QSpinBox();
     selectedFrameBox->setReadOnly(false);
-    selectedFrameBox->setMaximumWidth(100);
+    selectedFrameBox->setMaximumWidth(110);
     selectedFrameBox->setMinimum(1);
     selectedFrameBox->setMaximum(fileCamera->getNumImagesTotal());
     selectedFrameBox->setValue(selectedFrameVal);

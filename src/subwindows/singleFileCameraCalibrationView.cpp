@@ -10,7 +10,7 @@
 SingleFileCameraCalibrationView::SingleFileCameraCalibrationView(FileCamera *camera, QWidget *parent): QWidget(parent), camera(camera) {
 
     this->setMinimumSize(600, 330);
-    this->setWindowTitle("Offline Stereo Calibration");
+    this->setWindowTitle("Offline Single Calibration");
 
     calibrationWorker = camera->getCameraCalibration();
 

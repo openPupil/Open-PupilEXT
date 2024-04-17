@@ -67,6 +67,7 @@ private:
     QAction *plotROIAct;
 
     QMenu *autoParamMenu;
+    QMenu *roiMenu;
 
     //QAction *roiMenuAct;
     QAction *customROIAct;

@@ -51,10 +51,10 @@ public:
     }
 
     QMap<QString, Settings> settingsMap{
-            { "Default", Settings::DEFAULT },
-            { "ROI 0.3 Optimized", Settings::ROI_0_3_OPTIMIZED },
-            { "ROI 0.6 Optimized", Settings::ROI_0_6_OPTIMIZED },
-            { "Full Image Optimized", Settings::FULL_IMAGE_OPTIMIZED },
+            { "Default*", Settings::DEFAULT },
+            { "ROI 0.3 Optimized*", Settings::ROI_0_3_OPTIMIZED },
+            { "ROI 0.6 Optimized*", Settings::ROI_0_6_OPTIMIZED },
+            { "Full Image Optimized*", Settings::FULL_IMAGE_OPTIMIZED },
             { "Automatic Parametrization", Settings::AUTOMATIC_PARAMETRIZATION },
             { "Custom", Settings::CUSTOM }
     };

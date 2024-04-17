@@ -71,7 +71,8 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     // GB added/modified begin
     showAutoParamAct = plotMenu->addAction(tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct->setCheckable(true);
-    showAutoParamAct->setChecked(showAutoParamOverlay);
+    showAutoParamAct->setChecked(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    showAutoParamAct->setEnabled(plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
     showAutoParamAct->setStatusTip(tr("Display expected pupil size maximum and minimum values as currently set for Automatic Parametrization."));
     plotMenu->addAction(showAutoParamAct);
     connect(showAutoParamAct, SIGNAL(toggled(bool)), this, SLOT(onShowAutoParamOverlay(bool)));
@@ -139,7 +140,8 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(pupilDetectionMenuAct, &QAction::triggered, this, &StereoCameraView::onPupilDetectionMenuClick);
 
     // GB: renamed to be pore descriptive (not to be confused with camera image acquisition ROI), also modified tooltips
-    QMenu *roiMenu = pupilDetectionMenu->addMenu(tr("&Pupil Detection ROI"));
+    roiMenu = pupilDetectionMenu->addMenu(tr("&Pupil Detection ROI"));
+    roiMenu->setEnabled(pupilDetection->isROIPreProcessingEnabled());
 
     customROIAct = roiMenu->addAction(tr("Custom"), this, [this]()
     {
@@ -810,8 +812,9 @@ void StereoCameraView::onPlotPupilCenterClick(bool value) {
 void StereoCameraView::onPlotROIClick(bool value) {
     plotROIContour = value;
     applicationSettings->setValue("StereoCameraView.plotROIContour", plotROIContour);
-
-    emit onShowROI(plotROIContour);
+    showAutoParamAct->setEnabled(plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    emit onShowAutoParamOverlay(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    emit onShowROI(plotROIContour & pupilDetection->isROIPreProcessingEnabled());
 }
 
 
@@ -890,6 +893,11 @@ void StereoCameraView::onSettingsChange() {
 void StereoCameraView::onPupilDetectionConfigChanged(QString config) {
     processingConfigLabel->setText(config);
     autoParamMenu->setEnabled(isAutoParamModificationEnabled());
+    roiMenu->setEnabled(pupilDetection->isROIPreProcessingEnabled());
+    showAutoParamAct->setEnabled(plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    plotROIAct->setEnabled(pupilDetection->isROIPreProcessingEnabled());
+    emit onChangeShowAutoParamOverlay(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    emit onShowROI(plotROIContour & pupilDetection->isROIPreProcessingEnabled());
 }
 
 
@@ -992,8 +1000,7 @@ void StereoCameraView::updateForPupilDetectionProcMode() {
 void StereoCameraView::onShowAutoParamOverlay(bool state) {
     showAutoParamOverlay = state;
     applicationSettings->setValue("StereoCameraView.showAutoParamOverlay", showAutoParamOverlay);
-
-    emit onChangeShowAutoParamOverlay(showAutoParamOverlay);
+    emit onChangeShowAutoParamOverlay(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
 }
 
 // GB TODO: STRINGS

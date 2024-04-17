@@ -222,6 +222,16 @@ private:
         connect(parameterConfigs, SIGNAL(currentTextChanged(QString)), this, SLOT(onParameterConfigSelection(QString)));
 
         mainLayout->addLayout(configsLayout);
+
+        QHBoxLayout *configsNoteLayout = new QHBoxLayout();
+        QLabel* configsNoteLabel = new QLabel(tr("Note: Configurations marked with an asterisk (*) are recommended for Basler\nacA2040-120um (1/1.8\" sensor format) camera(s) equipped with f=50 mm 2/3\"\nnominal sensor format lens, using 4:3 aspect ratio pupil detection ROI(s)."));
+        //configsNoteLabel->setFixedWidth((int)this->size().width()/2);
+        configsNoteLabel->setFixedWidth(420);
+        configsNoteLabel->setFixedHeight(45);
+        configsNoteLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+        configsNoteLayout->addWidget(configsNoteLabel);
+        mainLayout->addLayout(configsNoteLayout);
+
         mainLayout->addSpacerItem(new QSpacerItem(40, 5, QSizePolicy::Fixed));
 
 
