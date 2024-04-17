@@ -6,6 +6,7 @@
     @author Moritz Lode, Gábor Bényei
 */
 
+#include <QCoreApplication>
 #include <QtCore/qdir.h>
 #include "devices/camera.h"
 
@@ -28,7 +29,7 @@ Q_OBJECT
 public:
 
     // Format: Bmp is fastest as it doesnt compress, jpg is also fast "enough" but results in higher cpu load
-    ImageWriter(const QString& directory, QString format="bmp", bool stereo=false, QObject *parent = 0);
+    ImageWriter(const QString& directory, bool stereo=false, QObject *parent = 0);
     ~ImageWriter() override;
 
     // GB added begin
@@ -44,8 +45,10 @@ public:
 
 private:
 
+    QSettings *applicationSettings;
     QDir outputDirectory, outputDirectorySecondary;
-    QString format;
+    QString imageWriterFormat;
+    QString imageWriterDataRule;
     bool stereoMode;
 
 public slots:

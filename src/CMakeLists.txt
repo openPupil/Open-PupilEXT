@@ -76,6 +76,8 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         camImageRegionsWidget.h camImageRegionsWidget.cpp
         playbackSynchroniser.cpp
         playbackSynchroniser.h
+        subwindows/outputDataRuleDialog.h
+        subwindows/outputDataRuleDialog.cpp
 )
 
 # On linux with GCC and QT 5.15.2 setting standard here is recognized and is not overwritten by QT

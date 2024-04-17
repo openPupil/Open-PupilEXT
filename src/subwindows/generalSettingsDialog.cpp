@@ -12,12 +12,14 @@
 GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
         QDialog(parent),
         //playbackSpeed(30),
-        writerFormat("tiff"),
+        imageWriterFormat("tiff"),
+        imageWriterDataRule("ask"),
         delimiterToUse(","),
+        dataWriterDataRule("ask"),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     //this->setMinimumSize(200, 330); 
-    this->setMinimumSize(280, 330); 
+    this->setMinimumSize(290, 370);
     this->setWindowTitle("Settings");
 
     readSettings();
@@ -26,9 +28,12 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
     // GB added/modified begin
     updateForm();
 
-    connect(formatBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onFormatChange(int)));
+    connect(imageWriterFormatBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onFormatChange(int)));
+    connect(imageWriterDataRuleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterDataRuleChange(int)));
 
     connect(delimiterBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDelimiterChange(int)));
+    connect(dataWriterDataRuleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDataWriterDataRuleChange(int)));
+
     connect(darkAdaptBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDarkAdaptChange(int)));
     connect(metaSnapshotBox, SIGNAL(stateChanged(int)), this, SLOT(setMetaSnapshotEnabled(int)));
     connect(saveOfflineEventLogBox, SIGNAL(stateChanged(int)), this, SLOT(setSaveOfflineEventLog(int)));
@@ -40,16 +45,27 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
 
 // Reads the settings from the QT application setting, if the entries were found
 void GeneralSettingsDialog::readSettings() {
-    const QString m_writerFormat = applicationSettings->value("writerFormat", QByteArray()).toString();
-    if (!m_writerFormat.isEmpty()) {
-        writerFormat = m_writerFormat;
+    const QString m_imageWriterFormat = applicationSettings->value("imageWriterFormat", QByteArray()).toString();
+    if (!m_imageWriterFormat.isEmpty()) {
+        imageWriterFormat = m_imageWriterFormat;
     }
 
     // GB begin
+    const QString m_imageWriterDataRule = applicationSettings->value("imageWriterDataRule", QByteArray()).toString();
+    if (!m_imageWriterDataRule.isEmpty()) {
+        imageWriterDataRule = m_imageWriterDataRule;
+    }
+
     const QString m_delimiterToUse = applicationSettings->value("delimiterToUse", "0").toString();
     if (!m_delimiterToUse.isEmpty()) {
         delimiterToUse = m_delimiterToUse;
     }
+
+    const QString m_dataWriterDataRule = applicationSettings->value("dataWriterDataRule", QByteArray()).toString();
+    if (!m_dataWriterDataRule.isEmpty()) {
+        dataWriterDataRule = m_dataWriterDataRule;
+    }
+
     const QByteArray m_metaSnapshotsEnabled = applicationSettings->value("metaSnapshotsEnabled", "1").toByteArray();
     //std::cout << m_metaSnapshotsEnabled.toStdString() << std::endl; //
     if (!m_metaSnapshotsEnabled.isEmpty()) {
@@ -78,14 +94,23 @@ void GeneralSettingsDialog::updateForm() {
 
     // GB modified begin
     // NOTE: thiw line below somehow does not work (always sets the index 0 element of the combobox)
-    // formatBox->setCurrentText(writerFormat); 
-    if(writerFormat == "tiff")
-        formatBox->setCurrentIndex(0);
-    else if(writerFormat == "jpg")
-        formatBox->setCurrentIndex(1);
-    else if(writerFormat == "png")
-        formatBox->setCurrentIndex(2);
-    //qDebug() << writerFormat << "\n";
+    // imageWriterFormatBox->setCurrentText(imageWriterFormat);
+    if(imageWriterFormat == "tiff")
+        imageWriterFormatBox->setCurrentIndex(0);
+    else if(imageWriterFormat == "jpg")
+        imageWriterFormatBox->setCurrentIndex(1);
+    else if(imageWriterFormat == "png")
+        imageWriterFormatBox->setCurrentIndex(2);
+    else if(imageWriterFormat == "bmp")
+        imageWriterFormatBox->setCurrentIndex(3);
+    //qDebug() << imageWriterFormat << "\n";
+
+    if(imageWriterDataRule == "ask")
+        imageWriterDataRuleBox->setCurrentIndex(0);
+    else if(imageWriterDataRule == "append")
+        imageWriterDataRuleBox->setCurrentIndex(1);
+    else if(imageWriterDataRule == "new")
+        imageWriterDataRuleBox->setCurrentIndex(2);
 
     //delimiterBox->setCurrentText(delimiterToUse);
     if(delimiterToUse == ",")
@@ -96,6 +121,13 @@ void GeneralSettingsDialog::updateForm() {
         delimiterBox->setCurrentIndex(2);
     //qDebug() << delimiterToUse << "\n";
 
+    if(dataWriterDataRule == "ask")
+        dataWriterDataRuleBox->setCurrentIndex(0);
+    else if(dataWriterDataRule == "append")
+        dataWriterDataRuleBox->setCurrentIndex(1);
+    else if(dataWriterDataRule == "new")
+        dataWriterDataRuleBox->setCurrentIndex(2);
+
     darkAdaptBox->setCurrentIndex(darkAdaptMode);
 
     metaSnapshotBox->setChecked(metaSnapshotsEnabled);
@@ -105,9 +137,11 @@ void GeneralSettingsDialog::updateForm() {
 
 // Saved the settings selected in the dialog to the QT application settings
 void GeneralSettingsDialog::saveSettings() {
-    applicationSettings->setValue("writerFormat", writerFormat);
+    applicationSettings->setValue("imageWriterFormat", imageWriterFormat);
     // GB begin
+    applicationSettings->setValue("imageWriterDataRule", imageWriterDataRule);
     applicationSettings->setValue("delimiterToUse", delimiterToUse );
+    applicationSettings->setValue("dataWriterDataRule", dataWriterDataRule);
     applicationSettings->setValue("GUIDarkAdaptMode", darkAdaptMode );
     applicationSettings->setValue("metaSnapshotsEnabled", metaSnapshotsEnabled );
     applicationSettings->setValue("saveOfflineEventLog", saveOfflineEventLog );
@@ -119,7 +153,7 @@ void GeneralSettingsDialog::createForm() {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
 
-    QGroupBox *dataOutGroup = new QGroupBox("General Data Output");
+    dataWriterGroup = new QGroupBox("General Data Output");
     QFormLayout *dataOutLayout = new QFormLayout;
 
     QLabel *delimiterLabel = new QLabel(tr("Delimiter Character"));
@@ -130,33 +164,56 @@ void GeneralSettingsDialog::createForm() {
     delimiterBox->setCurrentText(delimiterToUse);
     dataOutLayout->addRow(delimiterLabel, delimiterBox);
 
+
+    QLabel *dataWriterDataRuleLabel = new QLabel(tr("Action when output recording already exists:"));
+    dataOutLayout->addRow(dataWriterDataRuleLabel);
+
+    dataWriterDataRuleBox = new QComboBox();
+    dataWriterDataRuleBox->addItem(QString("Ask every time"), QString("ask"));
+    dataWriterDataRuleBox->addItem(QString("Append to found recording"), QString("append"));
+    dataWriterDataRuleBox->addItem(QString("Keep existing and save new one too"), QString("new"));
+    dataWriterDataRuleBox->setCurrentText(dataWriterDataRule);
+    dataOutLayout->addRow(dataWriterDataRuleBox);
+
     metaSnapshotBox = new QCheckBox("Generate metadata snapshot files");
     metaSnapshotBox->setChecked(getMetaSnapshotsEnabled());
     dataOutLayout->addRow(metaSnapshotBox);
 
-    dataOutGroup->setLayout(dataOutLayout);
-    mainLayout->addWidget(dataOutGroup);
+    dataWriterGroup->setLayout(dataOutLayout);
+    mainLayout->addWidget(dataWriterGroup);
 
 
 
-    QGroupBox *writerGroup = new QGroupBox("Image Writer");
+    imageWriterGroup = new QGroupBox("Image Writer");
     QFormLayout *writerLayout = new QFormLayout;
 
     QLabel *formatLabel = new QLabel(tr("Image Format"));
 
-    formatBox = new QComboBox();
-    formatBox->addItem(QString("tiff [very CPU heavy]"), QString("tiff"));
-    formatBox->addItem(QString("jpg [CPU heavy]"), QString("jpg"));
-    formatBox->addItem(QString("bmp [fastest]"), QString("bmp"));
-    formatBox->setCurrentText(writerFormat);
-    writerLayout->addRow(formatLabel, formatBox);
+    imageWriterFormatBox = new QComboBox();
+    imageWriterFormatBox->addItem(QString("tiff [very CPU heavy]"), QString("tiff"));
+    imageWriterFormatBox->addItem(QString("jpg [CPU heavy]"), QString("jpg"));
+    imageWriterFormatBox->addItem(QString("png [CPU heavy]"), QString("png"));
+    imageWriterFormatBox->addItem(QString("bmp [fastest]"), QString("bmp"));
+    imageWriterFormatBox->setCurrentText(imageWriterFormat);
+    writerLayout->addRow(formatLabel, imageWriterFormatBox);
+
+
+    QLabel *imageWriterDataRuleLabel = new QLabel(tr("Action when output recording already exists:"));
+    writerLayout->addRow(imageWriterDataRuleLabel);
+
+    imageWriterDataRuleBox = new QComboBox();
+    imageWriterDataRuleBox->addItem(QString("Ask every time"), QString("ask"));
+    imageWriterDataRuleBox->addItem(QString("Append to found recording"), QString("append"));
+    imageWriterDataRuleBox->addItem(QString("Keep existing and save new one too"), QString("new"));
+    imageWriterDataRuleBox->setCurrentText(imageWriterDataRule);
+    writerLayout->addRow(imageWriterDataRuleBox);
 
     saveOfflineEventLogBox = new QCheckBox("Save trials/event log for offline analyses");
     saveOfflineEventLogBox->setChecked(getSaveOfflineEventLog());
     writerLayout->addRow(saveOfflineEventLogBox);
 
-    writerGroup->setLayout(writerLayout);
-    mainLayout->addWidget(writerGroup);
+    imageWriterGroup->setLayout(writerLayout);
+    mainLayout->addWidget(imageWriterGroup);
 
     // GB NOTE: removed playback speed and playback loop settings, as these are yet in ImagePlaybackSettingsDialog
 
@@ -194,6 +251,27 @@ void GeneralSettingsDialog::createForm() {
     setLayout(mainLayout);
 }
 
+void GeneralSettingsDialog::setLimitationsWhileImageWriting(bool state) {
+    readSettings();
+    updateForm();
+    imageWriterGroup->setDisabled(state);
+}
+
+void GeneralSettingsDialog::setLimitationsWhileDataWriting(bool state) {
+    readSettings();
+    updateForm();
+    dataWriterGroup->setDisabled(state);
+}
+
+void GeneralSettingsDialog::open() {
+    onSettingsChangedElsewhere();
+}
+
+void GeneralSettingsDialog::onSettingsChangedElsewhere() {
+    readSettings();
+    updateForm();
+}
+
 // On apply button click
 // Save the settings, send signal that settings have changed
 void GeneralSettingsDialog::apply() {
@@ -224,8 +302,16 @@ bool GeneralSettingsDialog::getSaveOfflineEventLog() const {
 
 
 // Returns the current writer format setting i.e. tiff, jpg, bmp
-QString GeneralSettingsDialog::getWriterFormat() const {
-    return writerFormat;
+QString GeneralSettingsDialog::getImageWriterFormat() const {
+    return imageWriterFormat;
+}
+
+QString GeneralSettingsDialog::getImageWriterDataRule() const {
+    return imageWriterDataRule;
+}
+
+QString GeneralSettingsDialog::getDataWriterDataRule() const {
+    return dataWriterDataRule;
 }
 
 void GeneralSettingsDialog::setMetaSnapshotEnabled(int m_state) {
@@ -237,18 +323,34 @@ void GeneralSettingsDialog::setSaveOfflineEventLog(int m_state) {
 
 // Set the image writer format, all formats supported by OpenCV's imwrite can be specified
 // Choices in the settings window are tiff, jpg, and bmp
-void GeneralSettingsDialog::setWriterFormat(const QString &m_writerFormat) {
-    writerFormat = m_writerFormat;
+void GeneralSettingsDialog::setImageWriterFormat(const QString &m_imageWriterFormat) {
+    imageWriterFormat = m_imageWriterFormat;
+}
+
+void GeneralSettingsDialog::setImageWriterDataRule(const QString &m_imageWriterDataRule) {
+    imageWriterDataRule = m_imageWriterDataRule;
+}
+
+void GeneralSettingsDialog::setDataWriterDataRule(const QString &m_dataWriterDataRule) {
+    dataWriterDataRule = m_dataWriterDataRule;
 }
 
 // Event handler on the change of the combobox selection in the dialog
-void GeneralSettingsDialog::onFormatChange(int index) {
-    writerFormat = formatBox->itemData(index).toString();
+void GeneralSettingsDialog::onImageWriterFormatChange(int index) {
+    imageWriterFormat = imageWriterFormatBox->itemData(index).toString();
+}
+
+void GeneralSettingsDialog::onImageWriterDataRuleChange(int index) {
+    imageWriterDataRule = imageWriterDataRuleBox->itemData(index).toString();
 }
 
 // Event handler on the change of the combobox selection in the dialog
 void GeneralSettingsDialog::onDelimiterChange(int index) {
     delimiterToUse = delimiterBox->itemData(index).toString();
+}
+
+void GeneralSettingsDialog::onDataWriterDataRuleChange(int index) {
+    dataWriterDataRule = dataWriterDataRuleBox->itemData(index).toString();
 }
 
 // Event handler on the change of the combobox selection in the dialog

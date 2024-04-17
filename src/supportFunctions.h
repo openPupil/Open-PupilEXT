@@ -12,6 +12,7 @@
 #include <cmath>
 #include <QRectF>
 #include <QColor>
+#include "subwindows/outputDataRuleDialog.h"
 
 /**
 
@@ -113,6 +114,124 @@ public:
             return true;
         else
             return false;
+    };
+
+    static QString stripIfInventedName(QString fileBaseName) {
+        QString workCopy = fileBaseName;
+        while(workCopy.length()>0 && workCopy[workCopy.length()-1].isDigit()) {
+            workCopy.chop(1);
+        }
+        if(workCopy.length()==0) {
+            return fileBaseName;
+        }
+        if(workCopy.endsWith("_Run", Qt::CaseInsensitive)) {
+            workCopy.chop(4);
+        }
+        return workCopy;
+    };
+
+    static QString prepareOutputDirForImageWriter(QString directory, QSettings* applicationSettings, QWidget* parent) {
+        QString imageWriterDataRule = applicationSettings->value("imageWriterDataRule", "ask").toString();
+
+        SupportFunctions::preparePath(directory);
+
+        QDir outputDirectory = QDir(directory);
+
+        // TODO: what if there is e.g. a single recording already, the user says "append" but the current setup is for stereo camera...? Incongruent recording can result
+        if(!outputDirectory.exists()) {
+            outputDirectory.mkdir(".");
+        } else if(imageWriterDataRule == "ask") {
+            OutputDataRuleDialog *dialog = new OutputDataRuleDialog("Image output folder already exists", parent);
+            dialog->setModal(true);
+            if(dialog->exec() == QDialog::Accepted)
+            {
+                auto resp = dialog->getResponse();
+                bool rememberChoice = dialog->getRememberChoice();
+
+                if(resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND) {
+                    imageWriterDataRule = "append";
+                } else if(resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW) {
+                    imageWriterDataRule = "new";
+                }
+
+                if((resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND || resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW) && rememberChoice) {
+                    applicationSettings->setValue("imageWriterDataRule", imageWriterDataRule);
+                }
+            }
+        }
+
+        if(imageWriterDataRule == "new") {
+            bool nameInvented = false;
+            int nameIter = 1;
+            QString tryBase = directory;
+            tryBase = SupportFunctions::stripIfInventedName(tryBase);
+            // TODO: proper exception handling
+            while(!nameInvented) {
+                nameIter++;
+                outputDirectory = QDir(tryBase + "_Run" + QString::number(nameIter));
+                nameInvented = !outputDirectory.exists();
+                if(nameIter >=65000)
+                    outputDirectory = QDir(tryBase + "_TooManyRuns");
+            }
+            outputDirectory.mkdir(".");
+        }
+        //std::cout << outputDirectory.absolutePath().toStdString() << std::endl;
+        return outputDirectory.absolutePath();
+    };
+
+    static QString prepareOutputFileForImageWriter(QString fileName, QSettings* applicationSettings, QWidget* parent) {
+        QString dataWriterDataRule = applicationSettings->value("dataWriterDataRule", "ask").toString();
+
+        bool pathWriteable = SupportFunctions::preparePath(fileName); // GB added
+        // TODO: false case and exception handling
+
+        QFileInfo dataFile(fileName);
+        bool exists = dataFile.exists();
+
+        if(exists && dataWriterDataRule == "ask") {
+            OutputDataRuleDialog *dialog = new OutputDataRuleDialog("Data recording output file already exists", parent);
+            dialog->setModal(true);
+            if(dialog->exec() == QDialog::Accepted)
+            {
+                auto resp = dialog->getResponse();
+                bool rememberChoice = dialog->getRememberChoice();
+
+                if(resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND) {
+                    dataWriterDataRule = "append";
+                } else if(resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW) {
+                    dataWriterDataRule = "new";
+                }
+
+                if((resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND || resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW) && rememberChoice) {
+                    applicationSettings->setValue("dataWriterDataRule", dataWriterDataRule);
+                }
+            }
+        }
+
+        if(dataWriterDataRule == "new") {
+            QFileInfo fileCandidate;
+            QString fileNameCandidate;
+            bool nameInvented = false;
+            int nameIter = 1;
+            QString tryBase = dataFile.absolutePath() + '/' + dataFile.completeBaseName();
+            tryBase = SupportFunctions::stripIfInventedName(tryBase);
+            // TODO: proper exception handling
+            while(!nameInvented) {
+                nameIter++;
+                fileNameCandidate = (tryBase + "_Run" + QString::number(nameIter) + '.' + dataFile.completeSuffix());
+                if(nameIter >=65000)
+                    fileNameCandidate = (tryBase + "_TooManyRuns" + '.' + dataFile.completeSuffix());
+                //std::cout << fileNameCandidate.toStdString() << std::endl;
+                fileCandidate = QFileInfo(fileNameCandidate);
+                nameInvented = !fileCandidate.exists();
+            }
+            //outputDirectory.mkdir(".");
+            dataFile = fileCandidate;
+        }
+        //std::cout << dataFile.absolutePath().toStdString() << std::endl;
+        //std::cout << dataFile.fileName().toStdString() << std::endl;
+        //std::cout << dataFile.completeSuffix().toStdString() << std::endl;
+        return dataFile.absolutePath() + '/' + dataFile.fileName();
     };
 
     /**

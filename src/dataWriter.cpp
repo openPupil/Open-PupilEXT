@@ -21,22 +21,24 @@ DataWriter::DataWriter(
     //delim = applicationSettings->value("delimiterToUse", ',').toChar(); // somehow this just doesnt work
 
     //delim = delimToUse; // only used if dataFormat=='P'
-    std::cout << "New DataWriter object created." << std::endl;
+    qDebug() << "New DataWriter object created.";
 
     // Header definitions of the output file, this must fit the output format in the pupilToRow functions
     header = EyeDataSerializer::getHeaderCSV(procMode, delim);
 
-    std::cout<<fileName.toStdString()<<std::endl;
+    qDebug() << fileName;
 
+    /*
     bool pathWriteable = SupportFunctions::preparePath(fileName); // GB added
     if(!pathWriteable) {
         QMessageBox MsgBox;
         MsgBox.setText("Recording failure. Could not create path.");
         MsgBox.exec();
     }
+    */
 
     dataFile = new QFile(fileName);
-    bool exists = dataFile->exists();
+    bool exists = dataFile->exists(); // NOTE: should never happen
 
     // Open the file in append mode
     // GB: needed to double check, in case of writing to e.g. C:/ or other admin-only folder, 
@@ -61,7 +63,8 @@ DataWriter::DataWriter(
     if(!exists)
         *textStream << header << Qt::endl;
 
-    if(!pathWriteable || !fileWriteable)
+    //if(!pathWriteable || !fileWriteable)
+    if(!fileWriteable)
         this->deleteLater();
 }
 

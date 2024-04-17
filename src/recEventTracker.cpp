@@ -208,32 +208,57 @@ void RecEventTracker::close()
     dataFile = nullptr;
 }
 
-void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestampTo, const QString &fileName)
-{
+void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestampTo, const QString &fileName) {
 
     std::cout << fileName.toStdString() << std::endl;
     SupportFunctions::preparePath(fileName);
-    dataFile = new QFile(fileName);
+    QByteArray textContent;
 
-    if (dataFile->exists())
-    {
-        std::cout << "An offline event log file already exists with name: " << fileName.toStdString() << ", writing cancelled." << std::endl;
-        // TODO: make it append
-        return;
+    dataFile = new QFile(fileName);
+    bool exists = dataFile->exists();
+
+    if(exists) {
+        std::cout << "An offline event log file already exists with name: " << fileName.toStdString() << "" << std::endl;
     }
 
-    if (!dataFile->open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text))
-    {
+    bool opened = dataFile->open(QIODevice::ReadWrite | QIODevice::Text);
+    //bool opened = dataFile->open(QIODevice::ReadWrite | QIODevice::Append | QIODevice::Text); // OR-ing the Append kills it, and no exception or anything remains, be aware
+    if(!opened) {
         std::cout << "Offline event log XML file recording failure. Could not open file for writing: " << fileName.toStdString() << std::endl;
         delete dataFile;
         dataFile = nullptr;
+        // TODO: better exception handling, etc.
+        return;
     }
 
-    QTextStream *textStream = new QTextStream(dataFile);
+    //bool readable = dataFile->isReadable();
+    //textContent = dataFile->readAll();
 
     QDomDocument document;
-    QDomElement root = document.createElement("RecordedEvents");
-    document.appendChild(root);
+    QDomElement root;
+    bool existingRead = false;
+    if(exists) {
+        QString errorString;
+        int errorLine;
+        int errorColumn;
+        existingRead = document.setContent(dataFile, false, &errorString, &errorLine, &errorColumn);
+        if (!existingRead) {
+            qDebug() << errorLine;
+            qDebug() << errorColumn;
+            qDebug() << errorString;
+        }
+    }
+
+    if(exists && existingRead) {
+        root = document.firstChildElement();
+        qDebug() << "Appending to found XML contents.";
+        //std::cout << root.nodeName().toStdString() << std::endl;
+    } else {
+        root = document.createElement("RecordedEvents");
+        document.appendChild(root);
+        qDebug() << "Creating a fresh XML.";
+        //std::cout << root.nodeName().toStdString() << std::endl;
+    }
 
     QDomElement currObj;
 
@@ -258,6 +283,14 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
         }
     }
 
+    // TODO: clear file even if appended, as new XML is flushed into it
+
+    QTextStream *textStream = new QTextStream(dataFile);
+    textStream->seek(0); // rewrite the file
+
+    // NOTE: the line below (XML processing instruction)  is not automatically added for some reason..
+    // BUT if we add it like this, it will cumulatively add to the next file write, and it causes problems.. so we do not add it
+    //*textStream << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
     *textStream << document.toString();
     dataFile->close();
 }

@@ -8,18 +8,15 @@
 
 // Creates a new image writer that outputs images in the given directory
 // If stereo is true, a stereo directory structure is created in the given directory
-ImageWriter::ImageWriter(const QString& directory, QString format, bool stereo, QObject *parent) : QObject(parent), format(format), stereoMode(stereo) {
+ImageWriter::ImageWriter(const QString& directory, bool stereo, QObject *parent) :
+    QObject(parent),
+    stereoMode(stereo),
+    applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent))
+    {
 
-    // GB added begin
-    // GB: changed to "const QString&"
-    SupportFunctions::preparePath(directory);
-    // GB added end
+    imageWriterFormat = applicationSettings->value("imageWriterFormat", "bmp").toString();
 
     outputDirectory = QDir(directory);
-
-    if(!outputDirectory.exists()) {
-        outputDirectory.mkdir(".");
-    }
 
     if(stereoMode) {
         outputDirectorySecondary = outputDirectory;
@@ -42,7 +39,7 @@ ImageWriter::~ImageWriter() = default;
 // File writing is executed using Qts concurrent to not block the GUI thread for writing
 void ImageWriter::onNewImage(const CameraImage &img) {
 
-    QString filepath = outputDirectory.filePath(QString::number(img.timestamp) + "." + format);
+    QString filepath = outputDirectory.filePath(QString::number(img.timestamp) + "." + imageWriterFormat);
 
     // std::cout<<"Saving image: " << filepath.toStdString() << std::endl;
 
@@ -50,7 +47,7 @@ void ImageWriter::onNewImage(const CameraImage &img) {
     QtConcurrent::run(cv::imwrite, filepath.toStdString(), img.img,std::vector<int>());
 
     if(stereoMode && (img.type == CameraImageType::STEREO_IMAGE_FILE || img.type == CameraImageType::LIVE_STEREO_CAMERA)) {
-        QString filepathSecondary = outputDirectorySecondary.filePath(QString::number(img.timestamp) + "." + format);
+        QString filepathSecondary = outputDirectorySecondary.filePath(QString::number(img.timestamp) + "." + imageWriterFormat);
         QtConcurrent::run(cv::imwrite, filepathSecondary.toStdString(), img.imgSecondary,std::vector<int>());
     }
 }

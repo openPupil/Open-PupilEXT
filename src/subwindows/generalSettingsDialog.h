@@ -32,9 +32,11 @@ public:
     int getPlaybackSpeed() const;
     bool getPlaybackLoop() const;
 
-    QString getWriterFormat() const;
+    QString getImageWriterFormat() const;
+    QString getImageWriterDataRule() const;
 
     // GB added begin
+    QString getDataWriterDataRule() const;
     bool getMetaSnapshotsEnabled() const;
     bool getSaveOfflineEventLog() const; 
     // GB added end
@@ -43,12 +45,16 @@ private:
 
     QSettings *applicationSettings;
 
-    QString writerFormat;
+    QGroupBox *dataWriterGroup;
+    QGroupBox *imageWriterGroup;
+    QString imageWriterFormat;
+    QString imageWriterDataRule;
 
     QPushButton *applyButton;
     QPushButton *cancelButton;
 
-    QComboBox *formatBox;
+    QComboBox *imageWriterFormatBox;
+    QComboBox *imageWriterDataRuleBox;
     QSpinBox *playbackSpeedInputBox;
     QCheckBox *playbackLoopBox;
 
@@ -57,7 +63,9 @@ private:
     bool saveOfflineEventLog; 
 
     QString delimiterToUse;
+    QString dataWriterDataRule;
     QComboBox *delimiterBox;
+    QComboBox *dataWriterDataRuleBox;
 
     int darkAdaptMode;
     QComboBox *darkAdaptBox;
@@ -69,21 +77,30 @@ private:
     void saveSettings();
     void updateForm();
 
-private slots:
+public slots:
 
+    void open() override;
     void apply();
     void cancel();
-    void onFormatChange(int index);
+    void onImageWriterFormatChange(int index);
+    void onImageWriterDataRuleChange(int index);
     void readSettings();
     //void setPlaybackSpeed(int playbackSpeed);
-    void setWriterFormat(const QString &writerFormat);
+    void setImageWriterFormat(const QString &imageWriterFormat);
+    void setImageWriterDataRule(const QString &imageWriterDataRule);
+    void setDataWriterDataRule(const QString &dataWriterDataRule);
     //void setPlaybackLoop(int m_state);
 
     // GB added begin
-    void onDelimiterChange(int index); 
+    void onDelimiterChange(int index);
+    void onDataWriterDataRuleChange(int index);
     void onDarkAdaptChange(int index);
     void setMetaSnapshotEnabled(int m_state);
     void setSaveOfflineEventLog(int m_state);
+
+    void setLimitationsWhileImageWriting(bool state);
+    void setLimitationsWhileDataWriting(bool state);
+    void onSettingsChangedElsewhere();
     // GB added end
 
 signals:

@@ -1028,18 +1028,18 @@ void MainWindow::onStreamClick() {
 
 void MainWindow::onRecordClick() {
 
-    // GB added begin
     if(pupilDetectionDataFile.isEmpty())
         return;
-    // GB added end
 
     if(recordOn && dataWriter) {
         // Deactivate recording
 
         dataWriter->close(); // TODO check if may terminate writing to early? because of the lag of the event queue in pupildetection
-        // GB added: this way we can safely check like if(var!=nullptr) or if(var)
+        // GB: this way we can safely check like if(var!=nullptr) or if(var)
         dataWriter = nullptr;
-        // GB added end
+
+        if(generalSettingsDialog)
+            generalSettingsDialog->setLimitationsWhileDataWriting(false);
 
         const QIcon recordOffIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-record.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
         recordAct->setIcon(recordOffIcon);
@@ -1048,7 +1048,12 @@ void MainWindow::onRecordClick() {
     } else {
         // Activate recording
 
-        // GB modified/added begin
+        if(generalSettingsDialog)
+            generalSettingsDialog->setLimitationsWhileDataWriting(true);
+
+        // TODO: this version is imperfect yet, as it permanently overwrites pupilDetectionDataFile name
+        pupilDetectionDataFile = SupportFunctions::prepareOutputFileForImageWriter(pupilDetectionDataFile, applicationSettings, this);
+
         dataWriter = 
             new DataWriter(
                 pupilDetectionDataFile, 
@@ -1073,7 +1078,6 @@ void MainWindow::onRecordClick() {
             MetaSnapshotOrganizer::writeMetaSnapshot(
                 pupilDetectionDir.filePath(metadataFileName),
                 selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, applicationSettings);
-        // GB added end
         
         // GB new kind of signals
         connect(pupilDetectionWorker, SIGNAL (processedPupilData(quint64, int, std::vector<Pupil>, QString)), dataWriter, SLOT (newPupilData(quint64, int, std::vector<Pupil>, QString)));
@@ -1112,6 +1116,9 @@ void MainWindow::onRecordImageClick() {
             stereoCameraSettingsDialog->setLimitationsWhileTracking(false);
         if(singleWebcamSettingsDialog && !trackingOn)
             singleWebcamSettingsDialog->setLimitationsWhileTracking(false);
+
+        if(generalSettingsDialog)
+            generalSettingsDialog->setLimitationsWhileImageWriting(false);
         // GB added end
     } else {
         // Activate recording
@@ -1129,21 +1136,27 @@ void MainWindow::onRecordImageClick() {
             stereoCameraSettingsDialog->setLimitationsWhileTracking(true);
         if(singleWebcamSettingsDialog)
             singleWebcamSettingsDialog->setLimitationsWhileTracking(true);
-        
-        if( applicationSettings->value("metaSnapshotsEnabled", "1") == "1" || 
+
+        if(generalSettingsDialog)
+            generalSettingsDialog->setLimitationsWhileImageWriting(true);
+
+        bool stereo = selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA || selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE;
+
+        // TODO: why use string everywhere for directory? Use QDir instead, or clarify naming ("directory" variables should all be QString or QDir type)
+        // TODO: this version is imperfect yet, as it permanently overwrites outputDirectory (image output directory) name
+        outputDirectory = SupportFunctions::prepareOutputDirForImageWriter(outputDirectory, applicationSettings, this);
+        imageWriter = new ImageWriter(outputDirectory, stereo, this);
+
+        // this should come here as the "directory already exists" dialog is only answered before, upon creation of imageWriter, and meta snapshot creation relies on that response
+        if( applicationSettings->value("metaSnapshotsEnabled", "1") == "1" ||
             applicationSettings->value("metaSnapshotsEnabled", "1") == "true" ) {
-            
+
             MetaSnapshotOrganizer::writeMetaSnapshot(
-                outputDirectory + "/" + QString::fromStdString("imagerec-meta.xml"),
-                selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, applicationSettings);
+                    outputDirectory + "/" + QString::fromStdString("imagerec-meta.xml"),
+                    selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, applicationSettings);
         }
         // GB: maybe write unix timestamp too in the name of meta snapshot file?
         // GB added end
-
-        const QString imageFormat = applicationSettings->value("writerFormat", generalSettingsDialog->getWriterFormat()).toString();
-
-        bool stereo = selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA || selectedCamera->getType() == CameraImageType::STEREO_IMAGE_FILE;
-        imageWriter = new ImageWriter(outputDirectory, imageFormat, stereo, this);
 
         // connect(selectedCamera, SIGNAL (onNewGrabResult(CameraImage)), signalPubSubHandler, SLOT (onNewImage(CameraImage)));
         connect(signalPubSubHandler, SIGNAL(onNewGrabResult(CameraImage)), imageWriter, SLOT (onNewImage(CameraImage)));
@@ -1888,7 +1901,7 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
     imagePlaybackControlDialog = new ImagePlaybackControlDialog(dynamic_cast<FileCamera*>(selectedCamera), pupilDetectionWorker, recEventTracker, this);
     RestorableQMdiSubWindow *imagePlaybackControlWindow = new RestorableQMdiSubWindow(imagePlaybackControlDialog, "ImagePlaybackControlDialog", this);
     mdiArea->addSubWindow(imagePlaybackControlWindow);
-    imagePlaybackControlWindow->resize(670, 275);
+    //imagePlaybackControlWindow->resize(650, 230); // Min. size will set automatically anyways
     // No "X" button on this window
     imagePlaybackControlWindow->setWindowFlags(Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowMinMaxButtonsHint | Qt::WindowStaysOnTopHint);
     //imagePlaybackControlWindow->setWindowFlags(imagePlaybackControlWindow->windowFlags() & ~Qt::WindowCloseButtonHint);
@@ -2368,7 +2381,7 @@ void MainWindow::dropEvent(QDropEvent* e)
         openImageDirectory(fileInfo.filePath());
     } else if(fileInfo.isFile()) {
         // TODO: do this with a QMap that is stored in persistence/QSettings
-        if(fileInfo.completeSuffix() == "tiff" || fileInfo.completeSuffix() == "bmp" || fileInfo.completeSuffix() == "png" ||
+        if(fileInfo.completeSuffix() == "tiff" || fileInfo.completeSuffix() == "jpg" || fileInfo.completeSuffix() == "bmp" || fileInfo.completeSuffix() == "png" ||
             fileInfo.fileName() == "imagerec-meta.xml" || fileInfo.fileName() == "offline-event-log.xml") {
 
             if(selectedCamera && selectedCamera->isOpen()) {
