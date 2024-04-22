@@ -10,6 +10,10 @@ void MainWindow::PRGforceResetTrialCounter(const quint64 &timestamp) {
     forceResetTrialCounter(timestamp);
 }
 
+void MainWindow::PRGlogRemoteMessage(const quint64 &timestamp, const QString &str) {
+    logRemoteMessage(timestamp, str);
+}
+
 void MainWindow::PRGopenSingleCamera(const QString &camName) {
     if(selectedCamera && selectedCamera->isOpen())
         return;

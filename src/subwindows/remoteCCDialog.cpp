@@ -416,6 +416,11 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
     MainWindow *w = dynamic_cast<MainWindow*>(mainWindow);
 
     //qDebug() << "Message is the following: \n" << msg;
+
+    if(msg.isEmpty()) {
+        qDebug() << "Received an empty datagram for a remote control command. No action performed.";
+        return;
+    }
     
     if(msg.at(0) == 'T' || msg.at(0) == 't') { // trigger signal for trial stepping, need to happen fast
         // GB note: qstring cannot use str[0] == 'T'
@@ -426,6 +431,11 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
     QString str = SupportFunctions::simplifyReceivedMessage(msg);
 
     // GB NOTE: toLower() is used to make identification of e.g. pup.det.algorithms safer
+
+    if(str[0].toLower() == 'm' && str.size()>=3) { // receive arbitrary message to be saved into output data file
+        w->PRGlogRemoteMessage(timestamp, str.mid(2, str.length()-2).toLower());
+        return;
+    }
 
     if(str[0].toLower() == 'a' && str.size()>=2) { // performing actions just like when interacting with GUI
         if(str[1].toLower() == '1' && str.size()>=4) { // open single camera device

@@ -103,6 +103,23 @@ RecEventTracker::RecEventTracker(const QString &fileName, QObject *parent) : QOb
         child = child.nextSiblingElement("CameraTempCheck");
     }
 
+    child = root.firstChildElement("Message");
+    while (!child.isNull())
+    {
+        temp_ts = 0;
+        str = child.attribute("TimestampMs", "");
+        if (!str.isEmpty()){
+            temp_ts = str.toULongLong();
+        }
+
+        str = child.attribute("MessageString", "");
+        // TODO: simplify string content?
+
+        if (temp_ts != 0 && !str.isEmpty())
+            addMessage(temp_ts, str);
+        child = child.nextSiblingElement("Message");
+    }
+
     dataFile->close();
     storageReady = true;
 }
@@ -251,17 +268,28 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
 
     if(exists && existingRead) {
         root = document.firstChildElement();
-        qDebug() << "Appending to found XML contents.";
+        QString temp_str = root.attribute("Version", "");
+        foundEventLogVersion = 1;
+        if (!temp_str.isEmpty())
+            foundEventLogVersion = temp_str.toUShort();
+        qDebug() << "Appending to found XML contents. Version: " << QString::number(foundEventLogVersion);
         //std::cout << root.nodeName().toStdString() << std::endl;
     } else {
         root = document.createElement("RecordedEvents");
         document.appendChild(root);
-        qDebug() << "Creating a fresh XML.";
+        qDebug() << "Creating a fresh XML. Version: " << QString::number(currentEventLogVersion);
         //std::cout << root.nodeName().toStdString() << std::endl;
+    }
+
+    if (!root.hasAttribute("Version") || root.attribute("Version","1").toUShort() < currentEventLogVersion)
+    {
+        // TODO: Safer logic for this? Also at reading
+        root.setAttribute("Version", QString::number(currentEventLogVersion));
     }
 
     QDomElement currObj;
 
+    // NOTE: Should this range inclusive on both sides? (Should be low inclusive high exclusive?) But now it surely prevents data loss
     for (size_t i = 0; i < trialIncrements.size(); i++)
         if (trialIncrements[i].timestamp >= timestampFrom && trialIncrements[i].timestamp <= timestampTo)
         {
@@ -282,6 +310,14 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
             root.appendChild(currObj);
         }
     }
+    for (size_t i = 0; i < messages.size(); i++)
+        if (messages[i].timestamp >= timestampFrom && messages[i].timestamp <= timestampTo)
+        {
+            currObj = document.createElement("Message");
+            currObj.setAttribute("TimestampMs", QString::number(messages[i].timestamp));
+            currObj.setAttribute("MessageString", messages[i].messageString);
+            root.appendChild(currObj);
+        }
 
     // TODO: clear file even if appended, as new XML is flushed into it
 
@@ -425,6 +461,31 @@ TemperatureCheck RecEventTracker::getTemperatureCheck(quint64 timestamp)
     return (emptyElem);
 }
 
+/*
+Message RecEventTracker::getMessage(quint64 timestamp)
+{
+    Message emptyElem;
+    if (messages.size() < 1)
+        return emptyElem;
+
+    size_t i = 1;
+    while (i <= messages.size())
+    { // GB: I dont use decremental indexing here, caused some weird "overflow", MSVC2019 x86_amd64
+        if (messages[messages.size() - i].timestamp < timestamp)
+        {
+            // if the gotten timestamp is just after an elem in the vector, that is the one we were looking for
+            //    qDebug() << "BUFFER: found applicable TemperatureCheck of: \n" <<
+            //        "index " << temperatureChecks.size()-i <<
+            //        "timestamp " << temperatureChecks[temperatureChecks.size()-i].timestamp <<
+            //        "trial number " << temperatureChecks[temperatureChecks.size()-i].trialNumber;
+            return messages[messages.size() - i];
+        }
+        i++;
+    }
+    return (emptyElem);
+}
+*/
+
 void RecEventTracker::addTrialIncrement(const quint64 &timestamp)
 {
     bufferTrialCounter++; // increment internal counter
@@ -447,6 +508,12 @@ void RecEventTracker::updateGrabTimestamp(CameraImage cimg) {
 void RecEventTracker::addTrialIncrement(quint64 timestamp, uint trialNumber)
 {
     trialIncrements.push_back(TrialIncrement{timestamp, trialNumber});
+    // NOTE: there is no increment here, so properly monotonically increasing trial numbering should be cared for in the caller class
+}
+
+void RecEventTracker::addMessage(const quint64 &timestamp, const QString &str)
+{
+    messages.push_back(Message{timestamp, str});
     // NOTE: there is no increment here, so properly monotonically increasing trial numbering should be cared for in the caller class
 }
 

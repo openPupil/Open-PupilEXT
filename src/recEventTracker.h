@@ -34,6 +34,10 @@ struct TemperatureCheck {
     quint64 timestamp = 0;
     std::vector<double> temperatures = {0,0};
 };
+struct Message {
+    quint64 timestamp = 0;
+    QString messageString;
+};
 
 /**
     
@@ -78,6 +82,7 @@ public:
     // for both modes
     TrialIncrement getTrialIncrement(quint64 timestamp);
     TemperatureCheck getTemperatureCheck(quint64 timestamp);
+    //Message getMessage(quint64 timestamp);
 
 public slots:
     // For adding elements to vectors in BUFFER mode (timestamp is updated via image grab handler emitted CameraImages automatically)
@@ -92,6 +97,9 @@ public slots:
     // BUFFER mode only
     void resetBufferTrialCounter(const quint64 &timestamp);
 
+    // for both modes
+    void addMessage(const quint64 &timestamp, const QString &str);
+
 private:
 
     EventReplayMode mode;
@@ -100,8 +108,12 @@ private:
     // both modes
     std::vector<TrialIncrement> trialIncrements;
     std::vector<TemperatureCheck> temperatureChecks;
+    std::vector<Message> messages;
     QChar delim;
     QFile *dataFile = nullptr;
+
+    quint16 foundEventLogVersion = 1;
+    const quint16 currentEventLogVersion = 1;
 
     // BUFFER mode only
     //quint64 currentGrabTimestamp = 0;

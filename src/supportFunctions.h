@@ -136,11 +136,13 @@ public:
         SupportFunctions::preparePath(directory);
 
         QDir outputDirectory = QDir(directory);
+        bool exists = outputDirectory.exists();
+        bool hasContent = !outputDirectory.isEmpty();
 
         // TODO: what if there is e.g. a single recording already, the user says "append" but the current setup is for stereo camera...? Incongruent recording can result
-        if(!outputDirectory.exists()) {
+        if(!exists) {
             outputDirectory.mkdir(".");
-        } else if(imageWriterDataRule == "ask") {
+        } else if(hasContent && imageWriterDataRule == "ask") {
             OutputDataRuleDialog *dialog = new OutputDataRuleDialog("Image output folder already exists", parent);
             dialog->setModal(true);
             if(dialog->exec() == QDialog::Accepted)
@@ -179,7 +181,7 @@ public:
         return outputDirectory.absolutePath();
     };
 
-    static QString prepareOutputFileForImageWriter(QString fileName, QSettings* applicationSettings, QWidget* parent) {
+    static QString prepareOutputFileForDataWriter(QString fileName, QSettings* applicationSettings, QWidget* parent) {
         QString dataWriterDataRule = applicationSettings->value("dataWriterDataRule", "ask").toString();
 
         bool pathWriteable = SupportFunctions::preparePath(fileName); // GB added
@@ -187,8 +189,9 @@ public:
 
         QFileInfo dataFile(fileName);
         bool exists = dataFile.exists();
+        bool hasContent = dataFile.size() != 0;
 
-        if(exists && dataWriterDataRule == "ask") {
+        if(exists && hasContent && dataWriterDataRule == "ask") {
             OutputDataRuleDialog *dialog = new OutputDataRuleDialog("Data recording output file already exists", parent);
             dialog->setModal(true);
             if(dialog->exec() == QDialog::Accepted)

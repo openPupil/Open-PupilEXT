@@ -28,7 +28,7 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
     // GB added/modified begin
     updateForm();
 
-    connect(imageWriterFormatBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onFormatChange(int)));
+    connect(imageWriterFormatBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterFormatChange(int)));
     connect(imageWriterDataRuleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterDataRuleChange(int)));
 
     connect(delimiterBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDelimiterChange(int)));

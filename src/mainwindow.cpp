@@ -1052,7 +1052,7 @@ void MainWindow::onRecordClick() {
             generalSettingsDialog->setLimitationsWhileDataWriting(true);
 
         // TODO: this version is imperfect yet, as it permanently overwrites pupilDetectionDataFile name
-        pupilDetectionDataFile = SupportFunctions::prepareOutputFileForImageWriter(pupilDetectionDataFile, applicationSettings, this);
+        pupilDetectionDataFile = SupportFunctions::prepareOutputFileForDataWriter(pupilDetectionDataFile, applicationSettings, this);
 
         dataWriter = 
             new DataWriter(
@@ -1207,6 +1207,7 @@ void MainWindow::onCameraDisconnectClick() {
     if(recEventTracker) {
         disconnect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
         disconnect(this, SIGNAL(commitTrialCounterReset(quint64)), recEventTracker, SLOT(resetBufferTrialCounter(quint64)));
+        disconnect(this, SIGNAL(commitRemoteMessage(quint64, QString)), recEventTracker, SLOT(addMessage(quint64, QString)));
 
         recEventTracker->close();
         //disconnect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), recEventTracker, SLOT(updateGrabTimestamp(CameraImage)));
@@ -1359,6 +1360,7 @@ void MainWindow::singleCameraSelected(QAction *action) {
     //connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), recEventTracker, SLOT(updateGrabTimestamp(CameraImage)));
     connect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
     connect(this, SIGNAL(commitTrialCounterReset(quint64)), recEventTracker, SLOT(resetBufferTrialCounter(quint64)));
+    connect(this, SIGNAL(commitRemoteMessage(quint64, QString)), recEventTracker, SLOT(addMessage(quint64, QString)));
     safelyResetTrialCounter();
     
     QThread *tempMonitorThread = new QThread();
@@ -1422,6 +1424,7 @@ void MainWindow::singleWebcamSelected() {
     //connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), recEventTracker, SLOT(updateGrabTimestamp(CameraImage)));
     connect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
     connect(this, SIGNAL(commitTrialCounterReset(quint64)), recEventTracker, SLOT(resetBufferTrialCounter(quint64)));
+    connect(this, SIGNAL(commitRemoteMessage(quint64, QString)), recEventTracker, SLOT(addMessage(quint64, QString)));
     safelyResetTrialCounter();
     // GB added end
 
@@ -1484,6 +1487,7 @@ void MainWindow::stereoCameraSelected() {
     //connect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), recEventTracker, SLOT(updateGrabTimestamp(CameraImage)));
     connect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
     connect(this, SIGNAL(commitTrialCounterReset(quint64)), recEventTracker, SLOT(resetBufferTrialCounter(quint64)));
+    connect(this, SIGNAL(commitRemoteMessage(quint64, QString)), recEventTracker, SLOT(addMessage(quint64, QString)));
     safelyResetTrialCounter();
     
     QThread *tempMonitorThread = new QThread();
@@ -2090,6 +2094,13 @@ void MainWindow::incrementTrialCounter(const quint64 &timestamp) {
     updateCurrentTrialLabel();
 }
 
+// TODO: let the user place a message from GUI too
+void MainWindow::logRemoteMessage(const quint64 &timestamp, const QString &str) {
+    if(!selectedCamera || (selectedCamera && (selectedCamera->getType()==SINGLE_IMAGE_FILE || selectedCamera->getType()==STEREO_IMAGE_FILE)) || !recEventTracker )
+        return;
+    emit commitRemoteMessage(timestamp, str);
+}
+
 void MainWindow::updateCurrentTrialLabel() {
     if(recEventTracker) {
         //currentTrialLabel->setText(QString::number(trialCounter->value()));
@@ -2265,42 +2276,46 @@ void MainWindow::startCamera()
 
 void MainWindow::resetStatus(bool isConnect)
 {
+    bool imageRecordingEnabled = selectedCamera && selectedCamera->getType() != CameraImageType::SINGLE_IMAGE_FILE && selectedCamera->getType() != CameraImageType::STEREO_IMAGE_FILE;
+
     if (isConnect){
-        cameraAct->setDisabled(true);
-        cameraSettingsAct->setDisabled(false);
-        cameraActDisconnectAct->setDisabled(false);
-        calibrateAct->setDisabled(false);
-        sharpnessAct->setDisabled(false);
-        trackAct->setDisabled(false);
-        outputDirectoryAct->setDisabled(false);
-        logFileAct->setDisabled(false);
-        // GB added begin
-        //streamAct->setDisabled(false);
-        forceResetTrialAct->setDisabled(false);
-        manualIncTrialAct->setDisabled(false);
-        streamingSettingsAct->setDisabled(false); 
+        cameraAct->setEnabled(false);
+        cameraSettingsAct->setEnabled(true);
+        cameraActDisconnectAct->setEnabled(true);
+        calibrateAct->setEnabled(true);
+        sharpnessAct->setEnabled(true);
+        trackAct->setEnabled(true);
+        logFileAct->setEnabled(true);
+        //streamAct->setEnabled(true);
+
+        outputDirectoryAct->setEnabled(imageRecordingEnabled);
+        recordImagesAct->setEnabled(imageRecordingEnabled);
+        forceResetTrialAct->setEnabled(imageRecordingEnabled);
+        manualIncTrialAct->setEnabled(imageRecordingEnabled);
+
+        streamingSettingsAct->setEnabled(true);
         trialWidget->setVisible(true);
     }
     else {
-        cameraAct->setDisabled(false);
-        cameraSettingsAct->setDisabled(true);
-        cameraActDisconnectAct->setDisabled(true);
-        calibrateAct->setDisabled(true);
-        sharpnessAct->setDisabled(true);
-        trackAct->setDisabled(true);
-        outputDirectoryAct->setDisabled(true);
-        logFileAct->setDisabled(true);
-        // GB added begin
-        //streamAct->setDisabled(true);
-        forceResetTrialAct->setDisabled(true);
-        manualIncTrialAct->setDisabled(true);
-        streamingSettingsAct->setDisabled(true);
+        cameraAct->setEnabled(true);
+        cameraSettingsAct->setEnabled(false);
+        cameraActDisconnectAct->setEnabled(false);
+        calibrateAct->setEnabled(false);
+        sharpnessAct->setEnabled(false);
+        trackAct->setEnabled(false);
+        logFileAct->setEnabled(false);
+        //streamAct->setEnabled(false);
+
+        outputDirectoryAct->setEnabled(imageRecordingEnabled);
+        recordImagesAct->setEnabled(imageRecordingEnabled);
+        forceResetTrialAct->setEnabled(imageRecordingEnabled);
+        manualIncTrialAct->setEnabled(imageRecordingEnabled);
+
+        streamingSettingsAct->setEnabled(false);
         trialWidget->setVisible(false);
 
-        // Disconnect only
-        recordImagesAct->setDisabled(true);
-        recordAct->setDisabled(true);
-        cameraPlaying = true;
+        recordAct->setEnabled(false); //
+        cameraPlaying = true; //
         }
 }
 

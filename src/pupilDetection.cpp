@@ -240,7 +240,7 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
     //qDebug()<<cimg.filename;
     if (!trackingOn) {
         //qDebug()<<"Single: onNewSingleImageForOnePupil: Tracking is stopped but receiving signals."; // GB: changed text
-        qDebug() << image.frameNumber;
+        //qDebug() << image.frameNumber;
         emit processedImage(image);
         return;
     }

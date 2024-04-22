@@ -298,6 +298,7 @@ private slots:
     void forceResetTrialCounter(const quint64 &timestamp);
     void incrementTrialCounter();
     void incrementTrialCounter(const quint64 &timestamp);
+    void logRemoteMessage(const quint64 &timestamp, const QString &str);
 
     void onStreamingUDPConnect();
     void onStreamingUDPDisconnect();
@@ -310,6 +311,8 @@ public slots:
     // GB added begin
     // GB NOTE: definitions of functions for programmatic control of GUI elements (their names beginning with PRG...)
     // are stored in PRGmainwindow.cpp, to keep mainwindow.cpp cleaner
+    void PRGlogRemoteMessage(const quint64 &timestamp, const QString &str);
+
     void PRGopenSingleCamera(const QString &camName);
     void PRGopenStereoCamera(const QString &camName1, const QString &camName2);
     void PRGopenSingleWebcam(int deviceID);
@@ -349,6 +352,7 @@ public slots:
 signals:
     void commitTrialCounterIncrement(quint64 timestamp);
     void commitTrialCounterReset(quint64 timestamp);
+    void commitRemoteMessage(quint64 timestamp, QString str);
 
     void cameraPlaybackChanged();
 
