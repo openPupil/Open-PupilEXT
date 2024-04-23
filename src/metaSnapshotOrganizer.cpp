@@ -7,14 +7,14 @@
 // added by kheki4 on 2022.11.07.
 
 
-void MetaSnapshotOrganizer::writeMetaSnapshot(QString fileName, Camera *camera, ImageWriter *imageWriter, PupilDetection *pupilDetection, DataWriter *dataWriter, QSettings *applicationSettings) {
+void MetaSnapshotOrganizer::writeMetaSnapshot(QString fileName, Camera *camera, ImageWriter *imageWriter, PupilDetection *pupilDetection, DataWriter *dataWriter, Purpose purpose, QSettings *applicationSettings) {
 
     qDebug() << fileName;
     QDomDocument document;
     QDomElement root = document.createElement("MetaSnapshot");
     document.appendChild(root);
 
-    addInfoNode(document, root, imageWriter, dataWriter, fileName);    
+    addInfoNode(document, root, imageWriter, dataWriter, purpose, fileName);
 
     addCameraNode(document, root, camera);
 
@@ -24,9 +24,12 @@ void MetaSnapshotOrganizer::writeMetaSnapshot(QString fileName, Camera *camera, 
     QString payload = document.toString();
 
 
+    bool changedGiven = false;
+    QString changedPath;
+    bool pathWriteable = SupportFunctions::preparePath(fileName, changedGiven, changedPath);
+    //if(changedGiven)
+    //    QMessageBox::warning(nullptr, "Path name changed", "The given path/name contained nonstandard characters,\nwhich were changed automatically for the following: a-z, A-Z, 0-9, _");
 
-    // write to file
-    SupportFunctions::preparePath(fileName);
     QFile* dataFile = new QFile(fileName);
     //if(dataFile->exists() == false) {
     //    return;
@@ -55,10 +58,15 @@ void MetaSnapshotOrganizer::writeMetaSnapshot(QString fileName, Camera *camera, 
     
 }
 
-void MetaSnapshotOrganizer::addInfoNode(QDomDocument &document, QDomElement &root, ImageWriter *imageWriter, DataWriter *dataWriter, QString fileName) {
+void MetaSnapshotOrganizer::addInfoNode(QDomDocument &document, QDomElement &root, ImageWriter *imageWriter, DataWriter *dataWriter, Purpose purpose, QString fileName) {
     
     QMap<QString, QString> metaSnapshot;
     metaSnapshot["version"] = QString::number(version);
+    if(purpose==DATA_REC) {
+        metaSnapshot["purpose"] = "datarec";
+    } else if(purpose==IMAGE_REC) {
+        metaSnapshot["purpose"] = "imagerec";
+    }
     metaSnapshot["creationTime"] = QDateTime::currentDateTime().toString("yyyy. MMM dd. hh:mm:ss");
     metaSnapshot["name"] = QString(fileName);
     metaSnapshot["creationTimeUnix"] = QString::number(QDateTime::currentMSecsSinceEpoch());

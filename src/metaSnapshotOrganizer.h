@@ -30,11 +30,13 @@ class MetaSnapshotOrganizer : public QObject {
 
 public:
 
-    static void addInfoNode(QDomDocument &document, QDomElement &root, ImageWriter *imageWriter, DataWriter *dataWriter, QString fileName);
+    enum Purpose {IMAGE_REC = 1, DATA_REC = 2};
+
+    static void addInfoNode(QDomDocument &document, QDomElement &root, ImageWriter *imageWriter, DataWriter *dataWriter, Purpose purpose, QString fileName);
     static void addCameraNode(QDomDocument &document, QDomElement &root, Camera *camera);
     static void addPupilDetectionNode(QDomDocument &document, QDomElement &root, PupilDetection *pupilDetection, QSettings *applicationSettings);
     
-    static void writeMetaSnapshot(QString fileName, Camera *camera, ImageWriter *imageWriter, PupilDetection *pupilDetection, DataWriter *dataWriter, QSettings *applicationSettings);
+    static void writeMetaSnapshot(QString fileName, Camera *camera, ImageWriter *imageWriter, PupilDetection *pupilDetection, DataWriter *dataWriter, Purpose purpose, QSettings *applicationSettings);
 
     static void addMapToNode(QDomDocument &document, QMap<QString, QString> map, QDomElement &parent);
 };

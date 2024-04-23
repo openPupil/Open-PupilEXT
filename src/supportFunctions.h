@@ -54,7 +54,7 @@ public:
         // Qt has this method to remove trailing whitespace from the beginning and the end of a string, and replace internal whitespaces with a single space
         str = str.simplified();
         // if there are "\" characters, change them to "/"
-        str.replace("\\", "/");
+        str.replace("\\", "/"); // TODO: WARNING: can interfere with OS-native separator, though / is safe but \ is not always so
         // todo: remove "..." and replace with ".." as long as they persist, etc. Now it is just a workaround
         str.replace("/./", "/");
         str.replace("...", "..");
@@ -62,7 +62,24 @@ public:
         return str;
     };
 
-    static bool preparePath(const QString &target)
+    // This function is used to simplify directory names that are auto-created (not selected in a GUI dialog by the user)
+    // Only a-z, 0-9, and _ are accepted, anything else will translate to _ character, and length will be trimmed to 240 chars
+    // (usually 255 is max by filesystems, but we reserve the last chars for auto-naming in worst-case scenarios)
+    static QString simplifyNewPathNodeName(QString str, bool &changed)
+    {
+        QString str2 = str;
+        // [^a-zA-Z\d\s:]
+        // [^a-zA-Z0-9_:]
+        // [-`~!@#$%^&*()—+=|:;<>«»,.?/{}'"\[\]\]
+        str2.replace(QRegExp(QString::fromUtf8("[^a-zA-Z0-9_:]")), "_");
+        str2 = str2.mid(0, qMin(str.size(), 240));
+        if(str2!=str) {
+            changed = true;
+        }
+        return str2;
+    };
+
+    static bool preparePath(const QString &target, bool &changedAnything, QString &changedPath)
     {
 
         if (QFileInfo(target).absoluteDir().exists() == true)
@@ -93,24 +110,47 @@ public:
         }
         // std::cout << "desiredPath = " << desiredPath.toStdString() << std::endl;
         QStringList subStrings = desiredPath.split('/');
-        bool success = false;
+        bool candidateExists = false;
+        bool changedExists = false;
+        bool newNodeCreated = false;
+        bool changedNodeName = false;
 
         // std::cout << "subStrings 0-th elem = " << subStrings[0].toStdString() << std::endl;
         QString cumulatedPath = subStrings[0] + "/";
-        for (int h = 1; h < subStrings.length(); h++)
+        QString cumulatedPathCandidate;
+        QString newNodeName;
+        for (int h = 1; h < subStrings.length() && !subStrings[h].isEmpty(); h++)
         {
             // std::cout << "subStrings n-th elem = " << subStrings[h].toStdString() << std::endl;
-            cumulatedPath = cumulatedPath + subStrings[h] + "/";
+            cumulatedPathCandidate = cumulatedPath + subStrings[h] + "/";
             // std::cout << "Now creating: " << QFileInfo(cumulatedPath).absolutePath().toStdString() << std::endl;
-            if (QFileInfo(cumulatedPath).absoluteDir().exists() == false)
+            candidateExists = QFileInfo(cumulatedPathCandidate).absoluteDir().exists();
+
+            if (!candidateExists)
             {
-                success = QDir().mkdir(QFileInfo(cumulatedPath).absolutePath());
-                if (!success)
+                // TODO: make some feedback, notify higher level code, and the user about the auto-renaming of illegal path/directory tree node names
+                newNodeName = simplifyNewPathNodeName(subStrings[h], changedNodeName);
+                cumulatedPath = cumulatedPath + newNodeName + "/";
+
+                newNodeCreated = QDir().mkdir(QFileInfo(cumulatedPath).absolutePath());
+                changedExists = QFileInfo(cumulatedPath).absoluteDir().exists();
+                if (!newNodeCreated && !changedExists)
                     break;
+
+                if(changedNodeName) {
+                    changedAnything = true;
+                    qDebug() << "Had to change directory name from: " << subStrings[h] << " to: " << newNodeName;
+                    changedNodeName = false;
+                }
+            } else {
+                cumulatedPath = cumulatedPathCandidate;
             }
         }
 
-        if (success)
+        if(changedAnything)
+            changedPath = cumulatedPath;
+
+        if (newNodeCreated)
             return true;
         else
             return false;
@@ -133,7 +173,14 @@ public:
     static QString prepareOutputDirForImageWriter(QString directory, QSettings* applicationSettings, QWidget* parent) {
         QString imageWriterDataRule = applicationSettings->value("imageWriterDataRule", "ask").toString();
 
-        SupportFunctions::preparePath(directory);
+        bool changedGiven = false;
+        QString changedPath;
+        bool pathWriteable = SupportFunctions::preparePath(directory, changedGiven, changedPath);
+        if(changedGiven) {
+            QMessageBox::warning(parent, "Path name changed",
+                                 "The given path/name contained nonstandard characters,\nwhich were changed automatically for the following: a-z, A-Z, 0-9, _");
+            directory = changedPath;
+        }
 
         QDir outputDirectory = QDir(directory);
         bool exists = outputDirectory.exists();
@@ -184,8 +231,15 @@ public:
     static QString prepareOutputFileForDataWriter(QString fileName, QSettings* applicationSettings, QWidget* parent) {
         QString dataWriterDataRule = applicationSettings->value("dataWriterDataRule", "ask").toString();
 
-        bool pathWriteable = SupportFunctions::preparePath(fileName); // GB added
+        bool changedGiven = false;
+        QString changedPath;
         // TODO: false case and exception handling
+        bool pathWriteable = SupportFunctions::preparePath(fileName, changedGiven, changedPath);
+        if(changedGiven) {
+            QMessageBox::warning(parent, "Path name changed",
+                                 "The given path/name contained nonstandard characters,\nwhich were changed automatically for the following: a-z, A-Z, 0-9, _");
+            fileName = changedPath;
+        }
 
         QFileInfo dataFile(fileName);
         bool exists = dataFile.exists();

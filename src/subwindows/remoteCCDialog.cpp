@@ -51,7 +51,7 @@ void RemoteCCDialog::createForm() {
     //udpIpBox->setFixedWidth(140);
 
     //udpIpBox->text();
-    udpIpBox->setValue("192.168.0.1");
+    udpIpBox->setValue("0.0.0.0");
 
     udpLayout->addRow(udpIpLabel, udpIpBox);
 
@@ -415,7 +415,7 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
 
     MainWindow *w = dynamic_cast<MainWindow*>(mainWindow);
 
-    //qDebug() << "Message is the following: \n" << msg;
+    qDebug() << "Message is the following: \n" << msg;
 
     if(msg.isEmpty()) {
         qDebug() << "Received an empty datagram for a remote control command. No action performed.";

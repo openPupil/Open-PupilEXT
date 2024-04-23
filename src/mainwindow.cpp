@@ -1069,7 +1069,7 @@ void MainWindow::onRecordClick() {
         
         QFileInfo fi(pupilDetectionDataFile);
         QDir pupilDetectionDir = fi.dir();
-        QString metadataFileName = fi.baseName() + QString::fromStdString("-datarec-meta.xml");
+        QString metadataFileName = fi.baseName() + QString::fromStdString("_datarec_meta.xml");
 
         int currentProcMode = pupilDetectionWorker->getCurrentProcMode();
 
@@ -1077,7 +1077,7 @@ void MainWindow::onRecordClick() {
             applicationSettings->value("metaSnapshotsEnabled", "1") == "true" ))
             MetaSnapshotOrganizer::writeMetaSnapshot(
                 pupilDetectionDir.filePath(metadataFileName),
-                selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, applicationSettings);
+                selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, MetaSnapshotOrganizer::Purpose::DATA_REC, applicationSettings);
         
         // GB new kind of signals
         connect(pupilDetectionWorker, SIGNAL (processedPupilData(quint64, int, std::vector<Pupil>, QString)), dataWriter, SLOT (newPupilData(quint64, int, std::vector<Pupil>, QString)));
@@ -1106,8 +1106,8 @@ void MainWindow::onRecordImageClick() {
             recEventTracker->saveOfflineEventLog(
                 imageRecStartTimestamp,
                 std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
-                outputDirectory + "/" + QString::fromStdString("offline-event-log.xml") );
-                //outputDirectory + "/" + QString::fromStdString("offline-event-log.csv") );
+                outputDirectory + "/" + QString::fromStdString("offline_event_log.xml") );
+                //outputDirectory + "/" + QString::fromStdString("offline_event_log.csv") );
         }
         
         if(singleCameraSettingsDialog && !trackingOn)
@@ -1152,8 +1152,8 @@ void MainWindow::onRecordImageClick() {
             applicationSettings->value("metaSnapshotsEnabled", "1") == "true" ) {
 
             MetaSnapshotOrganizer::writeMetaSnapshot(
-                    outputDirectory + "/" + QString::fromStdString("imagerec-meta.xml"),
-                    selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, applicationSettings);
+                    outputDirectory + "/" + QString::fromStdString("imagerec_meta.xml"),
+                    selectedCamera, imageWriter, pupilDetectionWorker, dataWriter, MetaSnapshotOrganizer::Purpose::IMAGE_REC, applicationSettings);
         }
         // GB: maybe write unix timestamp too in the name of meta snapshot file?
         // GB added end
@@ -1814,8 +1814,7 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
     // create simulated FileCamera
 
     // GB added begin
-    //QString offlineEventLogFileName = imageDirectory + '/' + "offline-event-log.csv";
-    QString offlineEventLogFileName = imageDirectory + '/' + "offline-event-log.xml";
+    QString offlineEventLogFileName = imageDirectory + '/' + "offline_event_log.xml";
     std::cout << "expected offlineEventLogFileName = " << offlineEventLogFileName.toStdString() << std::endl;
     if(QFileInfo(offlineEventLogFileName).exists() == true) {
         recEventTracker = new RecEventTracker(offlineEventLogFileName);
@@ -2289,7 +2288,7 @@ void MainWindow::resetStatus(bool isConnect)
         //streamAct->setEnabled(true);
 
         outputDirectoryAct->setEnabled(imageRecordingEnabled);
-        recordImagesAct->setEnabled(imageRecordingEnabled);
+        recordImagesAct->setEnabled(imageRecordingEnabled && !outputDirectory.isEmpty());
         forceResetTrialAct->setEnabled(imageRecordingEnabled);
         manualIncTrialAct->setEnabled(imageRecordingEnabled);
 
@@ -2306,10 +2305,10 @@ void MainWindow::resetStatus(bool isConnect)
         logFileAct->setEnabled(false);
         //streamAct->setEnabled(false);
 
-        outputDirectoryAct->setEnabled(imageRecordingEnabled);
-        recordImagesAct->setEnabled(imageRecordingEnabled);
-        forceResetTrialAct->setEnabled(imageRecordingEnabled);
-        manualIncTrialAct->setEnabled(imageRecordingEnabled);
+        outputDirectoryAct->setEnabled(false);
+        recordImagesAct->setEnabled(false);
+        forceResetTrialAct->setEnabled(false);
+        manualIncTrialAct->setEnabled(false);
 
         streamingSettingsAct->setEnabled(false);
         trialWidget->setVisible(false);
@@ -2397,7 +2396,8 @@ void MainWindow::dropEvent(QDropEvent* e)
     } else if(fileInfo.isFile()) {
         // TODO: do this with a QMap that is stored in persistence/QSettings
         if(fileInfo.completeSuffix() == "tiff" || fileInfo.completeSuffix() == "jpg" || fileInfo.completeSuffix() == "bmp" || fileInfo.completeSuffix() == "png" ||
-            fileInfo.fileName() == "imagerec-meta.xml" || fileInfo.fileName() == "offline-event-log.xml") {
+            fileInfo.fileName() == "imagerec_meta.xml" || fileInfo.fileName() == "offline_event_log.xml" ||
+            fileInfo.fileName() == "imagerec-meta.xml" || fileInfo.fileName() == "offline-event-log.xml" ) {
 
             if(selectedCamera && selectedCamera->isOpen()) {
                 onCameraDisconnectClick();

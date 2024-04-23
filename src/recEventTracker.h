@@ -46,9 +46,9 @@ struct Message {
         2, In case of an opened camera input device (BUFFER mode): 
             it represents temporary buffer to store frame-related info in, without slowing image processing 
             via adding extra data fields to some or each CameraImage instance that is passed down the pupil detection chain.
-            Also it can save event vectors into an offline-event-log.csv
+            Also it can save event vectors into an offline_event_log.csv
         3, When an image directory is opened for reading (STORAGE mode):
-            Tries to open an offline-event-log.csv containing trial increment events, etc.
+            Tries to open an offline_event_log.csv containing trial increment events, etc.
     
 */
 class RecEventTracker : public QObject {

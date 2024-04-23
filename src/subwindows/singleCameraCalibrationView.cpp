@@ -246,7 +246,7 @@ void SingleCameraCalibrationView::closeEvent(QCloseEvent *event) {
 
     if(calibrationWorker->isCalibrated()) {
         QString configFile = camera->getCalibrationFilename();
-        configFile.replace(" ", "");
+        //configFile.replace(" ", ""); // Commented out by BG on 2024.04.22., refer to https://github.com/openPupil/Open-PupilEXT/issues/42
         std::cout<<"Saving calibration file to settings directory: "<< configFile.toStdString() <<std::endl;
         calibrationWorker->saveToFile(configFile.toStdString().c_str());
         QWidget::closeEvent(event);
@@ -295,7 +295,7 @@ void SingleCameraCalibrationView::updateSettings() {
 // File is in the OpenCV XML filestorage fileformat
 void SingleCameraCalibrationView::loadConfigFile() {
     QString configFile = camera->getCalibrationFilename();
-    configFile.replace(" ", "");
+    //configFile.replace(" ", ""); // Commented out by BG on 2024.04.22., refer to https://github.com/openPupil/Open-PupilEXT/issues/42
     if (QFile::exists(configFile)) {
         std::cout << "Found calibration file in settings directory. Loading: " << configFile.toStdString()
                   << std::endl;

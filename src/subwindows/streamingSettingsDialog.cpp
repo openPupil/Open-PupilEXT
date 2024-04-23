@@ -41,7 +41,7 @@ void StreamingSettingsDialog::createForm() {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
 
-    QString udpIp = "192.168.0.1";
+    QString udpIp = "127.0.0.1";
     int udpPort = 6900;
 
 
