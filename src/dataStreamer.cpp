@@ -15,7 +15,7 @@ DataStreamer::DataStreamer(
     recEventTracker(recEventTracker),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent))
 {
-    delim = applicationSettings->value("delimiterToUse", ",").toString()[0];
+    delim = applicationSettings->value("dataWriterDelimiter", ",").toString()[0];
     //delim = applicationSettings->value("delimiterToUse", ',').toChar(); // somehow this just doesnt work
 
 }
@@ -61,7 +61,7 @@ void DataStreamer::newPupilData(quint64 timestamp, int procMode, const std::vect
     if( UDPStreamingOn && UDPsocket != nullptr) {
         QString str = "";
         if(UDPdataContainer == DataContainer::CSV)
-            str = EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, trialNumber, delim, d);
+            str = EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, trialNumber, delim, DataWriterDataStyle::PUPILEXT_V0_1_2, d);
         else if(UDPdataContainer == DataContainer::JSON)
             str = EyeDataSerializer::pupilToJSON(timestamp, procMode, Pupils, filename, trialNumber, d);
         else if(UDPdataContainer == DataContainer::XML)
@@ -75,7 +75,7 @@ void DataStreamer::newPupilData(quint64 timestamp, int procMode, const std::vect
     if(connPoolCOMIndex >= 0 && connPoolCOM->getInstance(connPoolCOMIndex) != nullptr) {
         QString str = "";
         if(COMdataContainer == DataContainer::CSV)
-            str = EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, trialNumber, delim, d);
+            str = EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, trialNumber, delim, DataWriterDataStyle::PUPILEXT_V0_1_2, d);
         else if(COMdataContainer == DataContainer::JSON)
             str = EyeDataSerializer::pupilToJSON(timestamp, procMode, Pupils, filename, trialNumber, d);
         else if(COMdataContainer == DataContainer::XML)

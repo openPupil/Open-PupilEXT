@@ -20,7 +20,7 @@ StreamingSettingsDialog::StreamingSettingsDialog(
     dataStreamer(dataStreamer),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    this->setMinimumSize(280, 330); 
+    this->setMinimumSize(280, 330);
     this->setWindowTitle("Streaming settings");
 
     createForm();

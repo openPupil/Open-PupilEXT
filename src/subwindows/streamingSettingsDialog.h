@@ -86,10 +86,8 @@ private:
     quint16 m_UDPport;
     ConnPoolCOMInstanceSettings m_currentSettingsCOM;
 
-    // DEV TODO, MÁR MINEK
     QGroupBox *udpGroup;
     QGroupBox *comGroup;
-    // DEV
 
     QPushButton *refreshButton;
 

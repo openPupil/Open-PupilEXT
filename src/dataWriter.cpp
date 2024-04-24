@@ -17,14 +17,20 @@ DataWriter::DataWriter(
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     // GB modified begin
-    delim = applicationSettings->value("delimiterToUse", ",").toString()[0];
+    delim = applicationSettings->value("dataWriterDelimiter", ",").toString()[0];
     //delim = applicationSettings->value("delimiterToUse", ',').toChar(); // somehow this just doesnt work
+
+    QString dataStyleStr = applicationSettings->value("dataWriterDataStyle", "PupilEXT-0-1-2").toString();
+    if(dataStyleStr == "PupilEXT-0-1-1")
+        dataStyle = PUPILEXT_V0_1_1;
+    else // if(dataStyleStr == "PupilEXT-0-1-2")
+        dataStyle = PUPILEXT_V0_1_2;
 
     //delim = delimToUse; // only used if dataFormat=='P'
     qDebug() << "New DataWriter object created.";
 
     // Header definitions of the output file, this must fit the output format in the pupilToRow functions
-    header = EyeDataSerializer::getHeaderCSV(procMode, delim);
+    header = EyeDataSerializer::getHeaderCSV(procMode, delim, dataStyle);
 
     qDebug() << fileName;
 
@@ -101,7 +107,7 @@ void DataWriter::newPupilData(quint64 timestamp, int procMode, const std::vector
             trialNumber = recEventTracker->getTrialIncrement(timestamp).trialNumber;
             d = recEventTracker->getTemperatureCheck(timestamp).temperatures;
         }
-        *textStream << EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, trialNumber, delim, d) << Qt::endl;
+        *textStream << EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, trialNumber, delim, dataStyle, d) << Qt::endl;
     }
 }
 
@@ -125,7 +131,7 @@ void DataWriter::writePupilData(std::vector<quint64> timestamps, int procMode, c
                 recEventTracker->getTrialIncrement(timestamps[i]).trialNumber;
                 d = recEventTracker->getTemperatureCheck(timestamps[i]).temperatures;
             }
-            *textStream << EyeDataSerializer::pupilToRowCSV(static_cast<quint64>(framePos), procMode, pupilData[i], "", trialNumber, delim, d) << Qt::endl;
+            *textStream << EyeDataSerializer::pupilToRowCSV(static_cast<quint64>(framePos), procMode, pupilData[i], "", trialNumber, delim, dataStyle, d) << Qt::endl;
         }
         ++framePos;
     }

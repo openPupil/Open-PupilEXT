@@ -298,7 +298,7 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
 
     // NOTE: Should this range inclusive on both sides? (Should be low inclusive high exclusive?) But now it surely prevents data loss
     for (size_t i = 0; i < trialIncrements.size(); i++)
-        if (trialIncrements[i].timestamp >= timestampFrom && trialIncrements[i].timestamp <= timestampTo)
+        if (trialIncrements[i].timestamp >= timestampFrom && trialIncrements[i].timestamp < timestampTo)
         {
             currObj = document.createElement("TrialIncrement");
             currObj.setAttribute("TimestampMs", QString::number(trialIncrements[i].timestamp));
@@ -307,7 +307,7 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
         }
     for (size_t i = 0; i < temperatureChecks.size(); i++)
     {
-        if (temperatureChecks[i].temperatures[0] != 0 && temperatureChecks[i].timestamp >= timestampFrom && temperatureChecks[i].timestamp <= timestampTo)
+        if (temperatureChecks[i].temperatures[0] != 0 && temperatureChecks[i].timestamp >= timestampFrom && temperatureChecks[i].timestamp < timestampTo)
         {
             currObj = document.createElement("CameraTempCheck");
             currObj.setAttribute("TimestampMs", QString::number(temperatureChecks[i].timestamp));
@@ -318,7 +318,7 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
         }
     }
     for (size_t i = 0; i < messages.size(); i++)
-        if (messages[i].timestamp >= timestampFrom && messages[i].timestamp <= timestampTo)
+        if (messages[i].timestamp >= timestampFrom && messages[i].timestamp < timestampTo)
         {
             currObj = document.createElement("Message");
             currObj.setAttribute("TimestampMs", QString::number(messages[i].timestamp));
@@ -326,6 +326,7 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
             root.appendChild(currObj);
         }
 
+    // NOTE: search intervals are only inclusive on the left, but exclusive on the right. Consider this
     // TODO: clear file even if appended, as new XML is flushed into it
 
     QTextStream *textStream = new QTextStream(dataFile);
@@ -337,59 +338,6 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
     *textStream << document.toString();
     dataFile->close();
 }
-
-// below is the version that creates a csv
-/*
-void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestampTo, const QString& fileName) {
-    delim = applicationSettings->value("delimiterToUse", ",").toString()[0];
-    //delim = applicationSettings->value("delimiterToUse", ',').toChar(); // somehow this just doesnt work
-
-    std::cout << "saveOfflineEventLog(const QString& fileName, QObject *parent = 0)" << std::endl;
-
-    QString header =
-        QString::fromStdString("timestamp_ms") + delim +
-        QString::fromStdString("event_type") + delim +
-        QString::fromStdString("notation_value1") + delim +
-        QString::fromStdString("notation_value2")
-    ;
-
-    std::cout<<fileName.toStdString()<<std::endl;
-    SupportFunctions::preparePath(fileName);
-    dataFile = new QFile(fileName);
-
-    if(dataFile->exists()) {
-        std::cout << "An offline event log file already exists with name: " << fileName.toStdString() << ", writing cancelled." << std::endl;
-        return;
-    }
-
-    if(!dataFile->open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
-        std::cout << "Recording failure. Could not open file for writing: " << fileName.toStdString() << std::endl;
-        delete dataFile;
-        dataFile = nullptr;
-    }
-
-    QTextStream *textStream = new QTextStream(dataFile);
-    *textStream << header << Qt::endl;
-    for(size_t i=0; i<trialIncrements.size(); i++)
-        if(trialIncrements[i].timestamp >= timestampFrom && trialIncrements[i].timestamp <= timestampTo)
-            *textStream <<
-                QString::number(trialIncrements[i].timestamp) << delim <<
-                "TRIAL_INCREMENT" << delim <<
-                QString::number(trialIncrements[i].trialNumber) << delim
-                << Qt::endl;
-    for(size_t i=0; i<temperatureChecks.size(); i++) {
-        if(temperatureChecks[i].temperatures[0] != 0 && temperatureChecks[i].timestamp >= timestampFrom && temperatureChecks[i].timestamp <= timestampTo)
-            *textStream <<
-                QString::number(temperatureChecks[i].timestamp) << delim <<
-                "TEMPERATURE_CHECK" << delim <<
-                QString::number(temperatureChecks[i].temperatures[0]) << delim <<
-                QString::number(temperatureChecks[i].temperatures[1])
-                << Qt::endl;
-    }
-
-    dataFile->close();
-}
-*/
 
 uint RecEventTracker::getLastCommissionedTrialNumber()
 {

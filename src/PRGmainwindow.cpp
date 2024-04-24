@@ -189,7 +189,7 @@ void MainWindow::PRGsetGlobalDelimiter(const QString &str) {
     if(str=="\t" || str=="tab" || str=="tabulator" || str == "tabulation")
         value="\t";
     
-    applicationSettings->setValue("delimiterToUse", value);
+    applicationSettings->setValue("dataWriterDelimiter", value);
 }
 
 void MainWindow::PRGsetImageOutputFormat(QString format) {

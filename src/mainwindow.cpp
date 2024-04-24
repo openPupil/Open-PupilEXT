@@ -194,6 +194,7 @@ void MainWindow::createActions() {
     // GB end
     fileOpenAct->setStatusTip(tr("Open Image Directory for Playback. Single and Stereo Mode supported."));
     fileMenu->addAction(fileOpenAct);
+    fileMenu->addSeparator();
 
     QAction *exitAct = fileMenu->addAction(tr("E&xit"), qApp, &QApplication::closeAllWindows);
     exitAct->setShortcuts(QKeySequence::Quit);
@@ -1052,7 +1053,8 @@ void MainWindow::onRecordClick() {
             generalSettingsDialog->setLimitationsWhileDataWriting(true);
 
         // TODO: this version is imperfect yet, as it permanently overwrites pupilDetectionDataFile name
-        pupilDetectionDataFile = SupportFunctions::prepareOutputFileForDataWriter(pupilDetectionDataFile, applicationSettings, this);
+        bool changedGiven = false; // unused yet
+        pupilDetectionDataFile = SupportFunctions::prepareOutputFileForDataWriter(pupilDetectionDataFile, applicationSettings, changedGiven, this);
 
         dataWriter = 
             new DataWriter(
@@ -1144,7 +1146,9 @@ void MainWindow::onRecordImageClick() {
 
         // TODO: why use string everywhere for directory? Use QDir instead, or clarify naming ("directory" variables should all be QString or QDir type)
         // TODO: this version is imperfect yet, as it permanently overwrites outputDirectory (image output directory) name
-        outputDirectory = SupportFunctions::prepareOutputDirForImageWriter(outputDirectory, applicationSettings, this);
+        bool changedGiven = false; // unused yet
+        outputDirectory = SupportFunctions::prepareOutputDirForImageWriter(outputDirectory, applicationSettings, changedGiven, this);
+
         imageWriter = new ImageWriter(outputDirectory, stereo, this);
 
         // this should come here as the "directory already exists" dialog is only answered before, upon creation of imageWriter, and meta snapshot creation relies on that response

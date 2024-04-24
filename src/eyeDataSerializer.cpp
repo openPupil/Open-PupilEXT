@@ -192,352 +192,340 @@ QString EyeDataSerializer::pupilToJSON(quint64 timestamp, int procMode, const st
     return QString(content);
 }
 
-QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim) {
+QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim, DataWriterDataStyle dataStyle) {
+
+    QString result; // TODO: .reserve() ?
+
     switch(procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            return
-                QString::fromStdString("filename") + delim +
-                QString::fromStdString("timestamp_ms") + delim +
-                QString::fromStdString("algorithm") + delim +
-                QString::fromStdString("diameter_px") + delim +
-                QString::fromStdString("undistortedDiameter_px") + delim +
-                QString::fromStdString("physicalDiameter_mm") + delim +
-                QString::fromStdString("width_px") + delim +
-                QString::fromStdString("height_px") + delim +
-                QString::fromStdString("axisRatio") + delim +
-                QString::fromStdString("center_x") + delim +
-                QString::fromStdString("center_y") + delim +
-                QString::fromStdString("angle_deg") + delim +
-                QString::fromStdString("circumference_px") + delim +
-                QString::fromStdString("confidence") + delim +
-                QString::fromStdString("outlineConfidence") + delim +
-                QString::fromStdString("trial") + delim +
-                QString::fromStdString("temperature_c") 
-            ;
-    //        break;
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
+                result = result % "filename" % delim;
+            }
+            result = result % "timestamp_ms" % delim;
+            result = result % "algorithm" % delim;
+            result = result % "diameter_px" % delim;
+            result = result % "undistortedDiameter_px" % delim;
+            result = result % "physicalDiameter_mm" % delim;
+            result = result % "width_px" % delim;
+            result = result % "height_px" % delim;
+            result = result % "axisRatio" % delim;
+            result = result % "center_x" % delim;
+            result = result % "center_y" % delim;
+            result = result % "angle_deg" % delim;
+            result = result % "circumference_px" % delim;
+            result = result % "confidence" % delim;
+            result = result % "outlineConfidence";
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
+                result = result % delim % "trial" % delim;
+                result = result % "temperature_c";
+            }
+            break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-            return
-                QString::fromStdString("filename") + delim +
-                QString::fromStdString("timestamp_ms") + delim +
-                QString::fromStdString("algorithm") + delim +
-                QString::fromStdString("diameterA_px") + delim +
-                QString::fromStdString("diameterB_px") + delim +
-                QString::fromStdString("undistortedDiameterA_px") + delim +
-                QString::fromStdString("undistortedDiameterB_px") + delim +
-                QString::fromStdString("physicalDiameterA_mm") + delim +
-                QString::fromStdString("physicalDiameterB_mm") + delim + // the different line
-                QString::fromStdString("widthA_px") + delim +
-                QString::fromStdString("heightA_px") + delim +
-                QString::fromStdString("axisRatioA") + delim +
-                QString::fromStdString("widthB_px") + delim +
-                QString::fromStdString("heightB_px") + delim +
-                QString::fromStdString("axisRatioB") + delim +
-                QString::fromStdString("centerA_x") + delim +
-                QString::fromStdString("centerA_y") + delim +
-                QString::fromStdString("centerB_x") + delim +
-                QString::fromStdString("centerB_y") + delim +
-                QString::fromStdString("angleA_deg") + delim +
-                QString::fromStdString("angleB_deg") + delim +
-                QString::fromStdString("circumferenceA_px") + delim +
-                QString::fromStdString("circumferenceB_px") + delim +
-                QString::fromStdString("confidenceA") + delim +
-                QString::fromStdString("outlineConfidenceA") + delim +
-                QString::fromStdString("confidenceB") + delim +
-                QString::fromStdString("outlineConfidenceB") + delim +
-                QString::fromStdString("trial") + delim +
-                QString::fromStdString("temperature_c")
-            ; // GB TODO: check temp
-    //        //break;
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
+                result = result % "filename" % delim;
+            }
+            result = result % "timestamp_ms" % delim;
+            result = result % "algorithm" % delim;
+            result = result % "diameterA_px" % delim;
+            result = result % "diameterB_px" % delim;
+            result = result % "undistortedDiameterA_px" % delim;
+            result = result % "undistortedDiameterB_px" % delim;
+            result = result % "physicalDiameterA_mm" % delim;
+            result = result % "physicalDiameterB_mm" % delim; // the different line
+            result = result % "widthA_px" % delim;
+            result = result % "heightA_px" % delim;
+            result = result % "axisRatioA" % delim;
+            result = result % "widthB_px" % delim;
+            result = result % "heightB_px" % delim;
+            result = result % "axisRatioB" % delim;
+            result = result % "centerA_x" % delim;
+            result = result % "centerA_y" % delim;
+            result = result % "centerB_x" % delim;
+            result = result % "centerB_y" % delim;
+            result = result % "angleA_deg" % delim;
+            result = result % "angleB_deg" % delim;
+            result = result % "circumferenceA_px" % delim;
+            result = result % "circumferenceB_px" % delim;
+            result = result % "confidenceA" % delim;
+            result = result % "outlineConfidenceA" % delim;
+            result = result % "confidenceB" % delim;
+            result = result % "outlineConfidenceB";
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
+                result = result % delim % "trial" % delim;
+                result = result % "temperature_c";
+            }
+                // GB TODO: check temp
+            break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
-            return
-                QString::fromStdString("filename") + delim +
-                QString::fromStdString("timestamp_ms") + delim +
-                QString::fromStdString("algorithm") + delim +
-                QString::fromStdString("diameterMain_px") + delim +
-                QString::fromStdString("diameterSec_px") + delim +
-                QString::fromStdString("undistortedDiameterMain_px") + delim +
-                QString::fromStdString("undistortedDiameterSec_px") + delim +
-                QString::fromStdString("physicalDiameter_mm") + delim +
-                QString::fromStdString("widthMain_px") + delim +
-                QString::fromStdString("heightMain_px") + delim +
-                QString::fromStdString("axisRatioMain") + delim +
-                QString::fromStdString("widthSec_px") + delim +
-                QString::fromStdString("heightSec_px") + delim +
-                QString::fromStdString("axisRatioSec") + delim +
-                QString::fromStdString("centerMain_x") + delim +
-                QString::fromStdString("centerMain_y") + delim +
-                QString::fromStdString("centerSec_x") + delim +
-                QString::fromStdString("centerSec_y") + delim +
-                QString::fromStdString("angleMain_deg") + delim +
-                QString::fromStdString("angleSec_deg") + delim +
-                QString::fromStdString("circumferenceMain_px") + delim +
-                QString::fromStdString("circumferenceSec_px") + delim +
-                QString::fromStdString("confidenceMain") + delim +
-                QString::fromStdString("outlineConfidenceMain") + delim +
-                QString::fromStdString("confidenceSec") + delim +
-                QString::fromStdString("outlineConfidenceSec") + delim +
-                QString::fromStdString("trial") + delim +
-                QString::fromStdString("temperatureMain_c") + delim +
-                QString::fromStdString("temperatureSec_c")
-            ;
-    //        //break;
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
+                result = result % "filename" % delim;
+            }
+            result = result % "timestamp_ms" % delim;
+            result = result % "algorithm" % delim;
+            result = result % "diameterMain_px" % delim;
+            result = result % "diameterSec_px" % delim;
+            result = result % "undistortedDiameterMain_px" % delim;
+            result = result % "undistortedDiameterSec_px" % delim;
+            result = result % "physicalDiameter_mm" % delim;
+            result = result % "widthMain_px" % delim;
+            result = result % "heightMain_px" % delim;
+            result = result % "axisRatioMain" % delim;
+            result = result % "widthSec_px" % delim;
+            result = result % "heightSec_px" % delim;
+            result = result % "axisRatioSec" % delim;
+            result = result % "centerMain_x" % delim;
+            result = result % "centerMain_y" % delim;
+            result = result % "centerSec_x" % delim;
+            result = result % "centerSec_y" % delim;
+            result = result % "angleMain_deg" % delim;
+            result = result % "angleSec_deg" % delim;
+            result = result % "circumferenceMain_px" % delim;
+            result = result % "circumferenceSec_px" % delim;
+            result = result % "confidenceMain" % delim;
+            result = result % "outlineConfidenceMain" % delim;
+            result = result % "confidenceSec" % delim;
+            result = result % "outlineConfidenceSec";
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
+                result = result % delim % "trial" % delim;
+                result = result % "temperatureMain_c" % delim;
+                result = result % "temperatureSec_c";
+            }
+            break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            return
-                QString::fromStdString("filename") + delim +
-                QString::fromStdString("timestamp_ms") + delim +
-                QString::fromStdString("algorithm") + delim +
-                //
-                QString::fromStdString("diameterAMain_px") + delim +
-                QString::fromStdString("diameterASec_px") + delim +
-                //
-                QString::fromStdString("diameterBMain_px") + delim +
-                QString::fromStdString("diameterBSec_px") + delim +
-                //
-                QString::fromStdString("undistortedDiameterAMain_px") + delim +
-                QString::fromStdString("undistortedDiameterASec_px") + delim +
-                //
-                QString::fromStdString("undistortedDiameterBMain_px") + delim +
-                QString::fromStdString("undistortedDiameterBSec_px") + delim +
-                //
-                QString::fromStdString("physicalDiameterA_mm") + delim +
-                //
-                QString::fromStdString("physicalDiameterB_mm") + delim +
-                //
-                QString::fromStdString("widthAMain_px") + delim +
-                QString::fromStdString("heightAMain_px") + delim +
-                QString::fromStdString("axisRatioAMain") + delim +
-                QString::fromStdString("widthASec_px") + delim +
-                QString::fromStdString("heightASec_px") + delim +
-                QString::fromStdString("axisRatioASec") + delim +
-                //
-                QString::fromStdString("widthBMain_px") + delim +
-                QString::fromStdString("heightBMain_px") + delim +
-                QString::fromStdString("axisRatioBMain") + delim +
-                QString::fromStdString("widthBSec_px") + delim +
-                QString::fromStdString("heightBSec_px") + delim +
-                QString::fromStdString("axisRatioBSec") + delim +
-                //
-                QString::fromStdString("centerAMain_x") + delim +
-                QString::fromStdString("centerAMain_y") + delim +
-                QString::fromStdString("centerASec_x") + delim +
-                QString::fromStdString("centerASec_y") + delim +
-                //
-                QString::fromStdString("centerBMain_x") + delim +
-                QString::fromStdString("centerBMain_y") + delim +
-                QString::fromStdString("centerBSec_x") + delim +
-                QString::fromStdString("centerBSec_y") + delim +
-                //
-                QString::fromStdString("angleAMain_deg") + delim +
-                QString::fromStdString("angleASec_deg") + delim +
-                //
-                QString::fromStdString("angleBMain_deg") + delim +
-                QString::fromStdString("angleBSec_deg") + delim +
-                //
-                QString::fromStdString("circumferenceAMain_px") + delim +
-                QString::fromStdString("circumferenceASec_px") + delim +
-                //
-                QString::fromStdString("circumferenceBMain_px") + delim +
-                QString::fromStdString("circumferenceBSec_px") + delim +
-                //
-                QString::fromStdString("confidenceAMain") + delim +
-                QString::fromStdString("outlineConfidenceAMain") + delim + 
-                QString::fromStdString("confidenceASec") + delim +
-                QString::fromStdString("outlineConfidenceASec") + delim +
-                //
-                QString::fromStdString("confidenceBMain") + delim +
-                QString::fromStdString("outlineConfidenceBMain") + delim + 
-                QString::fromStdString("confidenceBSec") + delim +
-                QString::fromStdString("outlineConfidenceBSec") + delim +
-                //
-                QString::fromStdString("trial") + delim +
-                //
-                QString::fromStdString("temperatureMain_c") + delim +
-                QString::fromStdString("temperatureSec_c")
-            ;
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
+                result = result % "filename" % delim;
+            }
+            result = result % "timestamp_ms" % delim;
+            result = result % "algorithm" % delim; //
+            result = result % "diameterAMain_px" % delim;
+            result = result % "diameterASec_px" % delim; //
+            result = result % "diameterBMain_px" % delim;
+            result = result % "diameterBSec_px" % delim; //
+            result = result % "undistortedDiameterAMain_px" % delim;
+            result = result % "undistortedDiameterASec_px" % delim; //
+            result = result % "undistortedDiameterBMain_px" % delim;
+            result = result % "undistortedDiameterBSec_px" % delim; //
+            result = result % "physicalDiameterA_mm" % delim; //
+            result = result % "physicalDiameterB_mm" % delim; //
+            result = result % "widthAMain_px" % delim;
+            result = result % "heightAMain_px" % delim;
+            result = result % "axisRatioAMain" % delim;
+            result = result % "widthASec_px" % delim;
+            result = result % "heightASec_px" % delim;
+            result = result % "axisRatioASec" % delim; //
+            result = result % "widthBMain_px" % delim;
+            result = result % "heightBMain_px" % delim;
+            result = result % "axisRatioBMain" % delim;
+            result = result % "widthBSec_px" % delim;
+            result = result % "heightBSec_px" % delim;
+            result = result % "axisRatioBSec" % delim; //
+            result = result % "centerAMain_x" % delim;
+            result = result % "centerAMain_y" % delim;
+            result = result % "centerASec_x" % delim;
+            result = result % "centerASec_y" % delim; //
+            result = result % "centerBMain_x" % delim;
+            result = result % "centerBMain_y" % delim;
+            result = result % "centerBSec_x" % delim;
+            result = result % "centerBSec_y" % delim; //
+            result = result % "angleAMain_deg" % delim;
+            result = result % "angleASec_deg" % delim; //
+            result = result % "angleBMain_deg" % delim;
+            result = result % "angleBSec_deg" % delim; //
+            result = result % "circumferenceAMain_px" % delim;
+            result = result % "circumferenceASec_px" % delim; //
+            result = result % "circumferenceBMain_px" % delim;
+            result = result % "circumferenceBSec_px" % delim; //
+            result = result % "confidenceAMain" % delim;
+            result = result % "outlineConfidenceAMain" % delim;
+            result = result % "confidenceASec" % delim;
+            result = result % "outlineConfidenceASec" % delim; //
+            result = result % "confidenceBMain" % delim;
+            result = result % "outlineConfidenceBMain" % delim;
+            result = result % "confidenceBSec" % delim;
+            result = result % "outlineConfidenceBSec"; //
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
+                result = result % delim % "trial" % delim; //
+                result = result % "temperatureMain_c" % delim;
+                result = result % "temperatureSec_c";
+            }
             // GB TODO: TEMP CHECK
-    //        break;
+            break;
         
         // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
         //     // NOTE: even though mirr image data comes from one camera, now we have different fields for temperature checks, 
         //     // no problem, just use the same value
         
         default:
-            return QString("PROCESSING MODE UNDETERMINED");
+            result = QString("PROCESSING MODE UNDETERMINED");
     }
+    return result;
 }
 
 // Converts a pupil detection to a string row that is written to file
 // CAUTION: This must exactly reproduce the format defined by the header fields
-QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, QChar delim, const std::vector<double> &temperatures) {
+QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, QChar delim, DataWriterDataStyle dataStyle, const std::vector<double> &temperatures) {
 
     QString filename = "-1";
     if(!filepath.isEmpty())
         filename = QFileInfo(filepath).fileName();
 
+    QString result; // TODO: .reserve() ?
+
     switch((ProcMode)procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            return 
-                filename + delim + 
-                QString::number(timestamp) + delim + 
-                QString::fromStdString(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].algorithmName) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].diameter()) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].undistortedDiameter)  + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].physicalDiameter) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].width()) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].height()) + delim + 
-                QString::number((double)Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].width() / Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].height()) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].center.x) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].center.y) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].angle) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].circumference()) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].confidence) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].outline_confidence) + delim + 
-                QString::number(trialNum) + delim + 
-                QString::number(temperatures[0])
-            ;
-            //break;
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
+                result = result % filename % delim;
+            }
+            result = result % QString::number(timestamp) % delim;
+            result = result % QString::fromStdString(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].algorithmName) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].diameter()) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].undistortedDiameter)  % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].physicalDiameter) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].width()) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].height()) % delim;
+            result = result % QString::number((double)Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].width() / Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].height()) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].center.x) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].center.y) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].angle) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].circumference()) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].confidence) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].outline_confidence);
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
+                result = result %  delim % QString::number(trialNum) % delim;
+                result = result % QString::number(temperatures[0]);
+            }
+            break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-            return 
-                filename + delim + 
-                QString::number(timestamp) + delim + 
-                QString::fromStdString(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].algorithmName) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].diameter()) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].diameter()) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].undistortedDiameter) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].undistortedDiameter) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].physicalDiameter) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].physicalDiameter) + delim + // HERE ONLY THIS LINE IS THE DIFFERENCE
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].width()) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].height()) + delim + 
-                QString::number((double)Pupils[SINGLE_IMAGE_TWO_PUPIL_A].width() / Pupils[SINGLE_IMAGE_TWO_PUPIL_A].height()) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].width()) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].height()) + delim + 
-                QString::number((double)Pupils[SINGLE_IMAGE_TWO_PUPIL_B].width() / Pupils[SINGLE_IMAGE_TWO_PUPIL_B].height()) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].center.x) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].center.y) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].center.x) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].center.y) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].angle) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].angle) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].circumference()) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].circumference()) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].confidence) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].outline_confidence) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].confidence) + delim + 
-                QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].outline_confidence) + delim + 
-                QString::number(trialNum) + delim +
-                QString::number(temperatures[0])
-            ;
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
+                result = result % filename % delim;
+            }
+            result = result % QString::number(timestamp) % delim;
+            result = result % QString::fromStdString(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].algorithmName) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].diameter()) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].diameter()) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].undistortedDiameter) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].undistortedDiameter) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].physicalDiameter) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].physicalDiameter) % delim; // HERE ONLY THIS LINE IS THE DIFFERENCE
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].width()) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].height()) % delim;
+            result = result % QString::number((double)Pupils[SINGLE_IMAGE_TWO_PUPIL_A].width() / Pupils[SINGLE_IMAGE_TWO_PUPIL_A].height()) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].width()) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].height()) % delim;
+            result = result % QString::number((double)Pupils[SINGLE_IMAGE_TWO_PUPIL_B].width() / Pupils[SINGLE_IMAGE_TWO_PUPIL_B].height()) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].center.x) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].center.y) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].center.x) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].center.y) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].angle) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].angle) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].circumference()) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].circumference()) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].confidence) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_A].outline_confidence) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].confidence) % delim;
+            result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].outline_confidence);
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
+                result = result % delim % QString::number(trialNum) % delim;
+                result = result % QString::number(temperatures[0]);
+            }
             // GB TODO: TEMP CHECK!
-            //break;
+            break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
-            return 
-                filename + delim + 
-                QString::number(timestamp) + delim + 
-                QString::fromStdString(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].algorithmName) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].diameter()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].diameter()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].undistortedDiameter) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].undistortedDiameter) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].physicalDiameter) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].width()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].height()) + delim + 
-                QString::number((double)Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].width() / Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].height()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].width()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].height()) + delim + 
-                QString::number((double)Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].width() / Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].height()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].center.x) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].center.y) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].center.x) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].center.y) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].angle) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].angle) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].circumference()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].circumference()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].confidence) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].outline_confidence) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].confidence) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].outline_confidence) + delim + 
-                QString::number(trialNum) + delim +
-                QString::number(temperatures[0]) + delim +
-                QString::number(temperatures[1])
-            ;
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
+                result = result % filename % delim;
+            }
+            result = result % QString::number(timestamp) % delim;
+            result = result % QString::fromStdString(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].algorithmName) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].diameter()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].diameter()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].undistortedDiameter) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].undistortedDiameter) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].physicalDiameter) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].width()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].height()) % delim;
+            result = result % QString::number((double)Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].width() / Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].height()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].width()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].height()) % delim;
+            result = result % QString::number((double)Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].width() / Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].height()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].center.x) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].center.y) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].center.x) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].center.y) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].angle) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].angle) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].circumference()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].circumference()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].confidence) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN].outline_confidence) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].confidence) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].outline_confidence);
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
+                result = result % delim % QString::number(trialNum) % delim;
+                result = result % QString::number(temperatures[0]) % delim;
+                result = result % QString::number(temperatures[1]);
+            }
             // GB TODO: TEMP CHECK!
-            //break;
+            break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            return 
-                filename + delim + 
-                QString::number(timestamp) + delim + 
-                QString::fromStdString(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].algorithmName) + delim + 
-
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].diameter()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].diameter()) + delim + 
-                
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].diameter()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].diameter()) + delim + 
-                
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].undistortedDiameter) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].undistortedDiameter) + delim + 
-                
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].undistortedDiameter) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].undistortedDiameter) + delim + 
-                
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].physicalDiameter) + delim + 
-
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].physicalDiameter) + delim +
-                
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].width()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].height()) + delim + 
-                QString::number((double)Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].width() / Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].height()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].width()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].height()) + delim + 
-                QString::number((double)Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].width() / Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].height()) + delim + 
-
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].width()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].height()) + delim + 
-                QString::number((double)Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].width() / Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].height()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].width()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].height()) + delim + 
-                QString::number((double)Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].width() / Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].height()) + delim + 
-
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].center.x) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].center.y) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].center.x) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].center.y) + delim + 
-
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].center.x) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].center.y) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].center.x) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].center.y) + delim + 
-
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].angle) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].angle) + delim + 
-
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].angle) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].angle) + delim + 
-                
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].circumference()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].circumference()) + delim + 
-                
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].circumference()) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].circumference()) + delim + 
-                
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].confidence) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].outline_confidence) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].confidence) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].outline_confidence) + delim + 
-                
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].confidence) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].outline_confidence) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].confidence) + delim + 
-                QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].outline_confidence) + delim + 
-                
-                QString::number(trialNum) + delim +
-                QString::number(temperatures[0]) + delim +
-                QString::number(temperatures[1])
-            ;
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_1) {
+                result = result % filename % delim;
+            }
+            result = result % QString::number(timestamp) % delim;
+            result = result % QString::fromStdString(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].algorithmName) % delim; //
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].diameter()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].diameter()) % delim; //
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].diameter()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].diameter()) % delim; //
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].undistortedDiameter) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].undistortedDiameter) % delim; //
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].undistortedDiameter) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].undistortedDiameter) % delim; //
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].physicalDiameter) % delim; //
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].physicalDiameter) % delim; //
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].width()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].height()) % delim;
+            result = result % QString::number((double)Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].width() / Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].height()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].width()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].height()) % delim;
+            result = result % QString::number((double)Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].width() / Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].height()) % delim; //
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].width()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].height()) % delim;
+            result = result % QString::number((double)Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].width() / Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].height()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].width()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].height()) % delim;
+            result = result % QString::number((double)Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].width() / Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].height()) % delim; //
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].center.x) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].center.y) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].center.x) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].center.y) % delim; //
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].center.x) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].center.y) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].center.x) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].center.y) % delim; //
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].angle) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].angle) % delim; //
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].angle) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].angle) % delim; //
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].circumference()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].circumference()) % delim; //
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].circumference()) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].circumference()) % delim; //
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].confidence) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN].outline_confidence) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].confidence) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC].outline_confidence) % delim; //
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].confidence) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN].outline_confidence) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].confidence) % delim;
+            result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].outline_confidence); //
+            if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
+                result = result % delim % QString::number(trialNum) % delim;
+                result = result % QString::number(temperatures[0]) % delim;
+                result = result % QString::number(temperatures[1]);
+            }
             // GB TODO: TEMP CHECK
-            //break;
+            break;
         
         // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
         //     return 
@@ -575,9 +563,9 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
         //     //break;
         
         default:
-            return QString(" ");
+            result = QString(" ");
     }
-
+    return result;
 }
 
 

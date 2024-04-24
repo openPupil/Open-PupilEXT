@@ -170,15 +170,20 @@ public:
         return workCopy;
     };
 
-    static QString prepareOutputDirForImageWriter(QString directory, QSettings* applicationSettings, QWidget* parent) {
+    static QString prepareOutputDirForImageWriter(QString directory, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
         QString imageWriterDataRule = applicationSettings->value("imageWriterDataRule", "ask").toString();
 
-        bool changedGiven = false;
+        //bool changedGiven = false;
         QString changedPath;
         bool pathWriteable = SupportFunctions::preparePath(directory, changedGiven, changedPath);
         if(changedGiven) {
-            QMessageBox::warning(parent, "Path name changed",
-                                 "The given path/name contained nonstandard characters,\nwhich were changed automatically for the following: a-z, A-Z, 0-9, _");
+            QMessageBox *msgBox = new QMessageBox(parent);
+            msgBox->setWindowTitle("Path name changed");
+            msgBox->setText("The given path/name contained nonstandard characters,\nwhich were changed automatically for the following: a-z, A-Z, 0-9, _");
+            msgBox->setIcon(QMessageBox::Warning);
+            msgBox->setModal(false);
+            msgBox->show();
+
             directory = changedPath;
         }
 
@@ -228,16 +233,16 @@ public:
         return outputDirectory.absolutePath();
     };
 
-    static QString prepareOutputFileForDataWriter(QString fileName, QSettings* applicationSettings, QWidget* parent) {
+    static QString prepareOutputFileForDataWriter(QString fileName, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
         QString dataWriterDataRule = applicationSettings->value("dataWriterDataRule", "ask").toString();
 
-        bool changedGiven = false;
+        //bool changedGiven = false;
         QString changedPath;
         // TODO: false case and exception handling
         bool pathWriteable = SupportFunctions::preparePath(fileName, changedGiven, changedPath);
         if(changedGiven) {
-            QMessageBox::warning(parent, "Path name changed",
-                                 "The given path/name contained nonstandard characters,\nwhich were changed automatically for the following: a-z, A-Z, 0-9, _");
+        //    QMessageBox::warning(parent, "Path name changed",
+        //                         "The given path/name contained nonstandard characters,\nwhich were changed automatically for the following: a-z, A-Z, 0-9, _");
             fileName = changedPath;
         }
 

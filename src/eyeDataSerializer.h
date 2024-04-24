@@ -18,6 +18,7 @@
 
 #include <QtXml>
 #include "pupilDetection.h"
+#include "dataWriter.h"
 
 #include <QStringBuilder>
 
@@ -31,9 +32,9 @@ class EyeDataSerializer : public QObject {
 
 public:
 
-    static QString getHeaderCSV(int procMode, QChar delim); 
+    static QString getHeaderCSV(int procMode, QChar delim, DataWriterDataStyle dataStyle);
     
-    static QString pupilToRowCSV(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, QChar delim, const std::vector<double> &temperatures); 
+    static QString pupilToRowCSV(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, QChar delim, DataWriterDataStyle dataStyle, const std::vector<double> &temperatures);
     static QString pupilToJSON(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, const std::vector<double> &temperatures);
     static QString pupilToXML(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, const std::vector<double> &temperatures);
     static QString pupilToYAML(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, const std::vector<double> &temperatures);
