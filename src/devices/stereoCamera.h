@@ -13,6 +13,7 @@
 #include <pylon/BaslerUniversalInstantCameraArray.h>
 #include "../frameRateCounter.h"
 #include "stereoCameraImageEventHandler.h"
+#include "cameraConfigurationEventHandler.h"
 #include "../stereoCameraCalibration.h"
 #include "../cameraFrameRateCounter.h"
 
@@ -86,7 +87,7 @@ public:
     double getGainMax();
 
     void attachCameras(const CDeviceInfo &diMain, const CDeviceInfo &diSecondary);
-    void open();
+    void open(bool enableHardwareTrigger);
 
     String_t getLineSource();
 
@@ -125,6 +126,7 @@ private:
     String_t lineSource;
 
     StereoCameraImageEventHandler *cameraImageEventHandler;
+    CameraConfigurationEventHandler *cameraConfigurationEventHandler;
 
     CameraFrameRateCounter *frameCounter;
 
@@ -133,6 +135,7 @@ private:
 
     void synchronizeTime();
     void loadCalibrationFile();
+    void genericExceptionOccured(const GenericException &e);
 
 public slots:
 
@@ -160,6 +163,8 @@ signals:
 
     void fps(double fps);
     void framecount(int framecount);
+    void cameraDeviceRemoved();
+    void imagesSkipped();
 
 };
 

@@ -18,10 +18,14 @@ StereoCameraImageEventHandler::~StereoCameraImageEventHandler() {
 // Event handler that is executed if for any of the two cameras in the stereo camera images were skipped
 // If image skipping happens in one of the two cameras, one may assume that the images are not in sync
 // anymore and the onImageGrabbed event handler may not be able produce any stereo images due to unsync framecount
+// BG: NOTE: According to Basler docs this will only ever get called when grabStrategy is set to LatestImageOnly or LatestImages, which is never the case for us ..(?)
+// https://zh.docs.baslerweb.com/pylonapi/cpp/class_pylon_1_1_c_basler_universal_image_event_handler#function-onimagesskipped
 void StereoCameraImageEventHandler::OnImagesSkipped(CInstantCamera& camera, size_t countOfSkippedImages) {
     std::cout << "OnImagesSkipped event for device " << camera.GetDeviceInfo().GetModelName() << std::endl;
     std::cout << countOfSkippedImages  << " images have been skipped." << std::endl;
     std::cout << std::endl;
+
+    emit imagesSkipped();
 }
 
 // Event handler that is executed for EACH image acquisition of EACH camera
@@ -82,6 +86,13 @@ void StereoCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
         mutex.unlock();
     } else {
         std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription() << std::endl;
+
+        // If there is faulty connection /hw. interface problem
+        if(ptrGrabResult->GetErrorCode() == 3791651083 || // Error code for "The image stream is out of sync."
+           ptrGrabResult->GetErrorCode() == 31 || // Error code for device not functioning
+           QString::fromStdString(ptrGrabResult->GetErrorDescription().c_str()).contains("sync")) {
+            emit imagesSkipped();
+        }
     }
 
 }

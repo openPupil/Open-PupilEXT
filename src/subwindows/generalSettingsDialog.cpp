@@ -359,8 +359,8 @@ void GeneralSettingsDialog::setDataWriterDataRule(const QString &m_dataWriterDat
     dataWriterDataRule = m_dataWriterDataRule;
 }
 
-void GeneralSettingsDialog::setDataWriterDataStyle(const QString &dataWriterDataStyle) {
-    dataWriterDataStyle = dataWriterDataStyle;
+void GeneralSettingsDialog::setDataWriterDataStyle(const QString &m_dataWriterDataStyle) {
+    dataWriterDataStyle = m_dataWriterDataStyle;
 }
 
 // Event handler on the change of the combobox selection in the dialog

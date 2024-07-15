@@ -92,7 +92,7 @@ public slots:
     void setImageWriterFormat(const QString &imageWriterFormat);
     void setImageWriterDataRule(const QString &imageWriterDataRule);
     void setDataWriterDataRule(const QString &dataWriterDataRule);
-    void setDataWriterDataStyle(const QString &dataWriterDataStyle);
+    void setDataWriterDataStyle(const QString &m_dataWriterDataStyle);
     //void setPlaybackLoop(int m_state);
 
     // GB added begin

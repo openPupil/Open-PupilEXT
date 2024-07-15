@@ -14,10 +14,14 @@ SingleCameraImageEventHandler::~SingleCameraImageEventHandler() {
 }
 
 // Event handler when images are skipped by the camera
+// BG: NOTE: According to Basler docs this will only ever get called when grabStrategy is set to LatestImageOnly or LatestImages, which is never the case for us ..(?)
+// https://zh.docs.baslerweb.com/pylonapi/cpp/class_pylon_1_1_c_basler_universal_image_event_handler#function-onimagesskipped
 void SingleCameraImageEventHandler::OnImagesSkipped(CInstantCamera& camera, size_t countOfSkippedImages) {
     std::cout << "OnImagesSkipped event for device " << camera.GetDeviceInfo().GetModelName() << std::endl;
     std::cout << countOfSkippedImages  << " images have been skipped." << std::endl;
     std::cout << std::endl;
+
+    emit imagesSkipped();
 }
 
 // Event handler when a new image was grabbed from the camera
@@ -57,6 +61,15 @@ void SingleCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
         emit onNewGrabResult(result);
     } else {
         std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription() << std::endl;
+
+        std::cout << " second try " << ptrGrabResult->GetErrorDescription() << std::endl;
+
+        // If there is faulty connection /hw. interface problem
+        if(ptrGrabResult->GetErrorCode() == 3791651083 || // Error code for "The image stream is out of sync."
+            ptrGrabResult->GetErrorCode() == 31 || // Error code for device not functioning
+            QString::fromStdString(ptrGrabResult->GetErrorDescription().c_str()).contains("sync")) {
+            emit imagesSkipped();
+        }
     }
 }
 

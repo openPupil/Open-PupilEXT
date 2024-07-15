@@ -11,6 +11,7 @@
 #include <pylon/PylonImage.h>
 #include <pylon/ImageEventHandler.h>
 #include <pylon/PylonIncludes.h>
+#include <QDateTime>
 #include "camera.h"
 
 using namespace Pylon;
@@ -47,6 +48,7 @@ private:
 signals:
 
     void onNewGrabResult(CameraImage grabResult);
+    void imagesSkipped();
 
 };
 

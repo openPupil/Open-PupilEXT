@@ -208,6 +208,8 @@ private:
 
     PlaybackSynchroniser *playbackSynchroniser;
 
+    QMessageBox *imagesSkippedMsgBox = nullptr;
+
 
     void loadCalibrationWindow();
     void loadSharpnessWindow();
@@ -304,6 +306,9 @@ private slots:
     void onStreamingUDPDisconnect();
     void onStreamingCOMConnect();
     void onStreamingCOMDisconnect();
+
+    void onImagesSkipped();
+    void onImagesSkippedMsgClose();
     // GB added end
 
 public slots:
@@ -347,6 +352,8 @@ public slots:
     void onCameraFreezePressed();
 
     void onCameraPlaybackChanged();
+
+    void onCameraUnexpectedlyDisconnected();
     // GB added end
 
 signals:

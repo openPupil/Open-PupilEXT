@@ -57,6 +57,7 @@ private:
 signals:
 
     void onNewGrabResult(CameraImage grabResult);
+    void imagesSkipped();
 
 };
 

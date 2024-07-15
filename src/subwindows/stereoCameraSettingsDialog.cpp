@@ -575,8 +575,14 @@ void StereoCameraSettingsDialog::onOpen() {
 
         // BG: moved widget group disabling from here
 
+        bool enableHardwareTrigger = true;
+        // For debug/testing purposes only
+        if(QString::fromStdString(lstDevices[mainCameraIndex].GetFriendlyName().c_str()).contains("emulat", Qt::CaseInsensitive) ||
+                QString::fromStdString(lstDevices[secondaryCameraIndex].GetFriendlyName().c_str()).contains("emulat", Qt::CaseInsensitive)) {
+            enableHardwareTrigger = false;
+        }
         // Its important to open the camera here not earlier, as loading config overrides the config in open
-        camera->open();
+        camera->open(enableHardwareTrigger);
 
         loadSettings();
 
