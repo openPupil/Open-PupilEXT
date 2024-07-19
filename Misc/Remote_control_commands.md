@@ -3,12 +3,14 @@
 
 Remote-controlling the pupil-tracker computer that is running PupilEXT from the display computer that is running a PsychoPy or Matlab script presenting stimuli.
 
+The easiest is to use our sample codes (see folders under "Misc/PupilEXT Experiment Integration"), though if you would like to understand the background of their workings or you encounter difficultied, you can continue reading below for further details.
+
 ---
 ---
 
 ### Purpose and method of operation
 
-PupilEXT is suggested to run separately from the experiment computer (called "display computer" from now on) on another computer that is free from any other resource-needy task during operation (called "host computer" from now on). this way, on the one hand, PupilEXT can utilize its own hardware resources unbothered by the experiment program. On the other hand, PupilEXT will not slow down the display computer that is expected to present any kind of stimuli with high temporal precision.
+PupilEXT is suggested to run separately from the experiment computer (called "display computer" from now on) on another computer that is free from any other resource-needy task during operation (called "host computer" from now on). This way, on the one hand, PupilEXT can utilize its own hardware resources unbothered by the experiment program. On the other hand, PupilEXT will not slow down the display computer that is expected to present any kind of stimuli with high temporal precision.
 
 To this end, PupilEXT is equipped with two interfaces, which can be "listened to" for remote control commands, allowing the display computer to communicate with PupilEXT and instrument it via UDP messages or using a COM/serial port. 
 
@@ -22,10 +24,10 @@ Even extraordinary cases can be handled e.g. when PupilEXT is instructed by a UD
 
 User Datagram Protocol (abbreviated UDP) is a transport layer network communication protocol. It is widespread among measurement devices i.e. eye-tracker setups for sending textual commands from the display computer to control the host computer e.g. to start or stop recording or to "send trigger signals" to increment trial numbering. It is realized through network adapters of the communicating computers, thus the commands can travel through an ethernet cable or even WiFi, from computer to computer directly, within a local network (LAN) or even over the internet. In experimental setups however, typically the former are used. 
 
-A port needs to be opened on the receiver side which is "listened to" for our textual commands to control PupilEXT. Sender computer needs to specify the target IP address and port to send to (e.g. "192.168.40.1" and "6900" respectively). On the host computer, PupilEXT listens to any message received on the specified port, but importantly, these messages containing the commands are further filtered using an IP address that you specify: 
-- The IP address should be set to equal the address that was previously set on the other computer (the display computer). E.g. "192.168.40.2"
-- If the IP address for listening is set to "0.0.0.0", any message will be received that was sent from any computer connected to the host (also including the host computer itself). This is the best option if nothing else is working, or you are debugging.
-- If the IP is "127.0.0.1" (which IP is conventionally called "localhost" elsewhere) then only those commands will be received that were sent from the host computer itself. This option is rather for special use cases or debugging, when the host and display computer are deliberately the same.
+A port needs to be opened on the receiver side which is "listened to" for our textual commands to control PupilEXT. Sender computer needs to specify the target IP address and port to send to (e.g. "192.168.40.1" and "6900" respectively). On the host computer, PupilEXT listens to any message received on the specified port, but importantly, these messages containing the commands are further filtered using an IP address that you specify. On the host computer running PupilEXT, there are several options for this filter:
+- 1, It can be limited to one certain IP address. To achieve this, the IP address in PupilEXT should be set to equal the address that was previously set on the other computer (the display computer). E.g. "192.168.40.2"
+- 2, If the IP address for listening is set to "0.0.0.0", any message will be received that was sent from any computer connected to the host (also including the host computer itself). This is the best option if nothing else is working, or you are debugging.
+- 3, If the IP is "127.0.0.1" (which IP is conventionally called "localhost" elsewhere) then only those commands will be received that were sent from the host computer itself. This option is rather for special use cases or debugging, when the host and display computer are deliberately the same.
 
 Commands sent using UDP can only be received if there is PupilEXT listening on the receiver side. To achieve this, you probably need to disable firewall, or add PupilEXT as an exception that can communicate through UDP protocol anytime, and/or run PupilEXT with administrator privileges. 
 
@@ -38,9 +40,9 @@ After you ensured that connection is possible between the computers, you should 
 - If you can start listening, but the commands do not arrive to PupilEXT, it is possible that 
     - you specified a different port to listen to than the one you use for sending the commands, or 
     - the network adapters were not correctly set up on both computers, or that 
-    - the display computer does not succeed in sending the message for various reasons. 
+    - the display computer does not succeed in sending the message for various reasons (firewall, no admin rights of PupilEXT, etc).
 
-To test sending and receiving UDP messages, you can try a free program called PacketSender.
+To test sending and receiving UDP messages, you can try a free program, e.g. PacketSender (https://packetsender.com/).
 
 Communication using UDP usually provides ample temporal precision, meaning that the sent command should arrive within 4-5 milliseconds.
 
@@ -54,19 +56,23 @@ Listening to localhost is also possible, for prototyping or other use cases invo
 
 COM ports provide excellent temporal precision, as the messages sent can surely arrive within one millisecond.
 
-In case your computer does not have a COM port by default, you can use any "USB to COM port adapter" which will create an emulated COM port on your computer. These adapters will work with PupilEXT, as they are also seen by the program as a regular built-in COM ports. Though USB-emulated COM ports can exhibit worse temporal fidelity than their built-in version, as their speed also depends on the USB adapter of the computer, which acts as a bottleneck.
+In case your computer does not have a COM port by default, you can use any "USB to COM port adapter" which will create an emulated COM port on your computer. These adapters will work with PupilEXT, as they are also seen by the program as a regular built-in COM ports. However, USB-emulated COM ports might exhibit worse temporal fidelity than their built-in version, as their speed also depends on the USB adapter of the computer, which acts as a bottleneck.
 
 ---
 
 ### List of Remote Control Commands:
 
+Important: The "smaller than" and "less than" signs (i.e. "<>") below are for designating the borders of placeholders, and should not be included in the actual remote control commands sent to PupilEXT.
+
 `T` - Increment trial numbering.
+
+`M <message>` - Send textual message, to be saved along with the image recording as timestamped annotation, just like trial numbering increment triggers.
 
 `A1 <camera>` - Open a single camera. Friendly name of the device should be provided. A friendly name means the name that is displayed to you in Pylon Viewer of your Basler camera, e.g. "Basler a2A1920-160umBAS (12345678)" where the number in parentheses is the serial number of your camera device.
 
 `A2 <camera>;<camera>` - Open a stereo camera. Friendly names of the devices should be provided, separated by either "," or "|" or ";" characters.
 
-`AW: <camera>` - Open a single OpenCV camera device ("webcam"). Device ID should be provided, which is an integer, enumerating devices starting from 0.
+`AW <camera>` - Open a single OpenCV camera device ("webcam"). Device ID should be provided, which is an integer, enumerating devices starting from 0.
 
 `AT` - Start pupil tracking. A camera needs to be opened beforehand.
 
@@ -103,15 +109,15 @@ In case your computer does not have a COM port by default, you can use any "USB 
 
 `PO <state>` - Compute Additional Outline Confidence. Either "true" or "false".
 
-`PRC udp;<IP>;<port>` - Establish connection (start listening) for remote control using a UDP port.
+`CRC udp;<IP>;<port>` - Establish connection (start listening) for remote control using a UDP port.
 
-`PRC com;<port>;<baud>` - Establish connection (start listening) for remote control using a COM/serial port.
+`CRC com;<port>;<baud>` - Establish connection (start listening) for remote control using a COM/serial port.
 
-`PRD <interface>` - Disconnect (stop listening) for remote control. Interface type should be provided: "udp" or "com".
+`CRD <interface>` - Disconnect (stop listening) for remote control. Interface type should be provided: "udp" or "com".
 
-`PSC udp;<IP>;<port>` - Establish connection for pupil data streaming target using a UDP port.
+`CSC udp;<IP>;<port>` - Establish connection for pupil data streaming target using a UDP port.
 
-`PSC com;<port>;<baud>` - Establish connection for pupil data streaming target using a COM/serial port.
+`CSC com;<port>;<baud>` - Establish connection for pupil data streaming target using a COM/serial port.
 
-`PSD <interface>` - Disconnect streaming target. Interface type should be provided: "udp" or "com".
+`CSD <interface>` - Disconnect streaming target. Interface type should be provided: "udp" or "com".
 
