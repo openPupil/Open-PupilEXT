@@ -117,8 +117,10 @@ public:
     }
     // GB added end
 
-    int getImageROIwidth() override; 
-    int getImageROIheight() override; 
+    int getImageROIwidth() override;
+    int getImageROIheight() override;
+    int getImageROIwidthMax() override;
+    int getImageROIheightMax() override;
     int getImageROIoffsetX() override; 
     int getImageROIoffsetY() override;
     QRectF getImageROI() override;

@@ -57,8 +57,10 @@ public:
     virtual void close() = 0;
     virtual CameraImageType getType() = 0;
 
-    virtual int getImageROIwidth() = 0; 
-    virtual int getImageROIheight() = 0; 
+    virtual int getImageROIwidth() = 0;
+    virtual int getImageROIheight() = 0;
+    virtual int getImageROIwidthMax() = 0;
+    virtual int getImageROIheightMax() = 0;
     virtual int getImageROIoffsetX() = 0; 
     virtual int getImageROIoffsetY() = 0;  
     virtual QRectF getImageROI() = 0;

@@ -99,8 +99,10 @@ public:
     void startGrabbing() override;
     void stopGrabbing() override;
 
-    int getImageROIwidth() override; 
-    int getImageROIheight() override; 
+    int getImageROIwidth() override;
+    int getImageROIheight() override;
+    int getImageROIwidthMax() override;
+    int getImageROIheightMax() override;
     int getImageROIoffsetX() override; 
     int getImageROIoffsetY() override;
     QRectF getImageROI() override;

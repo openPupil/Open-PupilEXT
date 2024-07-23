@@ -635,10 +635,18 @@ void SingleCameraSettingsDialog::updateImageROISettingsMax() {
 }
 
 void SingleCameraSettingsDialog::updateImageROISettingsValues() {
-    imageROIwidthInputBox->setValue(singleCamera->getImageROIwidth());
-    imageROIheightInputBox->setValue(singleCamera->getImageROIheight());
-    imageROIoffsetXInputBox->setValue(singleCamera->getImageROIoffsetX());
-    imageROIoffsetYInputBox->setValue(singleCamera->getImageROIoffsetY());
+
+    int width = singleCamera->getImageROIwidth();
+    int height = singleCamera->getImageROIheight();
+    int offsetX = singleCamera->getImageROIoffsetX();
+    int offsetY = singleCamera->getImageROIoffsetY();
+
+    imageROIwidthInputBox->setValue(width);
+    imageROIheightInputBox->setValue(height);
+    imageROIoffsetXInputBox->setValue(offsetX);
+    imageROIoffsetYInputBox->setValue(offsetY);
+
+    emit onImageROIChanged(QRect(offsetX, offsetY, width, height));
 }
 
 void SingleCameraSettingsDialog::onBinningModeChange(int index) {
@@ -672,6 +680,13 @@ void SingleCameraSettingsDialog::onBinningModeChange(int index) {
     lastUsedBinningVal = binningVal;
     updateCamImageRegionsWidget();
     updateFrameRateValue(); // only update when camera has updated too
+
+    // Change: okay, we tell the cameraview, but only for properly letting it know where the positioning guide should be drawn
+    updateSensorSize();
+}
+
+void SingleCameraSettingsDialog::updateSensorSize() {
+    emit onSensorSizeChanged(QSize(singleCamera->getImageROIwidthMax(), singleCamera->getImageROIheightMax()));
 }
 
 void SingleCameraSettingsDialog::updateCamImageRegionsWidget() {

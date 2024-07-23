@@ -102,6 +102,9 @@ private:
 
     QAction *showAutoParamAct;
     bool showAutoParamOverlay;
+
+    QAction *showPositioningGuideAct;
+    bool showPositioningGuide;
     
     QRectF tempROIRect1;
     QRectF tempROIRect2;
@@ -157,6 +160,9 @@ public slots:
     void onPupilColorFillThresholdChanged(double value);
 
     void onShowAutoParamOverlay(bool state);
+    void onShowPositioningGuide(bool state);
+    void onImageROIChanged(const QRect& ROI);
+    void onSensorSizeChanged(const QSize& size);
     void onAutoParamPupSize(int value);
 
     void onFreezeClicked();
@@ -170,6 +176,7 @@ signals:
     void onChangePupilColorFill(int colorFill);
     void onChangePupilColorFillThreshold(float value);
     void onChangeShowAutoParamOverlay(bool state);
+    void onChangeShowPositioningGuide(bool state);
     void cameraPlaybackChanged();
     // GB end
 

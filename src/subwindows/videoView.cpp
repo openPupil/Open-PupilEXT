@@ -160,6 +160,7 @@ void VideoView::clearProcessedOverlayMemory() {
 
 void VideoView::drawOverlay() {
 
+    drawPositioningGuide();
     drawAutoParamOverlay();
 
     if(tROIs.size()>=1)
@@ -198,6 +199,11 @@ void VideoView::onChangeShowAutoParamOverlay(bool state) {
     drawOverlay();
 }
 
+void VideoView::onChangeShowPositioningGuide(bool state) {
+    showPositioningGuide = state;
+    drawOverlay();
+}
+
 void VideoView::onChangePupilDetectionUsingROI(bool state) {
     pupilDetectionUsingROI = state;
     drawOverlay();
@@ -222,12 +228,84 @@ void VideoView::updateViewProcessed(const cv::Mat &img, const std::vector<cv::Re
     updateViewInternal(img);
 }
 
+void VideoView::setImageROI(const QRect& ROI) {
+    // image ROI width and height is redundant, as it is already contained in the last known (received) actual
+    // image width and height values.. but we keep them to use as safety checks.. is they do not match,
+    // we have some GUI thread lag and we should not draw the positioning guide
+    imageROI = ROI;
+}
+
+void VideoView::setSensorSize(const QSize& size) {
+    // we need this to calculate the center of the sensor (map it) on the images for showin the positioning guide
+    sensorSize = size;
+}
+
+void VideoView::drawPositioningGuide() {
+
+    // to prevent memory leaks and lagging GUI
+    for(std::size_t c=0; c<geBufferPG.size(); c++) {
+        graphicsScene->removeItem(geBufferPG[c]);
+        delete geBufferPG[c];
+    }
+    if(geBufferPG.size()>0)
+        geBufferPG.clear();
+
+    if(!showPositioningGuide ||
+       sensorSize.isNull() || !sensorSize.isValid() || sensorSize.isEmpty() ||
+       imageROI.isNull() || !imageROI.isValid() || imageROI.isEmpty() ||
+       imageSize.width<=0 || imageSize.height<=0 ||
+       imageSize.width!=imageROI.width() || imageSize.height!=imageROI.height()) {
+
+        return;
+    }
+
+    float lineWidth = (float)imageSize.width / (float)graphicsView->width();
+    penPositioningGuide.setWidthF(lineWidth);
+
+    // truncation occurs due to operations done in integer type, but this precision is enough here
+    int centerMappedX = sensorSize.width()/2-imageROI.x();
+    int centerMappedY = sensorSize.height()/2-imageROI.y();
+
+    int circleRadius;
+
+    circleRadius = sensorSize.width()/3.5;
+    geBufferPG.push_back( graphicsScene->addEllipse(QRect(centerMappedX-circleRadius, centerMappedY-circleRadius, circleRadius*2, circleRadius*2), penPositioningGuide) );
+
+    circleRadius = sensorSize.width()/7.5;
+    geBufferPG.push_back( graphicsScene->addEllipse(QRect(centerMappedX-circleRadius, centerMappedY-circleRadius, circleRadius*2, circleRadius*2), penPositioningGuide) );
+
+    geBufferPG.push_back( graphicsScene->addLine(0-imageROI.x(), 0-imageROI.y(),sensorSize.width()-imageROI.x(), sensorSize.height()-imageROI.y(), penPositioningGuide) );
+    geBufferPG.push_back( graphicsScene->addLine(0-imageROI.x(), sensorSize.height()-imageROI.y(), sensorSize.width()-imageROI.x(), 0-imageROI.y(), penPositioningGuide) );
+    geBufferPG.push_back( graphicsScene->addLine(sensorSize.width()/2-imageROI.x(), 0-imageROI.y(), sensorSize.width()/2-imageROI.x(), sensorSize.height()-imageROI.y(), penPositioningGuide) );
+    geBufferPG.push_back( graphicsScene->addLine(0-imageROI.x(), sensorSize.height()/2-imageROI.y(), sensorSize.width()-imageROI.x(), sensorSize.height()/2-imageROI.y(), penPositioningGuide) );
+
+    geBufferPG.push_back( graphicsScene->addLine(0-imageROI.x(), 0-imageROI.y(),sensorSize.width()-imageROI.x(), 0-imageROI.y(), penPositioningGuide) );
+    geBufferPG.push_back( graphicsScene->addLine(0-imageROI.x(), 0-imageROI.y(), 0-imageROI.x(), sensorSize.height()-imageROI.y(), penPositioningGuide) );
+    geBufferPG.push_back( graphicsScene->addLine(sensorSize.width()-imageROI.x(), 0-imageROI.y(), sensorSize.width()-imageROI.x(), sensorSize.height()-imageROI.y(), penPositioningGuide) );
+    geBufferPG.push_back( graphicsScene->addLine(0-imageROI.x(), sensorSize.height()-imageROI.y(), sensorSize.width()-imageROI.x(), sensorSize.height()-imageROI.y(), penPositioningGuide) );
+
+    for(std::size_t c=0; c<geBufferPG.size(); c++) {
+        geBufferPG[c]->setZValue(90);
+    }
+}
+
 void VideoView::drawAutoParamOverlay() {
 
-    float lineWidth = 0;
-    // set about 1 pixel thickness
-    if(imageSize.width>0)
-        lineWidth = (float)imageSize.width / (float)graphicsView->width();
+    // to prevent memory leaks and lagging GUI
+    for(std::size_t c=0; c<geBufferAP.size(); c++) {
+        graphicsScene->removeItem(geBufferAP[c]);
+        delete geBufferAP[c];
+    }
+    if(geBufferAP.size()>0)
+        geBufferAP.clear();
+
+    if(!showAutoParamOverlay || !showROI ||
+        imageSize.width<=0 || imageSize.height<=0) {
+
+        return;
+    }
+
+    float lineWidth = (float)imageSize.width / (float)graphicsView->width();
     //qDebug() << "graphicsView->width()" << graphicsView->width();
     //qDebug() << "imageSize.width" << imageSize.width;
     //qDebug() << "graphicsScene->width()" << graphicsScene->width();
@@ -235,16 +313,6 @@ void VideoView::drawAutoParamOverlay() {
     //qDebug() << "lineWidth" << lineWidth;
     penAutoParamAccent.setWidthF(lineWidth);
     penAutoParamBack.setWidthF(lineWidth);
-
-    // to prevent memory leaks and lagging GUI
-    for(std::size_t c=0; c<geBufferAP.size(); c++) {
-        graphicsScene->removeItem(geBufferAP[c]);
-        delete geBufferAP[c];
-    }
-    geBufferAP.clear();
-
-    if(!showAutoParamOverlay || !showROI)
-        return;
 
     //QRectF roi1;
 //    if(graphicsScene->items().contains(roi1Selection))
@@ -269,39 +337,49 @@ void VideoView::drawAutoParamOverlay() {
     ppointer1->setZValue(98);
     //graphicsScene->addItem(ppointer1);
     geBufferAP.push_back(ppointer1);
-    if(usingDoubleROI) {
 
-        //QRectF roi2;
-//        if(graphicsScene->items().contains(roi2Selection))
-//            roi2 = roi2Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
-//        else 
-//            roi2 = roi2Selection->getRect();
-        QRectF roi2R;
-        if(pupilDetectionUsingROI)
-            roi2R = roi2SelectionRectLastR; 
-        else
-            roi2R = QRectF(0,0,1,1); 
-        QRectF roi2D = QRectF(roi2R.x()*imageSize.width, roi2R.y()*imageSize.height, roi2R.width()*imageSize.width, roi2R.height()*imageSize.height);
-
-        float pxDiaInner2 = minDim1/100*(float)autoParamPupSizePercent *0.15f;
-        float pxDiaOuter2 = minDim1/100*(float)autoParamPupSizePercent;
-        QPainterPath pp2;
-        pp2.addEllipse(roi2D.x()+(roi2D.width()/2)-pxDiaOuter2/2, roi2D.y()+(roi2D.height()/2)-pxDiaOuter2/2, pxDiaOuter2, pxDiaOuter2);
-        pp2.addEllipse(roi2D.x()+(roi2D.width()/2)-pxDiaInner2/2, roi2D.y()+(roi2D.height()/2)-pxDiaInner2/2, pxDiaInner2, pxDiaInner2);
-        QGraphicsItem *ppointer2 = graphicsScene->addPath(pp2, penAutoParamAccent, QBrush(QColor(10,255,10,90)));
-        ppointer2->setZValue(98);
-        //graphicsScene->addItem(ppointer1);
-        geBufferAP.push_back(ppointer2);
+    if(!usingDoubleROI) {
+        return;
     }
-    
+
+    //QRectF roi2;
+//    if(graphicsScene->items().contains(roi2Selection))
+//        roi2 = roi2Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
+//    else
+//        roi2 = roi2Selection->getRect();
+    QRectF roi2R;
+    if(pupilDetectionUsingROI)
+        roi2R = roi2SelectionRectLastR;
+    else
+        roi2R = QRectF(0,0,1,1);
+    QRectF roi2D = QRectF(roi2R.x()*imageSize.width, roi2R.y()*imageSize.height, roi2R.width()*imageSize.width, roi2R.height()*imageSize.height);
+
+    float pxDiaInner2 = minDim1/100*(float)autoParamPupSizePercent *0.15f;
+    float pxDiaOuter2 = minDim1/100*(float)autoParamPupSizePercent;
+    QPainterPath pp2;
+    pp2.addEllipse(roi2D.x()+(roi2D.width()/2)-pxDiaOuter2/2, roi2D.y()+(roi2D.height()/2)-pxDiaOuter2/2, pxDiaOuter2, pxDiaOuter2);
+    pp2.addEllipse(roi2D.x()+(roi2D.width()/2)-pxDiaInner2/2, roi2D.y()+(roi2D.height()/2)-pxDiaInner2/2, pxDiaInner2, pxDiaInner2);
+    QGraphicsItem *ppointer2 = graphicsScene->addPath(pp2, penAutoParamAccent, QBrush(QColor(10,255,10,90)));
+    ppointer2->setZValue(98);
+    //graphicsScene->addItem(ppointer1);
+    geBufferAP.push_back(ppointer2);
 }
 
 void VideoView::drawUnprocessedOverlay() {
 
-    float lineWidth = 0;
-    // set about 1 pixel thickness
-    if(imageSize.width>0)
-        lineWidth = (float)imageSize.width / (float)graphicsView->width();
+    // to prevent memory leaks and lagging GUI
+    for(std::size_t c=0; c<geBufferROI.size(); c++) {
+        graphicsScene->removeItem(geBufferROI[c]);
+        delete geBufferROI[c];
+    }
+    if(geBufferROI.size()>0)
+        geBufferROI.clear();
+
+    if(!showROI || imageSize.width<=0 || imageSize.height<=0) {
+        return;
+    }
+
+    float lineWidth = (float)imageSize.width / (float)graphicsView->width();
     //qDebug() << "graphicsView->width()" << graphicsView->width();
     //qDebug() << "imageSize.width" << imageSize.width;
     //qDebug() << "graphicsScene->width()" << graphicsScene->width();
@@ -310,60 +388,59 @@ void VideoView::drawUnprocessedOverlay() {
     penROIunprocessed1.setWidthF(lineWidth);
     penROIunprocessed2.setWidthF(lineWidth);
 
-    // to prevent memory leaks and lagging GUI
-    for(std::size_t c=0; c<geBufferROI.size(); c++) {
-        graphicsScene->removeItem(geBufferROI[c]);
-        delete geBufferROI[c];
+    //qDebug() << "roi1Selection->rect() = " << roi1Selection->rect();
+    //qDebug() << "roi1Selection->getRect() = " << roi1Selection->getRect();
+    //qDebug() << "roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5) = " << roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
+
+    QRectF roi1R;
+//    if(graphicsScene->items().contains(roi1Selection))
+//        roi1 = roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
+//    else
+//        roi1 = roi1Selection->getRect();
+    roi1R = roi1SelectionRectLastR;
+
+    QGraphicsRectItem *ROIrect1 = new QGraphicsRectItem(roi1R.x()*imageSize.width, roi1R.y()*imageSize.height, roi1R.width()*imageSize.width, roi1R.height()*imageSize.height);
+    ROIrect1->setPen(penROIunprocessed1);
+    ROIrect1->setZValue(90);
+
+    graphicsScene->addItem(ROIrect1);
+    geBufferROI.push_back(ROIrect1);
+
+    if(!usingDoubleROI) {
+        return;
     }
-    geBufferROI.clear();
 
-    if(showROI) {
-        //qDebug() << "roi1Selection->rect() = " << roi1Selection->rect();
-        //qDebug() << "roi1Selection->getRect() = " << roi1Selection->getRect();
-        //qDebug() << "roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5) = " << roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
-        
-        
-        QRectF roi1R;
-//        if(graphicsScene->items().contains(roi1Selection))
-//            roi1 = roi1Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
-//        else 
-//            roi1 = roi1Selection->getRect();
-        roi1R = roi1SelectionRectLastR;
+    QRectF roi2R;
+//    if(graphicsScene->items().contains(roi2Selection))
+//        roi2 = roi2Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
+//    else
+//        roi2 = roi2Selection->getRect();
+    roi2R = roi2SelectionRectLastR;
 
+    QGraphicsRectItem *ROIrect2 = new QGraphicsRectItem(roi2R.x()*imageSize.width, roi2R.y()*imageSize.height, roi2R.width()*imageSize.width, roi2R.height()*imageSize.height);
+    ROIrect2->setPen(penROIunprocessed2);
+    ROIrect2->setZValue(90);
 
-        QGraphicsRectItem *ROIrect1 = new QGraphicsRectItem(roi1R.x()*imageSize.width, roi1R.y()*imageSize.height, roi1R.width()*imageSize.width, roi1R.height()*imageSize.height);
-        ROIrect1->setPen(penROIunprocessed1);
-        ROIrect1->setZValue(90);
-
-        graphicsScene->addItem(ROIrect1);
-        geBufferROI.push_back(ROIrect1);
-        if(usingDoubleROI) {
-
-            QRectF roi2R;
-    //        if(graphicsScene->items().contains(roi2Selection))
-    //            roi2 = roi2Selection->sceneBoundingRect() - QMarginsF(0.5,0.5,0.5,0.5);
-    //        else 
-    //            roi2 = roi2Selection->getRect();
-            roi2R = roi2SelectionRectLastR; 
-
-            QGraphicsRectItem *ROIrect2 = new QGraphicsRectItem(roi2R.x()*imageSize.width, roi2R.y()*imageSize.height, roi2R.width()*imageSize.width, roi2R.height()*imageSize.height);
-            ROIrect2->setPen(penROIunprocessed2);
-            ROIrect2->setZValue(90);
-
-            graphicsScene->addItem(ROIrect2);
-            geBufferROI.push_back(ROIrect2);
-        }
-    }
+    graphicsScene->addItem(ROIrect2);
+    geBufferROI.push_back(ROIrect2);
 }
 
 void VideoView::drawProcessedOverlay() {
 
     // GB NOTE: all ROIs that arrive from pupilDetection are yet in DISCRETE px dimensions, not 0-1 floats
 
-    float lineWidth = 0;
-    // set about 1 pixel thickness
-    if(imageSize.width>0)
-        lineWidth = (float)imageSize.width / (float)graphicsView->width();
+    // to prevent memory leaks and lagging GUI
+    for(std::size_t c=0; c<geBufferROI.size(); c++) {
+        graphicsScene->removeItem(geBufferROI[c]);
+        delete geBufferROI[c];
+    }
+    if(geBufferROI.size()>0)
+        geBufferROI.clear();
+
+    if(imageSize.width<=0 || imageSize.height<=0)
+        return;
+
+    float lineWidth = (float)imageSize.width / (float)graphicsView->width();
     //qDebug() << "graphicsView->width()" << graphicsView->width();
     //qDebug() << "imageSize.width" << imageSize.width;
     //qDebug() << "graphicsScene->width()" << graphicsScene->width();
@@ -372,13 +449,6 @@ void VideoView::drawProcessedOverlay() {
     penROIprocessed.setWidthF(lineWidth);
     penPupilOutline.setWidthF(lineWidth);
     penPupilCenter.setWidthF(lineWidth);
-
-    // to prevent memory leaks and lagging GUI
-    for(std::size_t c=0; c<geBufferROI.size(); c++) {
-        graphicsScene->removeItem(geBufferROI[c]);
-        delete geBufferROI[c];
-    }
-    geBufferROI.clear();
 
     for(std::size_t z=0; z<tPupils.size(); z++) {
         if(showROI) {

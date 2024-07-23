@@ -406,6 +406,11 @@ void StereoCameraSettingsDialog::updateDevicesBox() {
         mainCameraBox->setDisabled(true);
         secondaryCameraBox->setDisabled(true);
     }
+
+    if(lstDevices.size()>1) {
+        //mainCameraBox->setCurrentIndex(0);
+        secondaryCameraBox->setCurrentIndex(1);
+    }
 }
 
 void StereoCameraSettingsDialog::updateForms() {
@@ -778,10 +783,18 @@ void StereoCameraSettingsDialog::updateImageROISettingsMax() {
 }
 
 void StereoCameraSettingsDialog::updateImageROISettingsValues() {
-    imageROIwidthInputBox->setValue(camera->getImageROIwidth());
-    imageROIheightInputBox->setValue(camera->getImageROIheight());
-    imageROIoffsetXInputBox->setValue(camera->getImageROIoffsetX());
-    imageROIoffsetYInputBox->setValue(camera->getImageROIoffsetY());
+
+    int width = camera->getImageROIwidth();
+    int height = camera->getImageROIheight();
+    int offsetX = camera->getImageROIoffsetX();
+    int offsetY = camera->getImageROIoffsetY();
+
+    imageROIwidthInputBox->setValue(width);
+    imageROIheightInputBox->setValue(height);
+    imageROIoffsetXInputBox->setValue(offsetX);
+    imageROIoffsetYInputBox->setValue(offsetY);
+
+    emit onImageROIChanged(QRect(offsetX, offsetY, width, height));
 }
 
 void StereoCameraSettingsDialog::onBinningModeChange(int index) {
@@ -815,6 +828,13 @@ void StereoCameraSettingsDialog::onBinningModeChange(int index) {
     lastUsedBinningVal = binningVal;
     updateCamImageRegionsWidget();
     updateFrameRateValue(); // only update when camera has updated too
+
+    // Change: okay, we tell the cameraview, but only for properly letting it know where the positioning guide should be drawn
+    updateSensorSize();
+}
+
+void StereoCameraSettingsDialog::updateSensorSize() {
+    emit onSensorSizeChanged(QSize(camera->getImageROIwidthMax(), camera->getImageROIheightMax()));
 }
 
 void StereoCameraSettingsDialog::updateCamImageRegionsWidget() {

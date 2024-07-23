@@ -39,7 +39,8 @@ public:
     QString getDataWriterDataRule() const;
     QString getDataWriterDataStyle() const;
     bool getMetaSnapshotsEnabled() const;
-    bool getSaveOfflineEventLog() const; 
+    bool getSaveOfflineEventLog() const;
+    bool getAlwaysOnTop() const;
     // GB added end
 
 private:
@@ -61,7 +62,8 @@ private:
 
     // GB added begin
     bool metaSnapshotsEnabled;
-    bool saveOfflineEventLog; 
+    bool saveOfflineEventLog;
+    bool alwaysOnTop;
 
     QString dataWriterDelimiter;
     QString dataWriterDataStyle;
@@ -74,6 +76,7 @@ private:
     QComboBox *darkAdaptBox;
     QCheckBox *metaSnapshotBox;
     QCheckBox *saveOfflineEventLogBox;
+    QCheckBox *alwaysOnTopBox;
     // GB added end
 
     void createForm();
@@ -102,6 +105,7 @@ public slots:
     void onDarkAdaptChange(int index);
     void setMetaSnapshotEnabled(int m_state);
     void setSaveOfflineEventLog(int m_state);
+    void setAlwaysOnTop(int m_state);
 
     void setLimitationsWhileImageWriting(bool state);
     void setLimitationsWhileDataWriting(bool state);

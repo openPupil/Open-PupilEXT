@@ -43,5 +43,18 @@
 
         <file>icons/media-record-green.svg</file>
 
+        <file>icons/Breeze/mimetypes/16/application-x-sharedlib.svg</file>
+        <file>icons/Breeze/actions/22/draw-circle.svg</file>
+        <file>icons/Breeze/actions/22/refactor.svg</file>
+        <file>icons/rs232.svg</file>
+        <file>icons/computer-connection.svg</file>
+        <file>icons/equals1b.svg</file>
+        <file>icons/plus1b.svg</file>
+        <file>icons/camera-video-stereo.svg</file>
+
+        <file>icons/Breeze/actions/22/composite-track-preview.svg</file>
+        <file>icons/Breeze/actions/16/highlight-pointer-spot.svg</file>
+        <file>icons/Breeze/actions/22/adjustlevels.svg</file>
+
     </qresource>
 </RCC>

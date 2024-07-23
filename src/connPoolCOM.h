@@ -72,7 +72,34 @@ class ConnPoolCOMInstance : public QObject {
             quint64 timestamp  = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
             //qDebug() << "handleReadyRead()";
             QByteArray data = port->readAll();
-            emit messageReceived(QString(data), timestamp);
+        //    emit messageReceived(QString(data), timestamp);
+            // TODO: should this be in a separate thread?
+
+            // The following is needed because unlike UDP datagrams, which arrive always separately,
+            // serial messages (if sent very fast), arrive in our buffer here many at once,
+            // just as if we concatenated them. So here we take them apart, and pass on each separately.
+            // Important that we assume each separate message ends with a CR or LF character, or their un-encoded strings
+            QString dataStr = QString(data);
+
+            // De-canonize if contains un-encoded control characters
+            while(dataStr.length()>1 && dataStr.contains("\\n"))
+                dataStr = dataStr.replace("\\n","\n");
+            while(dataStr.length()>1 && dataStr.contains("\\r"))
+                dataStr = dataStr.replace("\\r","\r");
+
+            // Trim newlines from the beginning and end
+            while(!dataStr.isEmpty() && (dataStr[0] == '\n' || dataStr[0] == '\r'))
+                dataStr = dataStr.remove(0, 1);
+            while(!dataStr.isEmpty() && (dataStr[dataStr.length()-1] == '\n' || dataStr[dataStr.length()-1] == '\r'))
+                dataStr = dataStr.remove(dataStr.length()-1, 1);
+
+            // Split by newline (CR or LF)
+            QRegExp separators("(\r|\n)");
+            QStringList msgList = dataStr.split(separators);
+            for(int cc=0; cc<msgList.length(); cc++) {
+                if(!msgList[cc].isEmpty())
+                    emit messageReceived(msgList[cc], timestamp);
+            }
         };
 
         void handleError(QSerialPort::SerialPortError serialPortError) {

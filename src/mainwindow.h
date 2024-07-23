@@ -111,6 +111,22 @@ private:
     RestorableQMdiSubWindow *cameraViewWindow;
     RestorableQMdiSubWindow *sharpnessWindow;
 
+    QIcon fileOpenIcon;
+    QIcon cameraSerialConnectionIcon;
+    QIcon pupilDetectionSettingsIcon;
+    QIcon remoteCCIcon;
+    QIcon generalSettingsIcon;
+    QIcon singleCameraIcon;
+    QIcon stereoCameraIcon;
+    QIcon cameraSettingsIcon1;
+    QIcon cameraSettingsIcon2;
+    QIcon calibrateIcon;
+    QIcon sharpnessIcon;
+    QIcon subjectsIcon;
+    QIcon outputDataFileIcon;
+    QIcon streamingSettingsIcon;
+    QIcon imagePlaybackControlIcon;
+
     QMenu *windowMenu;
     QMenu *singleCameraDevicesMenu; // GB: refactored name
 
@@ -150,6 +166,7 @@ private:
     bool hwTriggerOn = false;
     bool cameraPlaying = true;
 
+    void loadIcons();
     void createActions();
     void createStatusBar();
     void readSettings();
@@ -209,7 +226,6 @@ private:
     PlaybackSynchroniser *playbackSynchroniser;
 
     QMessageBox *imagesSkippedMsgBox = nullptr;
-
 
     void loadCalibrationWindow();
     void loadSharpnessWindow();

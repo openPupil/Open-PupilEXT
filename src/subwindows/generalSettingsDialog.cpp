@@ -38,6 +38,7 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
     connect(darkAdaptBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDarkAdaptChange(int)));
     connect(metaSnapshotBox, SIGNAL(stateChanged(int)), this, SLOT(setMetaSnapshotEnabled(int)));
     connect(saveOfflineEventLogBox, SIGNAL(stateChanged(int)), this, SLOT(setSaveOfflineEventLog(int)));
+    connect(alwaysOnTopBox, SIGNAL(stateChanged(int)), this, SLOT(setAlwaysOnTop(int)));
     // GB added/modified end
 
     connect(applyButton, &QPushButton::clicked, this, &GeneralSettingsDialog::apply);
@@ -92,7 +93,16 @@ void GeneralSettingsDialog::readSettings() {
     const int m_darkAdaptMode = applicationSettings->value("GUIDarkAdaptMode", "2").toInt();
     darkAdaptMode = m_darkAdaptMode;
     // GUIDarkAdaptMode: 0 = no, 1 = yes, 2 = let PupilEXT guess
-        
+
+    const QByteArray m_alwaysOnTop = applicationSettings->value("alwaysOnTop", "0").toByteArray();
+    //std::cout << m_alwaysOnTop.toStdString() << std::endl; //
+    if (!m_alwaysOnTop.isEmpty()) {
+        if(m_alwaysOnTop == "1" || m_alwaysOnTop == "true")
+            alwaysOnTop = true;
+        else
+            alwaysOnTop = false;
+    }
+
     // GB end
 }
 
@@ -143,6 +153,7 @@ void GeneralSettingsDialog::updateForm() {
 
     metaSnapshotBox->setChecked(metaSnapshotsEnabled);
     saveOfflineEventLogBox->setChecked(saveOfflineEventLog);
+    alwaysOnTopBox->setChecked(alwaysOnTop);
     // GB modified end
 }
 
@@ -156,6 +167,7 @@ void GeneralSettingsDialog::saveSettings() {
     applicationSettings->setValue("GUIDarkAdaptMode", darkAdaptMode );
     applicationSettings->setValue("metaSnapshotsEnabled", metaSnapshotsEnabled );
     applicationSettings->setValue("saveOfflineEventLog", saveOfflineEventLog );
+    applicationSettings->setValue("alwaysOnTop", alwaysOnTop );
 }
 
 void GeneralSettingsDialog::createForm() {
@@ -249,7 +261,9 @@ void GeneralSettingsDialog::createForm() {
     darkAdaptBox->setCurrentIndex(darkAdaptMode);
     appearanceLayout->addRow(darkAdaptLabel, darkAdaptBox);
 
-    // TODO: add "always on top" checkbox
+    alwaysOnTopBox = new QCheckBox("Keep application always on top (needs restart)", this);
+    alwaysOnTopBox->setChecked(getAlwaysOnTop());
+    appearanceLayout->addRow(alwaysOnTopBox);
 
     appearanceGroup->setLayout(appearanceLayout);
     mainLayout->addWidget(appearanceGroup);
@@ -319,6 +333,9 @@ bool GeneralSettingsDialog::getMetaSnapshotsEnabled() const {
 bool GeneralSettingsDialog::getSaveOfflineEventLog() const {
     return saveOfflineEventLog;
 }
+bool GeneralSettingsDialog::getAlwaysOnTop() const {
+    return alwaysOnTop;
+}
 
 
 // Returns the current writer format setting i.e. tiff, jpg, bmp
@@ -343,6 +360,9 @@ void GeneralSettingsDialog::setMetaSnapshotEnabled(int m_state) {
 }
 void GeneralSettingsDialog::setSaveOfflineEventLog(int m_state) {
     saveOfflineEventLog = (bool) m_state;
+}
+void GeneralSettingsDialog::setAlwaysOnTop(int m_state) {
+    alwaysOnTop = (bool) m_state;
 }
 
 // Set the image writer format, all formats supported by OpenCV's imwrite can be specified

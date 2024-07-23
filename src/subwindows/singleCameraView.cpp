@@ -33,6 +33,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     toolBar->addSeparator();
     toolBar->addAction("+Zoom", this, &SingleCameraView::onZoomPlusClick);
     toolBar->addAction("-Zoom", this, &SingleCameraView::onZoomMinusClick);
+    toolBar->addSeparator();
     if (playbackFrozen)
         freezeText = "Unfreeze";
     else 
@@ -79,6 +80,13 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     showAutoParamAct->setStatusTip(tr("Display expected pupil size maximum and minimum values as currently set for Automatic Parametrization."));
     plotMenu->addAction(showAutoParamAct);
     connect(showAutoParamAct, SIGNAL(toggled(bool)), this, SLOT(onShowAutoParamOverlay(bool)));
+
+    showPositioningGuideAct = plotMenu->addAction(tr("Show Camera Positioning Guide"));
+    showPositioningGuideAct->setCheckable(true);
+    showPositioningGuideAct->setChecked(showPositioningGuide);
+    showPositioningGuideAct->setStatusTip(tr("Show overlay to help position the camera(s)."));
+    plotMenu->addAction(showPositioningGuideAct);
+    connect(showPositioningGuideAct, SIGNAL(toggled(bool)), this, SLOT(onShowPositioningGuide(bool)));
 
     plotMenu->addSeparator();
 
@@ -145,6 +153,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
 
     // GB: renamed to be more descriptive (not to be confused with camera image acquisition ROI), also modified tooltips
     roiMenu = pupilDetectionMenu->addMenu(tr("&Pupil Detection ROI"));
+    roiMenu->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/16/highlight-pointer-spot.svg"), applicationSettings));
     roiMenu->setEnabled(pupilDetection->isROIPreProcessingEnabled());
 
     customROIAct = roiMenu->addAction(tr("Custom"), this, [this]()
@@ -171,6 +180,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     
 
     autoParamMenu = pupilDetectionMenu->addMenu(tr("&Automatic Parametrization"));
+    autoParamMenu->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/adjustlevels.svg"), applicationSettings));
     autoParamMenu->setEnabled(isAutoParamModificationEnabled());
     
     QWidget *autoParamPupSizeWidget = new QWidget();
@@ -246,9 +256,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
 
     // GB NOTE: first just create the videoView instance like it is for a single ROI, and then we can change
     videoView = new VideoView();
-    // GB added begin
     videoView->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
-    // GB added end
     layout->addWidget(videoView);
 
     statusBar = new QStatusBar();
@@ -347,6 +355,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(this, SIGNAL (onChangePupilColorFill(int)), videoView, SLOT (onChangePupilColorFill(int)));
     connect(this, SIGNAL (onChangePupilColorFillThreshold(float)), videoView, SLOT (onChangePupilColorFillThreshold(float)));
     connect(this, SIGNAL (onChangeShowAutoParamOverlay(bool)), videoView, SLOT (onChangeShowAutoParamOverlay(bool)));
+    connect(this, SIGNAL (onChangeShowPositioningGuide(bool)), videoView, SLOT (onChangeShowPositioningGuide(bool)));
     connect(pupilDetection, SIGNAL (onROIPreprocessingChanged(bool)), videoView, SLOT (onChangePupilDetectionUsingROI(bool)));
     
     connect(pupilColorFillBox, SIGNAL (currentIndexChanged(int)), this, SLOT (onPupilColorFillChanged(int)));
@@ -389,6 +398,15 @@ void SingleCameraView::loadSettings() {
     showAutoParamOverlay = applicationSettings->value("SingleCameraView.showAutoParamOverlay", showAutoParamOverlay).toBool();
     showAutoParamAct->setChecked(showAutoParamOverlay);
     onShowAutoParamOverlay(showAutoParamOverlay);
+
+    showPositioningGuide = applicationSettings->value("SingleCameraView.showPositioningGuide", showPositioningGuide).toBool();
+    if(camera->getType() == SINGLE_IMAGE_FILE) {
+        showPositioningGuideAct->setDisabled(true);
+        showPositioningGuideAct->setChecked(false);
+    } else {
+        showPositioningGuideAct->setChecked(showPositioningGuide);
+        onShowPositioningGuide(showPositioningGuide);
+    }
 
     int autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", 50).toInt();
     //    // GB: workaround to set values for auto param pup. size box and slider, without causing a cascade of events due to value change
@@ -868,6 +886,20 @@ void SingleCameraView::onShowAutoParamOverlay(bool state) {
     showAutoParamOverlay = state;
     applicationSettings->setValue("SingleCameraView.showAutoParamOverlay", showAutoParamOverlay);
     emit onChangeShowAutoParamOverlay(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+}
+
+void SingleCameraView::onShowPositioningGuide(bool state) {
+    showPositioningGuide = state;
+    applicationSettings->setValue("SingleCameraView.showPositioningGuide", showAutoParamOverlay);
+    emit onChangeShowPositioningGuide(showPositioningGuide);
+}
+
+void SingleCameraView::onImageROIChanged(const QRect& ROI) {
+    videoView->setImageROI(ROI);
+}
+
+void SingleCameraView::onSensorSizeChanged(const QSize& size) {
+    videoView->setSensorSize(size);
 }
 
 // GB TODO: STRINGS

@@ -320,6 +320,7 @@ void SerialSettingsDialog::fillPortsParameters()
     baudRateBox->addItem(QStringLiteral("19200"), QSerialPort::Baud19200);
     baudRateBox->addItem(QStringLiteral("38400"), QSerialPort::Baud38400);
     baudRateBox->addItem(QStringLiteral("115200"), QSerialPort::Baud115200);
+    baudRateBox->setCurrentIndex(3);
     baudRateBox->addItem(tr("Custom"));
 
     dataBitsBox->addItem(QStringLiteral("5"), QSerialPort::Data5);

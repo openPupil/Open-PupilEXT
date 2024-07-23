@@ -123,7 +123,7 @@ void PupilDetection::setCamera(Camera *m_camera) {
             singleCalibration = dynamic_cast<SingleWebcam *>(camera)->getCameraCalibration();
             calibrated = static_cast<bool>(singleCalibration->isCalibrated());
         }
-        configureCameraConnection();
+        configureCameraConnection(true);
     }
     // GB added end
 }
@@ -166,13 +166,7 @@ void PupilDetection::stopDetection() {
 // Emits a signal to signal the algorithm changed
 void PupilDetection::setAlgorithm(QString method) {
 
-    if(camera && trackingOn) {
-        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
-        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
-        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
-        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
-        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
-    }
+    configureCameraConnection(false);
 
     frameCounter->reset();
 
@@ -192,22 +186,7 @@ void PupilDetection::setAlgorithm(QString method) {
 
     emit algorithmChanged();
 
-    if(camera && trackingOn) {
-        if(currentProcMode == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
-        } else if(currentProcMode == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
-        } else if(currentProcMode == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
-        } else if(currentProcMode == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
-        // } else if(currentProcMode == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-        //     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
-        } else {
-            // error
-            //qDebug() << "Could not determine pupilDetection proc mode or it is still undetermined" ;
-        }
-    }
+    configureCameraConnection(true);
 }
 
 // Slot callback for receiving new single camera images
@@ -1052,47 +1031,12 @@ ProcMode PupilDetection::getCurrentProcMode() {
 }
 
 void PupilDetection::setCurrentProcMode(int val) {
-    if(camera && trackingOn) {
-        if(currentProcMode == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
-            // Runtime history
-            //auto timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
-            //writeVectorCSV(runtimeHistory, "timestamp,runtime[ms]", pupilDetectionMethods[pupilDetectionIndex]->title() + "_" + std::to_string(timestamp) + "_runtimeHistory.csv");
-            disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage))); // GB refactored
-        } else if(currentProcMode == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
-            disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
-        } else if(currentProcMode == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
-            // For debugging, measuring times
-            //auto timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
-            //writeVectorCSV(runtimeHistory, "timestamp,runtime[ms]", pupilDetectionMethods[pupilDetectionIndex]->title() + "_" + std::to_string(timestamp) + "_triangulateHistory.csv");
-            disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage))); // GB refactored
-        } else if(currentProcMode == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
-            disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
-        // } else if(currentProcMode == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-        //     disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
-        } else {
-            // error
-            qDebug() << "Could not determine pupilDetection proc mode or it is still undetermined" ;
-        }
-    }
+
+    configureCameraConnection(true);
 
     currentProcMode = (ProcMode)val;
 
-    if(camera && trackingOn) {
-        if(currentProcMode == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage))); // GB refactored
-        } else if(currentProcMode == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
-        } else if(currentProcMode == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage))); // GB refactored
-        } else if(currentProcMode == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
-        // } else if(currentProcMode == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
-        //     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
-        } else {
-            // error
-            //qDebug() << "Could not determine pupilDetection proc mode or it is still undetermined" ;
-        }
-    }
+    configureCameraConnection(false);
 }
 
 void PupilDetection::setAutoParamEnabled(bool state) {
@@ -1285,21 +1229,28 @@ void PupilDetection::setSynchronised(bool synchronised) {
     PupilDetection::synchronised = synchronised;
 }
 
-void PupilDetection::configureCameraConnection() {
-    if (camera) {
+void PupilDetection::configureCameraConnection(bool connectOrDisconnect) {
+    if(!camera)
+        return;
+
+    if(!connectOrDisconnect) {
+        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
+        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
+        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
+        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
+        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
+    } else {
         if (currentProcMode == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage)));
         } else if (currentProcMode == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
         } else if (currentProcMode == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
-            //runtimeHistory.clear();
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage)));
         } else if (currentProcMode == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
             connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
             // } else if(currentProcMode == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
             //     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
         } else {
-            // error
             qDebug() << "Could not determine pupilDetection proc mode or it is still undetermined";
         }
     }

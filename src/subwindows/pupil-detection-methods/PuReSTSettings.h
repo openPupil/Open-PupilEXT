@@ -48,10 +48,16 @@ public:
 
         QGridLayout *infoLayout = new QGridLayout(infoBox);
 
-        QIcon trackOnIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings);
-        QLabel *iLabel = new QLabel();
-        iLabel->setPixmap(trackOnIcon.pixmap(QSize(32, 32)));
-        infoLayout->addWidget(iLabel, 0, 0);
+        QPushButton *iLabelFakeButton = new QPushButton();
+        iLabelFakeButton = new QPushButton();
+        iLabelFakeButton->setFlat(true);
+        iLabelFakeButton->setAttribute(Qt::WA_NoSystemBackground, true);
+        iLabelFakeButton->setAttribute(Qt::WA_TranslucentBackground, true);
+        iLabelFakeButton->setStyleSheet("QPushButton { background-color: transparent; border: 0px }");
+        iLabelFakeButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings));
+        iLabelFakeButton->setFixedSize(QSize(32,32));
+        iLabelFakeButton->setIconSize(QSize(32,32));
+        infoLayout->addWidget(iLabelFakeButton, 0, 0);
 
         QLabel *pLabel = new QLabel();
         pLabel->setWordWrap(true);

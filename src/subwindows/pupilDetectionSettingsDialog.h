@@ -56,14 +56,14 @@ private:
     QCheckBox *imageUndistortionBox;
 
     // GB begin
-    QPixmap procModePixmap_undetermined;
-    QPixmap procModePixmap_1cam1pup;
-    QPixmap procModePixmap_1cam2pup;
-    QPixmap procModePixmap_1Mcam1pup;
-    QPixmap procModePixmap_2cam1pup;
-    QPixmap procModePixmap_2cam2pup;
+    QIcon procModeIcon_undetermined;
+    QIcon procModeIcon_1cam1pup;
+    QIcon procModeIcon_1cam2pup;
+    QIcon procModeIcon_1Mcam1pup;
+    QIcon procModeIcon_2cam1pup;
+    QIcon procModeIcon_2cam2pup;
     //QFormLayout *procModeBoxLayout;
-    QLabel *iLabel;
+    QPushButton *iLabelFakeButton;
     QGroupBox *procModeGroup;
     QLabel *procModeInfoLabel;
     QComboBox *procModeBox;

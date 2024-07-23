@@ -104,8 +104,8 @@ public:
     int getImageROIheight() override; 
     int getImageROIoffsetX() override; 
     int getImageROIoffsetY() override;
-    int getImageROIwidthMax(); // both setImageROI and setImageResize depends on this
-    int getImageROIheightMax(); // both setImageROI and setImageResize depends on this
+    int getImageROIwidthMax() override; // both setImageROI and setImageResize depends on this
+    int getImageROIheightMax() override; // both setImageROI and setImageResize depends on this
     QRectF getImageROI() override;
     int getBinningVal();
     std::vector<double> getTemperatures();

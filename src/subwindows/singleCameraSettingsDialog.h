@@ -113,7 +113,11 @@ private:
     // BG added end
 
 public slots:
-    void setLimitationsWhileTracking(bool state); // GÁBOR
+    void setLimitationsWhileTracking(bool state);
+
+    void updateImageROISettingsValues();
+    void updateCamImageRegionsWidget();
+    void updateSensorSize();
 
 private slots:
 
@@ -135,7 +139,6 @@ private slots:
 
     void onSettingsChange();
 
-    // BG added begin
     void onSetImageROIwidth(int val);
     void onSetImageROIheight(int val);
     void onSetImageROIoffsetX(int val);
@@ -144,22 +147,21 @@ private slots:
 
     void updateImageROISettingsMin(int binningVal);
     void updateImageROISettingsMax();
-    void updateImageROISettingsValues();
-    void updateCamImageRegionsWidget();
 
     void setExposureTimeValue(int value);
     void setAcquisitionFPSValue(int value);
     void enableAcquisitionFrameRate(bool value);
-    // BG added end
 
 signals:
-
     void onSerialConfig();
     void onHardwareTriggerStart(QString cmd);
     void onHardwareTriggerStop(QString cmd);
 
     void onHardwareTriggerEnable();
     void onHardwareTriggerDisable();
+
+    void onImageROIChanged(QRect rect);
+    void onSensorSizeChanged(QSize size);
 
 };
 

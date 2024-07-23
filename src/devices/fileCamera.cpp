@@ -107,6 +107,16 @@ int FileCamera::getImageROIheight(){
     return imageReader->getImageHeight();
 }
 
+// Yet these are just placeholders in case of filecamera, but could be meaningful if the imagerec-meta was read, and the sensor size was read from it
+int FileCamera::getImageROIwidthMax(){
+    return getImageROIwidth();
+}
+
+// Yet these are just placeholders in case of filecamera, but could be meaningful if the imagerec-meta was read, and the sensor size was read from it
+int FileCamera::getImageROIheightMax(){
+    return getImageROIheight();
+}
+
 int FileCamera::getImageROIoffsetX(){
     return 0;
 }

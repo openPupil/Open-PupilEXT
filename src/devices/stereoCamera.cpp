@@ -61,6 +61,10 @@ StereoCamera::~StereoCamera() {
         if(cameras.IsGrabbing())
             cameras.StopGrabbing();
         cameras.Close();
+
+        cameraImageEventHandler->DestroyImageEventHandler(); //
+        cameras.DetachDevice(); //
+        cameras.DestroyDevice(); //
     }
     delete cameraImageEventHandler;
 }

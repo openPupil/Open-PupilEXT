@@ -122,10 +122,12 @@ private:
     // BG added end
 
 public slots:
-    // GB added begin
     void setLimitationsWhileTracking(bool state);
     void setLimitationsWhileUnconnected(bool state);
-    // GB added end
+
+    void updateImageROISettingsValues();
+    void updateCamImageRegionsWidget();
+    void updateSensorSize();
 
 private slots:
 
@@ -149,7 +151,6 @@ private slots:
 
     void onSettingsChange();
 
-    // BG added begin
     void onSetImageROIwidth(int val);
     void onSetImageROIheight(int val);
     void onSetImageROIoffsetX(int val);
@@ -158,23 +159,20 @@ private slots:
 
     void updateImageROISettingsMin(int binningVal);
     void updateImageROISettingsMax();
-    void updateImageROISettingsValues();
-    void updateCamImageRegionsWidget();
-    // BG added end
 
 public slots:
-    // GB added begin
     void openStereoCamera(const QString &camName1, const QString &camName2);
-    // GB added end
 
 signals:
-
     void onSerialConfig();
     void onHardwareTriggerStart(QString cmd);
     void onHardwareTriggerStop(QString cmd);
 
     void onHardwareTriggerEnable();
     void onHardwareTriggerDisable();
+
+    void onImageROIChanged(QRect rect);
+    void onSensorSizeChanged(QSize size);
 
 };
 

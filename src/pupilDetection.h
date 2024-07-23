@@ -273,7 +273,7 @@ private:
     void onNewStereoImageForOnePupilImpl(const CameraImage &simg);
     void onNewStereoImageForTwoPupilImpl(const CameraImage &simg);
 
-    void configureCameraConnection();
+    void configureCameraConnection(bool connectOrDisconnect);
 
 public slots:
 

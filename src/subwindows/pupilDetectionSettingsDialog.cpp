@@ -82,29 +82,35 @@ void PupilDetectionSettingsDialog::createForm() {
     // procModePixmap_2cam1pup = QIcon(":/icons/2cam1pup.png").pixmap(QSize(50, 50));
     // procModePixmap_2cam2pup = QIcon(":/icons/2cam2pup.png").pixmap(QSize(50, 50));
 
-    procModePixmap_undetermined = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings).pixmap(QSize(50, 50));
-    procModePixmap_1cam1pup = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/1cam1pup.svg"), applicationSettings).pixmap(QSize(50, 50));
-    procModePixmap_1cam2pup = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/1cam2pup.svg"), applicationSettings).pixmap(QSize(50, 50));
-    procModePixmap_1Mcam1pup = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/1Mcam1pup.svg"), applicationSettings).pixmap(QSize(50, 50));
-    procModePixmap_2cam1pup = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/2cam1pup.svg"), applicationSettings).pixmap(QSize(50, 50));
-    procModePixmap_2cam2pup = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/2cam2pup.svg"), applicationSettings).pixmap(QSize(50, 50));
+    procModeIcon_undetermined = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings);
+    procModeIcon_1cam1pup = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/1cam1pup.svg"), applicationSettings);
+    procModeIcon_1cam2pup = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/1cam2pup.svg"), applicationSettings);
+    procModeIcon_1Mcam1pup = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/1Mcam1pup.svg"), applicationSettings);
+    procModeIcon_2cam1pup = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/2cam1pup.svg"), applicationSettings);
+    procModeIcon_2cam2pup = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/2cam2pup.svg"), applicationSettings);
 
-    //QIcon procModeIcon = QIcon(":/icons/Breeze/status/22/dialog-information.svg");
-    iLabel = new QLabel();
-    iLabel->setPixmap(procModePixmap_undetermined);
-    //infoLayout->addWidget(iLabel, 0, 0);
+    // Note: this is a workaround to let the icons be repainted
+    // (Pixmaps, which could have been used for real QLabels, do not get repainted, they would need to be read again
+    // from the svg resource and rendered to pixmap, then set for the labels pixmaps. This is better now)
+    iLabelFakeButton = new QPushButton();
+    iLabelFakeButton->setFlat(true);
+    iLabelFakeButton->setAttribute(Qt::WA_NoSystemBackground, true);
+    iLabelFakeButton->setAttribute(Qt::WA_TranslucentBackground, true);
+    iLabelFakeButton->setStyleSheet("QPushButton { background-color: transparent; border: 0px }");
+    iLabelFakeButton->setIcon(procModeIcon_undetermined);
+    iLabelFakeButton->setFixedSize(QSize(50, 50));
+    iLabelFakeButton->setIconSize(QSize(50, 50));
 
     procModeInfoLabel = new QLabel(tr(""));
     //procModeBoxLayout->addWidget(procModeInfoLabel);
 
 
-        QGridLayout *layoutRow1 = new QGridLayout;
-        layoutRow1->addWidget(iLabel, 0, 0, 0, 1); // row, column, rowSpan, columnSpan
-        layoutRow1->addWidget(procModeInfoLabel, 0, 1, 0, 5); // row, column, rowSpan, columnSpan
-        //layoutRow1->addSpacerItem(sp);
-        procModeBoxLayout->addRow(layoutRow1);
+    QGridLayout *layoutRow1 = new QGridLayout;
+    layoutRow1->addWidget(iLabelFakeButton, 0, 0, 0, 1); // row, column, rowSpan, columnSpan
+    layoutRow1->addWidget(procModeInfoLabel, 0, 1, 0, 5); // row, column, rowSpan, columnSpan
+    //layoutRow1->addSpacerItem(sp);
+    procModeBoxLayout->addRow(layoutRow1);
 
-    
 
     procModeGroup->setLayout(procModeBoxLayout);
     mainLayout->addWidget(procModeGroup);
@@ -337,11 +343,12 @@ void PupilDetectionSettingsDialog::onShowHelpDialog() {
 void PupilDetectionSettingsDialog::loadSettings() {
     // GB begin
     if(!pupilDetection->isTrackingOn() && pupilDetection->hasOpenCamera()) {
+        // Note: workaround: these should not stay "undetermined" at any time, so use meaningful default values, even though they could be changed in GUI
         if(!pupilDetection->isStereo()) {
-            pupilDetection->setCurrentProcMode(applicationSettings->value("PupilDetectionSettingsDialog.singleCam.procMode", procModeBox->currentIndex()).toInt());
+            pupilDetection->setCurrentProcMode(applicationSettings->value("PupilDetectionSettingsDialog.singleCam.procMode", ProcMode::SINGLE_IMAGE_ONE_PUPIL).toInt());
             //std::cout << "LOADED SINGLE CAM PROC MODE" << std::endl;
         } else {
-            pupilDetection->setCurrentProcMode(applicationSettings->value("PupilDetectionSettingsDialog.stereoCam.procMode", procModeBox->currentIndex()).toInt());
+            pupilDetection->setCurrentProcMode(applicationSettings->value("PupilDetectionSettingsDialog.stereoCam.procMode", ProcMode::STEREO_IMAGE_ONE_PUPIL).toInt());
             //std::cout << "LOADED STEREO CAM PROC MODE" << std::endl;
         }
     }
@@ -377,23 +384,22 @@ void PupilDetectionSettingsDialog::saveSettings() {
 }
 
 // Show and hide the image processing mode specific info depending on the current selection
-// GB TODO: store icons in memory, and just change, dont always load
 void PupilDetectionSettingsDialog::onProcModeSelection(int idx) {
 
     if(idx == 0) {
-        iLabel->setPixmap(procModePixmap_undetermined);
+        iLabelFakeButton->setIcon(procModeIcon_undetermined);
         procModeInfoLabel->setText("Here you can specify how many eyes the program should look for \nwhen performing pupil detection, depending on physical arrangement \nof the camera(s) and eye(s).");
     } else if(idx == 1) {
-        iLabel->setPixmap(procModePixmap_1cam1pup);
+        iLabelFakeButton->setIcon(procModeIcon_1cam1pup);
         procModeInfoLabel->setText("Detecting one pupil from a single camera viewpoint. \n(Low CPU load)"); // This way no eye distance can be measured optically.
     } else if(idx == 2) {
-        iLabel->setPixmap(procModePixmap_1cam2pup);
+        iLabelFakeButton->setIcon(procModeIcon_1cam2pup);
         procModeInfoLabel->setText("Detecting both pupils from a single camera viewpoint. \n(Medium CPU load)"); // This way no eye distance can be measured optically.
     } else if(idx == 3) {
-        iLabel->setPixmap(procModePixmap_2cam1pup);
+        iLabelFakeButton->setIcon(procModeIcon_2cam1pup);
         procModeInfoLabel->setText("Detecting one pupil from two cameras, producing a stereoscopic \npair of viewpoints. (Medium CPU load)");
     } else if(idx == 4) {
-        iLabel->setPixmap(procModePixmap_2cam2pup);
+        iLabelFakeButton->setIcon(procModeIcon_2cam2pup);
         procModeInfoLabel->setText("Detecting both pupils from two cameras, producing stereoscopic \npairs of viewpoints. (High CPU load)");
     } 
     // else if(idx == 5) {

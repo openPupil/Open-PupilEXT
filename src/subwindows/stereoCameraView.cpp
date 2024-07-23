@@ -35,6 +35,7 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     toolBar->addSeparator();
     toolBar->addAction("+Zoom", this, &StereoCameraView::onZoomPlusClick);
     toolBar->addAction("-Zoom", this, &StereoCameraView::onZoomMinusClick);
+    toolBar->addSeparator();
     if (playbackFrozen)
         freezeText = "Unfreeze";
     else 
@@ -76,7 +77,14 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     showAutoParamAct->setStatusTip(tr("Display expected pupil size maximum and minimum values as currently set for Automatic Parametrization."));
     plotMenu->addAction(showAutoParamAct);
     connect(showAutoParamAct, SIGNAL(toggled(bool)), this, SLOT(onShowAutoParamOverlay(bool)));
-    
+
+    showPositioningGuideAct = plotMenu->addAction(tr("Show Camera Positioning Guide"));
+    showPositioningGuideAct->setCheckable(true);
+    showPositioningGuideAct->setChecked(showPositioningGuide);
+    showPositioningGuideAct->setStatusTip(tr("Show overlay to help position the camera(s)."));
+    plotMenu->addAction(showPositioningGuideAct);
+    connect(showPositioningGuideAct, SIGNAL(toggled(bool)), this, SLOT(onShowPositioningGuide(bool)));
+
     plotMenu->addSeparator();
 
     QLabel *pupilColorLabel = new QLabel("Show pupil detection confidence:");
@@ -141,6 +149,7 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
 
     // GB: renamed to be pore descriptive (not to be confused with camera image acquisition ROI), also modified tooltips
     roiMenu = pupilDetectionMenu->addMenu(tr("&Pupil Detection ROI"));
+    roiMenu->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/16/highlight-pointer-spot.svg"), applicationSettings));
     roiMenu->setEnabled(pupilDetection->isROIPreProcessingEnabled());
 
     customROIAct = roiMenu->addAction(tr("Custom"), this, [this]()
@@ -167,6 +176,7 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
 
 
     autoParamMenu = pupilDetectionMenu->addMenu(tr("&Automatic Parametrization"));
+    autoParamMenu->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":icons/Breeze/actions/22/adjustlevels.svg"), applicationSettings));
     autoParamMenu->setEnabled(isAutoParamModificationEnabled());
     
     QWidget *autoParamPupSizeWidget = new QWidget();
@@ -353,6 +363,8 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(this, SIGNAL (onChangePupilColorFillThreshold(float)), secondaryVideoView, SLOT (onChangePupilColorFillThreshold(float)));
     connect(this, SIGNAL (onChangeShowAutoParamOverlay(bool)), mainVideoView, SLOT (onChangeShowAutoParamOverlay(bool)));
     connect(this, SIGNAL (onChangeShowAutoParamOverlay(bool)), secondaryVideoView, SLOT (onChangeShowAutoParamOverlay(bool)));
+    connect(this, SIGNAL (onChangeShowPositioningGuide(bool)), mainVideoView, SLOT (onChangeShowPositioningGuide(bool)));
+    connect(this, SIGNAL (onChangeShowPositioningGuide(bool)), secondaryVideoView, SLOT (onChangeShowPositioningGuide(bool)));
     connect(pupilDetection, SIGNAL (onROIPreprocessingChanged(bool)), mainVideoView, SLOT (onChangePupilDetectionUsingROI(bool)));
     connect(pupilDetection, SIGNAL (onROIPreprocessingChanged(bool)), secondaryVideoView, SLOT (onChangePupilDetectionUsingROI(bool)));
 
@@ -398,6 +410,15 @@ void StereoCameraView::loadSettings() {
     showAutoParamOverlay = applicationSettings->value("StereoCameraView.showAutoParamOverlay", showAutoParamOverlay).toBool();
     showAutoParamAct->setChecked(showAutoParamOverlay);
     onShowAutoParamOverlay(showAutoParamOverlay);
+
+    showPositioningGuide = applicationSettings->value("StereoCameraView.showPositioningGuide", showPositioningGuide).toBool();
+    if(camera->getType() == STEREO_IMAGE_FILE) {
+        showPositioningGuideAct->setDisabled(true);
+        showPositioningGuideAct->setChecked(false);
+    } else {
+        showPositioningGuideAct->setChecked(showPositioningGuide);
+        onShowPositioningGuide(showPositioningGuide);
+    }
 
     int autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", 50).toInt();
 //    // GB: workaround to set values for auto param pup. size box and slider, without causing a cascade of events due to value change
@@ -1001,6 +1022,22 @@ void StereoCameraView::onShowAutoParamOverlay(bool state) {
     showAutoParamOverlay = state;
     applicationSettings->setValue("StereoCameraView.showAutoParamOverlay", showAutoParamOverlay);
     emit onChangeShowAutoParamOverlay(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+}
+
+void StereoCameraView::onShowPositioningGuide(bool state) {
+    showPositioningGuide = state;
+    applicationSettings->setValue("StereoCameraView.showPositioningGuide", showAutoParamOverlay);
+    emit onChangeShowPositioningGuide(showPositioningGuide);
+}
+
+void StereoCameraView::onImageROIChanged(const QRect& ROI) {
+    mainVideoView->setImageROI(ROI);
+    secondaryVideoView->setImageROI(ROI);
+}
+
+void StereoCameraView::onSensorSizeChanged(const QSize& size) {
+    mainVideoView->setSensorSize(size);
+    secondaryVideoView->setSensorSize(size);
 }
 
 // GB TODO: STRINGS

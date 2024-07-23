@@ -151,6 +151,11 @@ private:
     QRectF roi1SelectionRectLastR; // GB the last saved position. necessary in cases when there is no pupil detection going on, and we are setting a custom ROI, which is not yet committed, but moved on the scene. when image play is on, this variable is needed
     QRectF roi2SelectionRectLastR; 
     void updateViewInternal(const cv::Mat &img);
+
+    std::vector<QGraphicsItem*> geBufferPG;
+    QRect imageROI = QRect(0,0,0,0);
+    QSize sensorSize = QSize(0,0);
+    QPen penPositioningGuide = QColor(173, 66, 245, 255);
     
     const float wImg = 640;
     const float sf = 0.3F;
@@ -184,6 +189,7 @@ private:
     bool showROI = true;
     bool plotPupilCenter = true;
     bool showAutoParamOverlay = false;
+    bool showPositioningGuide = true; // DEV
     bool pupilDetectionUsingROI;
     // GB added/modified end
 
@@ -199,6 +205,7 @@ public slots:
     void drawProcessedOverlay();
     void drawOverlay();
     void drawAutoParamOverlay();
+    void drawPositioningGuide();
 
     void setSelectionColor1(QColor color);
     void setSelectionColor2(QColor color);
@@ -229,6 +236,10 @@ public slots:
     void onChangePupilColorFill(int colorFill);
     void onChangePupilColorFillThreshold(float value);
     void onChangeShowAutoParamOverlay(bool state);
+    void onChangeShowPositioningGuide(bool state);
+
+    void setImageROI(const QRect& ROI);
+    void setSensorSize(const QSize& size);
 
     void setAutoParamPupSize(int value);
 

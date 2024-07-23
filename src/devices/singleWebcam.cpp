@@ -272,6 +272,14 @@ int SingleWebcam::getImageROIheight(){
     return grabberDummy->getImageSize().height;
 }
 
+int SingleWebcam::getImageROIwidthMax(){
+    return getImageROIwidth();
+}
+
+int SingleWebcam::getImageROIheightMax(){
+    return getImageROIheight();
+}
+
 int SingleWebcam::getImageROIoffsetX(){
     return 0;
 }
