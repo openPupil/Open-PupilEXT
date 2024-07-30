@@ -1,6 +1,5 @@
 
 #include "stereoCamera.h"
-#include "hardwareTriggerConfiguration.h"
 #include <pylon/TlFactory.h>
 #include <QThread>
 
@@ -10,8 +9,6 @@
 // Stereo camera images handled using a StereoCameraImageEventHandler
 StereoCamera::StereoCamera(QObject* parent) : Camera(parent),
             cameras(2),
-            cameraImageEventHandler(new StereoCameraImageEventHandler(parent)),
-            cameraConfigurationEventHandler(new CameraConfigurationEventHandler),
             frameCounter(new CameraFrameRateCounter(parent)),
             cameraCalibration(new StereoCameraCalibration()),
             calibrationThread(new QThread()),
@@ -27,13 +24,6 @@ StereoCamera::StereoCamera(QObject* parent) : Camera(parent),
     cameraCalibration->moveToThread(calibrationThread);
     calibrationThread->start();
     calibrationThread->setPriority(QThread::HighPriority);
-
-    connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), this, SIGNAL(onNewGrabResult(CameraImage)));
-    connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), frameCounter, SLOT(count(CameraImage)));
-    //connect(cameraImageEventHandler, SIGNAL(needsTimeSynchronization()), this, SLOT(resynchronizeTime()));
-
-    connect(cameraImageEventHandler, SIGNAL(imagesSkipped()), this, SIGNAL(imagesSkipped()));
-    connect(cameraConfigurationEventHandler, SIGNAL(cameraDeviceRemoved()), this, SIGNAL(cameraDeviceRemoved()));
 
     connect(frameCounter, SIGNAL(fps(double)), this, SIGNAL(fps(double)));
     connect(frameCounter, SIGNAL(framecount(int)), this, SIGNAL(framecount(int)));
@@ -57,13 +47,7 @@ StereoCamera::StereoCamera(const String_t &fullnameMain, const String_t &fullnam
 // Closes the camera array
 StereoCamera::~StereoCamera() {
     if(cameras.IsOpen()) {
-        if(cameras.IsGrabbing())
-            cameras.StopGrabbing();
-        cameras.Close();
-
-        cameraImageEventHandler->DestroyImageEventHandler(); //
-        cameras.DetachDevice(); //
-        cameras.DestroyDevice(); //
+        safelyCloseCameras();
     }
     delete cameraImageEventHandler;
     if (cameraCalibration != nullptr)
@@ -79,9 +63,10 @@ void StereoCamera::genericExceptionOccured(const GenericException &e) {
     std::cerr << "A Pylon exception occurred." << std::endl<< e.GetDescription() << std::endl;
     if (cameras[0].IsCameraDeviceRemoved() || cameras[1].IsCameraDeviceRemoved()) {
         emit cameraDeviceRemoved();
-        cameras.Close();
-        cameras.DetachDevice();
-        cameras.DestroyDevice();
+//        cameras.Close();
+//        cameras.DetachDevice();
+//        cameras.DestroyDevice();
+        safelyCloseCameras();
     }
 }
 
@@ -95,6 +80,7 @@ void StereoCamera::attachCameras(const CDeviceInfo &diMain, const CDeviceInfo &d
         cameras.Close();
         cameras.DetachDevice();
         cameras.DestroyDevice();
+//        safelyCloseCameras();
     }
 
     cameras[0].Attach(CTlFactory::GetInstance().CreateDevice(diMain));
@@ -120,18 +106,33 @@ void StereoCamera::open(bool enableHardwareTrigger) {
         if(cameras.IsGrabbing())
             cameras.StopGrabbing();
         cameras.Close();
+//        safelyCloseCameras();
     }
 
     try {
-        // Register the configurations of the cameras, setting both to receive hardware trigger signals on the given line source
+        // Register the configurations of the cameras
+
+        cameraConfigurationEventHandler0 = new CameraConfigurationEventHandler();
+        cameraConfigurationEventHandler1 = new CameraConfigurationEventHandler();
+        connect(cameraConfigurationEventHandler0, SIGNAL(cameraDeviceRemoved()), this, SIGNAL(cameraDeviceRemoved()));
+        connect(cameraConfigurationEventHandler1, SIGNAL(cameraDeviceRemoved()), this, SIGNAL(cameraDeviceRemoved()));
+        cameras[0].RegisterConfiguration(cameraConfigurationEventHandler0, RegistrationMode_ReplaceAll, Cleanup_Delete);
+        cameras[1].RegisterConfiguration(cameraConfigurationEventHandler1, RegistrationMode_ReplaceAll, Cleanup_Delete);
+
+        // Setting both to receive hardware trigger signals on the given line source
         // NOTE: always true except when emulated cameras are used
         if(enableHardwareTrigger) {
-            cameras[0].RegisterConfiguration(new HardwareTriggerConfiguration(lineSource), RegistrationMode_ReplaceAll, Cleanup_Delete);
-            cameras[1].RegisterConfiguration(new HardwareTriggerConfiguration(lineSource), RegistrationMode_ReplaceAll, Cleanup_Delete);
+            hardwareTriggerConfiguration0 = new HardwareTriggerConfiguration(lineSource);
+            hardwareTriggerConfiguration1 = new HardwareTriggerConfiguration(lineSource);
+            cameras[0].RegisterConfiguration(hardwareTriggerConfiguration0, RegistrationMode_Append, Cleanup_Delete);
+            cameras[1].RegisterConfiguration(hardwareTriggerConfiguration1, RegistrationMode_Append, Cleanup_Delete);
         }
 
-        cameras[0].RegisterConfiguration(cameraConfigurationEventHandler, RegistrationMode_Append, Cleanup_Delete);
-        cameras[1].RegisterConfiguration(cameraConfigurationEventHandler, RegistrationMode_Append, Cleanup_Delete);
+        cameraImageEventHandler = new StereoCameraImageEventHandler(this->parent());
+        connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), this, SIGNAL(onNewGrabResult(CameraImage)));
+        connect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), frameCounter, SLOT(count(CameraImage)));
+        //connect(cameraImageEventHandler, SIGNAL(needsTimeSynchronization()), this, SLOT(resynchronizeTime()));
+        connect(cameraImageEventHandler, SIGNAL(imagesSkipped()), this, SIGNAL(imagesSkipped()));
 
         // Register the image event handler
         // IMPORTANT: For both cameras the same handler object is registered, as the handler must receive both main and secondary images to create a single stereo camera image
@@ -164,7 +165,7 @@ void StereoCamera::open(bool enableHardwareTrigger) {
             // Start the grabbing using the grab loop thread, by setting the grabLoopType parameter
             // to GrabLoop_ProvidedByInstantCamera. The grab results are delivered to the image event handlers.
             // The GrabStrategy_OneByOne default grab strategy is used.
-            cameras.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+            startGrabbing();
         } else {
             // See the documentation of CInstantCamera::CanWaitForFrameTriggerReady() for more information.
             std::cout << std::endl;
@@ -231,11 +232,12 @@ void StereoCamera::close() {
     std::cout << "StereoCamera: Releasing pylon resources.";
     cameras.StopGrabbing();
 
-    for(int i = 0; i<cameras.GetSize(); i++) {
-        cameras[i].DeregisterImageEventHandler(cameraImageEventHandler);
-    }
+//    for(int i = 0; i<cameras.GetSize(); i++) {
+//        cameras[i].DeregisterImageEventHandler(cameraImageEventHandler);
+//    }
 
-    cameras.Close();
+//    cameras.Close();
+    safelyCloseCameras();
 }
 
 // Current exposure time value of the main camera
@@ -403,6 +405,7 @@ void StereoCamera::loadMainFromFile(const String_t &filename) {
     }
     if(!wasOpen) {
         cameras.Close();
+//        safelyCloseCameras();
     }
 }
 
@@ -430,10 +433,13 @@ bool StereoCamera::isEnabledAcquisitionFrameRate() {
 bool StereoCamera::isEmulated()
 {
     if (cameras.GetSize() == 2){
-        String_t device1_name = cameras[0].GetDeviceInfo().GetModelName();
-        String_t device2_name = cameras[1].GetDeviceInfo().GetModelName();
-        qDebug() << QString(device1_name) << QString(device2_name);
-        return ((device1_name.find("Emu") != String_t::npos) || (device2_name.find("Emu") != String_t::npos));
+//        String_t device1_name = cameras[0].GetDeviceInfo().GetModelName();
+//        String_t device2_name = cameras[1].GetDeviceInfo().GetModelName();
+        QString device1_name = QString(cameras[0].GetDeviceInfo().GetModelName().c_str());
+        QString device2_name = QString(cameras[1].GetDeviceInfo().GetModelName().c_str());
+//        qDebug() << QString(device1_name) << QString(device2_name);
+        return (device1_name.toLower().contains("emu") || device2_name.toLower().contains("emu"));
+//        return ((device1_name.find("Emu") != String_t::npos) || (device2_name.find("Emu") != String_t::npos));
         // TODO: make this "is emulated" friendly name check coherent with the one used in mainwindow.cpp
     }
     else return false;
@@ -651,7 +657,7 @@ void StereoCamera::autoGainOnce() {
                 // set Gain value for second camera
                 cameras[1].Gain.TrySetValue(cameras[0].Gain.GetValue());
 
-                cameras.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+                startGrabbing();
             }
         } else {
             std::cerr << "Only area scan cameras support auto functions." << std::endl;
@@ -773,7 +779,7 @@ void StereoCamera::autoExposureOnce() {
                 // Set value of second camera
                 cameras[1].ExposureTime.TrySetValue(cameras[0].ExposureTime.GetValue());
 
-                cameras.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+                startGrabbing();
             }
         } else {
             std::cerr << "Only area scan cameras support auto functions." << std::endl;
@@ -874,10 +880,9 @@ int StereoCamera::getImageROIwidth() {
         int val1 = (int)cameras[1].Width.GetValue();
         if(val0 != val1) {
             std::cout<<"Image acquisition ROI width of the two cameras are not the same. Now resetting both to the lower value."<<std::endl;
-            if(val0 < val1)
-                setImageROIwidth(val0);
-            else
-                setImageROIwidth(val1);
+            int minVal = (val0 < val1) ? val0 : val1;
+            cameras[0].Width.TrySetValue(minVal);
+            cameras[1].Width.TrySetValue(minVal);
         }
         return val0;
     } catch (const GenericException &e) {
@@ -895,13 +900,10 @@ int StereoCamera::getImageROIheight() {
         int val0 = (int) cameras[0].Height.GetValue();
         int val1 = (int) cameras[1].Height.GetValue();
         if (val0 != val1) {
-            std::cout
-                    << "Image acquisition ROI height of the two cameras are not the same. Now resetting both to the lower value."
-                    << std::endl;
-            if (val0 < val1)
-                setImageROIheight(val0);
-            else
-                setImageROIheight(val1);
+            std::cout << "Image acquisition ROI height of the two cameras are not the same. Now resetting both to the lower value." << std::endl;
+            int minVal = (val0 < val1) ? val0 : val1;
+            cameras[0].Height.TrySetValue(minVal);
+            cameras[1].Height.TrySetValue(minVal);
         }
         return val0;
     } catch (const GenericException &e) {
@@ -919,13 +921,10 @@ int StereoCamera::getImageROIoffsetX() {
         int val0 = (int) cameras[0].OffsetX.GetValue();
         int val1 = (int) cameras[1].OffsetX.GetValue();
         if (val0 != val1) {
-            std::cout
-                    << "Image acquisition ROI offsetX of the two cameras are not the same. Now resetting both to the lower value."
-                    << std::endl;
-            if (val0 < val1)
-                setImageROIoffsetX(val0);
-            else
-                setImageROIoffsetX(val1);
+            std::cout << "Image acquisition ROI offsetX of the two cameras are not the same. Now resetting both to the lower value." << std::endl;
+            int minVal = (val0 < val1) ? val0 : val1;
+            cameras[0].OffsetX.TrySetValue(minVal);
+            cameras[1].OffsetX.TrySetValue(minVal);
         }
         return val0;
     } catch (const GenericException &e) {
@@ -943,13 +942,10 @@ int StereoCamera::getImageROIoffsetY() {
         int val0 = (int) cameras[0].OffsetY.GetValue();
         int val1 = (int) cameras[1].OffsetY.GetValue();
         if (val0 != val1) {
-            std::cout
-                    << "Image acquisition ROI offsetY of the two cameras are not the same. Now resetting both to the lower value."
-                    << std::endl;
-            if (val0 < val1)
-                setImageROIoffsetY(val0);
-            else
-                setImageROIoffsetY(val1);
+            std::cout << "Image acquisition ROI offsetY of the two cameras are not the same. Now resetting both to the lower value." << std::endl;
+            int minVal = (val0 < val1) ? val0 : val1;
+            cameras[0].OffsetY.TrySetValue(minVal);
+            cameras[1].OffsetY.TrySetValue(minVal);
         }
         return val0;
     } catch (const GenericException &e) {
@@ -972,9 +968,7 @@ int StereoCamera::getImageROIwidthMax() {
         int val0 = (int) cameras[0].WidthMax.GetValue();
         int val1 = (int) cameras[1].WidthMax.GetValue();
         if (val0 != val1) {
-            std::cout
-                    << "Image acquisition ROI max width of the two cameras are not the same. Now using the lower (safer) value."
-                    << std::endl;
+            std::cout << "Image acquisition ROI max width of the two cameras are not the same. Now using the lower (safer) value." << std::endl;
             if (val0 > val1)
                 val0 = val1;
         }
@@ -999,9 +993,7 @@ int StereoCamera::getImageROIheightMax() {
         int val0 = (int) cameras[0].HeightMax.GetValue();
         int val1 = (int) cameras[1].HeightMax.GetValue();
         if (val0 != val1) {
-            std::cout
-                    << "Image acquisition ROI max height of the two cameras are not the same. Now using the lower (safer) value."
-                    << std::endl;
+            std::cout << "Image acquisition ROI max height of the two cameras are not the same. Now using the lower (safer) value." << std::endl;
             if (val0 > val1)
                 val0 = val1;
         }
@@ -1026,9 +1018,7 @@ int StereoCamera::getBinningVal() {
         int b0 = (int) cameras[0].BinningHorizontal.GetValue();
         int b1 = (int) cameras[1].BinningHorizontal.GetValue();
         if (b0 != b1) {
-            std::cout
-                    << "Image acquisition horizontal binning of the two cameras are not the same. Now resetting both to the lower value."
-                    << std::endl;
+            std::cout << "Image acquisition horizontal binning of the two cameras are not the same. Now resetting both to the lower value." << std::endl;
             setBinningVal(b0);
         }
         return b0;
@@ -1072,16 +1062,13 @@ bool StereoCamera::isGrabbing()
 
 // NOTE: grabbing "pause" is necessary for setting binning
 bool StereoCamera::setBinningVal(int value) {
-    if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || cameras[1].BinningHorizontal.IsReadable()) {
+    if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || !cameras[1].BinningHorizontal.IsReadable()) {
         return false;
     }
-
     bool success = false;
 
-    if(cameras[0].IsGrabbing())
-        cameras[0].StopGrabbing();
-    if(cameras[1].IsGrabbing())
-        cameras[1].StopGrabbing();
+    if(cameras.IsGrabbing())
+        stopGrabbing();
 
     // in case of our Basler cameras here, only mode=1,2,4 are only valid values
     if (cameras[0].BinningHorizontal.IsWritable() && cameras[0].BinningVertical.IsWritable() &&
@@ -1121,158 +1108,91 @@ bool StereoCamera::setBinningVal(int value) {
             std::cout << "Setting binning to 1 (no binning) on both axes"<< std::endl;
         }
     }
-    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
-    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    startGrabbing();
     return success;
 }
 
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool StereoCamera::setImageROIwidth(int width) {
-    if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || cameras[1].BinningHorizontal.IsReadable()) {
+    if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || !cameras[1].BinningHorizontal.IsReadable()) {
         return false;
     }
 
     //std::cout << "Setting both cameras Image ROI width=" << std::to_string(width) << std::endl;
     bool success = false;
 
-    if(cameras[0].IsGrabbing())
-        cameras[0].StopGrabbing();
-    if(cameras[1].IsGrabbing())
-        cameras[1].StopGrabbing();
+    if(cameras.IsGrabbing())
+        stopGrabbing();
 
-    int b0 = cameras[0].BinningHorizontal.GetValue();
-    int b1 = cameras[1].BinningHorizontal.GetValue();
-    if(b0!=b1) {
-        std::cout << "Binning of the two cameras to not match. Now resetting." << std::endl;
-        setBinningVal(b0);
-    }
-
-    // ace Classic/U/L GigE Cameras
-   // int maxWidth = camera.Width.GetMax();
-   // int maxHeight = camera.Height.GetMax();
-    // other cameras
-    int mw0 = cameras[0].WidthMax.GetValue();
-    int mw1 = cameras[1].WidthMax.GetValue();
-    if(mw0!=mw1) {
-        std::cout << "Max px width size of the two cameras to not match." << std::endl;
-    }
-    int maxWidth = mw0 > mw1 ? mw0 : mw1;
-
-    int offsetX0 = cameras[0].OffsetX.GetValue();
-    int offsetX1 = cameras[1].OffsetX.GetValue();
+    getBinningVal(); // Call just to reset binning if they do not match for the 2 cameras
+    int maxWidth = getImageROIwidthMax();
+    int offsetX = getImageROIoffsetX();
 
     if(width < 16)
         width=16;
-
-    int modVal=width%4;
+    int modVal=width%16;
     if(modVal != 0)
         width -= modVal;
-    
-    int wc0, wc1, bestWidth;
-    wc0 = wc1 = bestWidth = 16;
-    
-    if (offsetX0 >= maxWidth-16)
-        wc0 = maxWidth-offsetX0;
-    if (offsetX1 >= maxWidth-16)
-        wc1 = maxWidth-offsetX1;
-    bestWidth = wc0 > wc1 ? wc0 : wc1;
+    int bestWidth = (offsetX >= maxWidth-16) ? 16 : width;
 
-    if (bestWidth + offsetX0 <= maxWidth && cameras[0].Width.IsWritable() && cameras[1].Width.IsWritable() ) {
+    if (cameras[0].Width.IsWritable() && cameras[1].Width.IsWritable() ) {
         success = cameras[0].Width.TrySetValue(bestWidth) &&
             cameras[1].Width.TrySetValue(bestWidth);
     }
-    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
-    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    startGrabbing();
     return success;
 }
 
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool StereoCamera::setImageROIheight(int height) {
-    if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || cameras[1].BinningHorizontal.IsReadable()) {
+    if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || !cameras[1].BinningHorizontal.IsReadable()) {
         return false;
     }
 
     //std::cout << "Setting both cameras Image ROI height=" << std::to_string(height) << std::endl;
     bool success = false;
 
-    if(cameras[0].IsGrabbing())
-        cameras[0].StopGrabbing();
-    if(cameras[1].IsGrabbing())
-        cameras[1].StopGrabbing();
+    if(cameras.IsGrabbing())
+        stopGrabbing();
 
-    int b0 = cameras[0].BinningHorizontal.GetValue();
-    int b1 = cameras[1].BinningHorizontal.GetValue();
-    if(b0!=b1) {
-        std::cout << "Binning of the two cameras to not match. Now resetting." << std::endl;
-        setBinningVal(b0);
-    }
-
-    // ace Classic/U/L GigE Cameras
-   // int maxWidth = camera.Width.GetMax();
-   // int maxHeight = camera.Height.GetMax();
-    // other cameras
-    int mh0 = cameras[0].HeightMax.GetValue();
-    int mh1 = cameras[1].HeightMax.GetValue();
-    if(mh0!=mh1) {
-        std::cout << "Max px height size of the two cameras to not match." << std::endl;
-    }
-    int maxHeight = mh0 > mh1 ? mh0 : mh1;
-
-    int offsetY0 = cameras[0].OffsetY.GetValue();
-    int offsetY1 = cameras[1].OffsetY.GetValue();
+    getBinningVal(); // Call just to reset binning if they do not match for the 2 cameras
+    int maxHeight = getImageROIheightMax();
+    int offsetY = getImageROIoffsetY();
 
     if(height < 16)
         height=16;
-
-    int modVal=height%4;
+    int modVal=height%16;
     if(modVal != 0)
         height -= modVal;
-    
-    int hc0, hc1, bestHeight;
-    hc0 = hc1 = bestHeight = 16;
-    
-    if (offsetY0 >= maxHeight-16)
-        hc0 = maxHeight-offsetY0;
-    if (offsetY1 >= maxHeight-16)
-        hc1 = maxHeight-offsetY1;
-    bestHeight = hc0 > hc1 ? hc0 : hc1;
+    int bestHeight = (offsetY >= maxHeight-16) ? 16 : height;
 
-    if (bestHeight + offsetY0 <= maxHeight && cameras[0].Height.IsWritable() && cameras[1].Height.IsWritable() ) {
+    if (cameras[0].Height.IsWritable() && cameras[1].Height.IsWritable() ) {
         success = cameras[0].Height.TrySetValue(bestHeight) &&
             cameras[1].Height.TrySetValue(bestHeight);
     }
-    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
-    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    startGrabbing();
     return success;
 }
 
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool StereoCamera::setImageROIoffsetX(int offsetX) {
-    if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || cameras[1].BinningHorizontal.IsReadable()) {
+    if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || !cameras[1].BinningHorizontal.IsReadable()) {
         return false;
     }
 
     //std::cout << "Setting Image ROI offsetX=" << std::to_string(offsetX) << std::endl;
     bool success = false;
 
-    if(cameras[0].IsGrabbing())
-        cameras[0].StopGrabbing();
-    if(cameras[1].IsGrabbing())
-        cameras[1].StopGrabbing();
+    if(cameras.IsGrabbing())
+        stopGrabbing();
 
-    // ace Classic/U/L GigE Cameras
-   // int maxWidth = cameras[0].Width.GetMax();
-   // int maxHeight = cameras[0].Height.GetMax();
-    // other cameras
+    getBinningVal(); // Call just to reset binning if they do not match for the 2 cameras
     int maxWidth = getImageROIwidthMax();
     int width = getImageROIwidth();
 
     if(maxWidth - offsetX < 16)
         offsetX = maxWidth - 16;
-    //if(width + offsetX > maxWidth)
-    //    return;
-    
-    int modVal=offsetX%4;
+    int modVal=offsetX%16;
     if(modVal != 0)
         offsetX -= modVal;
 
@@ -1280,47 +1200,37 @@ bool StereoCamera::setImageROIoffsetX(int offsetX) {
         success = cameras[0].OffsetX.TrySetValue(offsetX) &&
             cameras[1].OffsetX.TrySetValue(offsetX);
     }
-    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
-    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    startGrabbing();
     return success;
 }
 
 // NOTE: grabbing "pause" is necessary for setting image ROI
 bool StereoCamera::setImageROIoffsetY(int offsetY) {
-    if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || cameras[1].BinningHorizontal.IsReadable()) {
+    if (cameras.GetSize() != 2 || !cameras[0].BinningHorizontal.IsReadable() || !cameras[1].BinningHorizontal.IsReadable()) {
         return false;
     }
     
     //std::cout << "Setting Image ROI offsetY=" << std::to_string(offsetY) << std::endl;
     bool success = false;
 
-    if(cameras[0].IsGrabbing())
-        cameras[0].StopGrabbing();
-    if(cameras[1].IsGrabbing())
-        cameras[1].StopGrabbing();
+    if(cameras.IsGrabbing())
+        stopGrabbing();
 
-    // ace Classic/U/L GigE Cameras
-   // int maxWidth = cameras[0].Width.GetMax();
-   // int maxHeight = cameras[0].Height.GetMax();
-    // other cameras
+    getBinningVal(); // Call just to reset binning if they do not match for the 2 cameras
     int maxHeight = getImageROIheightMax();;
     int height = getImageROIheight();;
 
     if(maxHeight - offsetY < 16)
         offsetY = maxHeight - 16;
-    //if(height + offsetY > maxHeight)
-    //    return;
-
-    int modVal=offsetY%4;
+    int modVal=offsetY%16;
     if(modVal != 0)
         offsetY -= modVal;
 
     if (height + offsetY <= maxHeight && cameras[0].OffsetY.IsWritable() && cameras[1].OffsetY.IsWritable() ) {
         success = cameras[0].OffsetY.TrySetValue(offsetY) &&
             cameras[1].OffsetY.TrySetValue(offsetY);
-    } 
-    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
-    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    }
+    startGrabbing();
     return success;
 }
 
@@ -1332,47 +1242,25 @@ bool StereoCamera::setImageROIwidthEmu(int width) {
     //std::cout << "Setting both cameras Image ROI width=" << std::to_string(width) << std::endl;
     bool success = false;
 
-    if(cameras[0].IsGrabbing())
-        cameras[0].StopGrabbing();
-    if(cameras[1].IsGrabbing())
-        cameras[1].StopGrabbing();
+    if(cameras.IsGrabbing())
+        stopGrabbing();
 
-    // ace Classic/U/L GigE Cameras
-   // int maxWidth = camera.Width.GetMax();
-   // int maxHeight = camera.Height.GetMax();
-    // other cameras
-    int mw0 = cameras[0].WidthMax.GetValue();
-    int mw1 = cameras[1].WidthMax.GetValue();
-    if(mw0!=mw1) {
-        std::cout << "Max px width size of the two cameras to not match." << std::endl;
-    }
-    int maxWidth = mw0 > mw1 ? mw0 : mw1;
-
-    int offsetX0 = cameras[0].OffsetX.GetValue();
-    int offsetX1 = cameras[1].OffsetX.GetValue();
+    getBinningVal(); // Call just to reset binning if they do not match for the 2 cameras
+    int maxWidth = getImageROIwidthMax();
+    int offsetX = getImageROIoffsetX();
 
     if(width < 16)
         width=16;
-
-    int modVal=width%4;
+    int modVal=width%16;
     if(modVal != 0)
         width -= modVal;
-    
-    int wc0, wc1, bestWidth;
-    wc0 = wc1 = bestWidth = width;
-    
-    if (offsetX0 >= maxWidth-16)
-        wc0 = maxWidth-offsetX0;
-    if (offsetX1 >= maxWidth-16)
-        wc1 = maxWidth-offsetX1;
-    bestWidth = wc0 > wc1 ? wc0 : wc1;
+    int bestWidth = (offsetX >= maxWidth-16) ? 16 : width;
 
-    if (bestWidth + offsetX0 <= maxWidth && cameras[0].Width.IsWritable() && cameras[1].Width.IsWritable() ) {
+    if (cameras[0].Width.IsWritable() && cameras[1].Width.IsWritable() ) {
         success = cameras[0].Width.TrySetValue(bestWidth) &&
             cameras[1].Width.TrySetValue(bestWidth);
     }
-    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
-    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    startGrabbing();
     return success;
 }
 
@@ -1385,47 +1273,25 @@ bool StereoCamera::setImageROIheightEmu(int height) {
     //std::cout << "Setting both cameras Image ROI height=" << std::to_string(height) << std::endl;
     bool success = false;
 
-    if(cameras[0].IsGrabbing())
-        cameras[0].StopGrabbing();
-    if(cameras[1].IsGrabbing())
-        cameras[1].StopGrabbing();
+    if(cameras.IsGrabbing())
+        stopGrabbing();
 
-    // ace Classic/U/L GigE Cameras
-   // int maxWidth = camera.Width.GetMax();
-   // int maxHeight = camera.Height.GetMax();
-    // other cameras
-    int mh0 = cameras[0].HeightMax.GetValue();
-    int mh1 = cameras[1].HeightMax.GetValue();
-    if(mh0!=mh1) {
-        std::cout << "Max px height size of the two cameras to not match." << std::endl;
-    }
-    int maxHeight = mh0 > mh1 ? mh0 : mh1;
-
-    int offsetY0 = cameras[0].OffsetY.GetValue();
-    int offsetY1 = cameras[1].OffsetY.GetValue();
+    getBinningVal(); // Call just to reset binning if they do not match for the 2 cameras
+    int maxHeight = getImageROIheightMax();
+    int offsetY = getImageROIoffsetY();
 
     if(height < 16)
         height=16;
-
-    int modVal=height%4;
+    int modVal=height%16;
     if(modVal != 0)
         height -= modVal;
-    
-    int hc0, hc1, bestHeight;
-    hc0 = hc1 = bestHeight = height;
-    
-    if (offsetY0 >= maxHeight-16)
-        hc0 = maxHeight-offsetY0;
-    if (offsetY1 >= maxHeight-16)
-        hc1 = maxHeight-offsetY1;
-    bestHeight = hc0 > hc1 ? hc0 : hc1;
+    int bestHeight = (offsetY >= maxHeight-16) ? 16 : height;
 
-    if (bestHeight + offsetY0 <= maxHeight && cameras[0].Height.IsWritable() && cameras[1].Height.IsWritable() ) {
+    if (cameras[0].Height.IsWritable() && cameras[1].Height.IsWritable() ) {
         success = cameras[0].Height.TrySetValue(bestHeight) &&
             cameras[1].Height.TrySetValue(bestHeight);
     }
-    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
-    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    startGrabbing();
     return success;
 }
 
@@ -1438,24 +1304,15 @@ bool StereoCamera::setImageROIoffsetXEmu(int offsetX) {
     //std::cout << "Setting Image ROI offsetX=" << std::to_string(offsetX) << std::endl;
     bool success = false;
 
-    if(cameras[0].IsGrabbing())
-        cameras[0].StopGrabbing();
-    if(cameras[1].IsGrabbing())
-        cameras[1].StopGrabbing();
+    if(cameras.IsGrabbing())
+        stopGrabbing();
 
-    // ace Classic/U/L GigE Cameras
-   // int maxWidth = cameras[0].Width.GetMax();
-   // int maxHeight = cameras[0].Height.GetMax();
-    // other cameras
     int maxWidth = getImageROIwidthMax();;
     int width = getImageROIwidth();;
 
     if(maxWidth - offsetX < 16)
         offsetX = maxWidth - 16;
-    //if(width + offsetX > maxWidth)
-    //    return;
-    
-    int modVal=offsetX%4;
+    int modVal=offsetX%16;
     if(modVal != 0)
         offsetX -= modVal;
 
@@ -1463,8 +1320,7 @@ bool StereoCamera::setImageROIoffsetXEmu(int offsetX) {
         success = cameras[0].OffsetX.TrySetValue(offsetX) &&
             cameras[1].OffsetX.TrySetValue(offsetX);
     }
-    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
-    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    startGrabbing();
     return success;
 }
 
@@ -1477,32 +1333,62 @@ bool StereoCamera::setImageROIoffsetYEmu(int offsetY) {
     //std::cout << "Setting Image ROI offsetY=" << std::to_string(offsetY) << std::endl;
     bool success = false;
 
-    if(cameras[0].IsGrabbing())
-        cameras[0].StopGrabbing();
-    if(cameras[1].IsGrabbing())
-        cameras[1].StopGrabbing();
+    if(cameras.IsGrabbing())
+        stopGrabbing();
 
-    // ace Classic/U/L GigE Cameras
-   // int maxWidth = cameras[0].Width.GetMax();
-   // int maxHeight = cameras[0].Height.GetMax();
-    // other cameras
     int maxHeight = getImageROIheightMax();
     int height = getImageROIheight();
 
     if(maxHeight - offsetY < 16)
         offsetY = maxHeight - 16;
-    //if(height + offsetY > maxHeight)
-    //    return;
-
-    int modVal=offsetY%4;
+    int modVal=offsetY%16;
     if(modVal != 0)
         offsetY -= modVal;
 
     if (height + offsetY <= maxHeight && cameras[0].OffsetY.IsWritable() && cameras[1].OffsetY.IsWritable() ) {
         success = cameras[0].OffsetY.TrySetValue(offsetY) &&
             cameras[1].OffsetY.TrySetValue(offsetY);
-    } 
-    cameras[0].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
-    cameras[1].StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    }
+    startGrabbing();
     return success;
+}
+
+void StereoCamera::safelyCloseCameras() {
+    if(!cameras.IsOpen())
+        return;
+
+    if(cameras.IsGrabbing())
+        cameras.StopGrabbing();
+    cameras.Close();
+
+    if(cameraImageEventHandler) {
+        disconnect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), this,
+                   SIGNAL(onNewGrabResult(CameraImage)));
+        disconnect(cameraImageEventHandler, SIGNAL(onNewGrabResult(CameraImage)), frameCounter,
+                   SLOT(count(CameraImage)));
+        //disconnect(cameraImageEventHandler, SIGNAL(needsTimeSynchronization()), this, SLOT(resynchronizeTime()));
+        disconnect(cameraImageEventHandler, SIGNAL(imagesSkipped()), this, SIGNAL(imagesSkipped()));
+        cameras[0].DeregisterImageEventHandler(cameraImageEventHandler);
+        cameras[1].DeregisterImageEventHandler(cameraImageEventHandler);
+//        cameraImageEventHandler->DestroyImageEventHandler(); //
+        cameraImageEventHandler = nullptr;
+    }
+
+    if(cameraConfigurationEventHandler0) {
+        disconnect(cameraConfigurationEventHandler0, SIGNAL(cameraDeviceRemoved()), this,
+                   SIGNAL(cameraDeviceRemoved()));
+        cameras[0].DeregisterConfiguration(hardwareTriggerConfiguration0);
+        cameras[0].DeregisterConfiguration(cameraConfigurationEventHandler0);
+        hardwareTriggerConfiguration0 = nullptr;
+        cameraConfigurationEventHandler0 = nullptr;
+    }
+
+    if(cameraConfigurationEventHandler1) {
+        disconnect(cameraConfigurationEventHandler1, SIGNAL(cameraDeviceRemoved()), this,
+                   SIGNAL(cameraDeviceRemoved()));
+        cameras[1].DeregisterConfiguration(hardwareTriggerConfiguration1);
+        cameras[1].DeregisterConfiguration(cameraConfigurationEventHandler1);
+        hardwareTriggerConfiguration1 = nullptr;
+        cameraConfigurationEventHandler1 = nullptr;
+    }
 }

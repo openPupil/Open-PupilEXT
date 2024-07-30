@@ -394,24 +394,24 @@ StereoCameraView::~StereoCameraView() {
 void StereoCameraView::loadSettings() {
     // GB TODO: surely loads the bools always? Seems to be ok, but I remember to have seen cases in other code when the read value was "false" which was not parsed as 0
 
-    displayPupilView = applicationSettings->value("StereoCameraView.displayPupilView", displayPupilView).toBool();
+    displayPupilView = applicationSettings->value("StereoCameraView.displayPupilView", false).toBool();
     onDisplayPupilViewClick(displayPupilView);
     displayDetailAct->setChecked(displayPupilView);
 
-    plotPupilCenter = applicationSettings->value("StereoCameraView.plotPupilCenter", plotPupilCenter).toBool();
+    plotPupilCenter = applicationSettings->value("StereoCameraView.plotPupilCenter", false).toBool();
     onPlotPupilCenterClick(plotPupilCenter);
     plotCenterAct->setChecked(plotPupilCenter);
 
-    plotROIContour = applicationSettings->value("StereoCameraView.plotROIContour", plotROIContour).toBool();
+    plotROIContour = applicationSettings->value("StereoCameraView.plotROIContour", false).toBool();
     plotROIAct->setChecked(plotROIContour);
     onPlotROIClick(plotROIContour);
 
     // GB added/modified begin
-    showAutoParamOverlay = applicationSettings->value("StereoCameraView.showAutoParamOverlay", showAutoParamOverlay).toBool();
+    showAutoParamOverlay = applicationSettings->value("StereoCameraView.showAutoParamOverlay", false).toBool();
     showAutoParamAct->setChecked(showAutoParamOverlay);
     onShowAutoParamOverlay(showAutoParamOverlay);
 
-    showPositioningGuide = applicationSettings->value("StereoCameraView.showPositioningGuide", showPositioningGuide).toBool();
+    showPositioningGuide = applicationSettings->value("StereoCameraView.showPositioningGuide", false).toBool();
     if(camera->getType() == STEREO_IMAGE_FILE) {
         showPositioningGuideAct->setDisabled(true);
         showPositioningGuideAct->setChecked(false);

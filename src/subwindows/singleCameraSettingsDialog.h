@@ -17,6 +17,7 @@
 #include <QtWidgets/QtWidgets>
 #include "../devices/singleCamera.h"
 #include "serialSettingsDialog.h"
+#include "../SVGIconColorAdjuster.h"
 
 // BG added
 #include "../devices/singleWebcam.h"
@@ -32,7 +33,7 @@ class SingleCameraSettingsDialog : public QDialog {
 
 public:
 
-    explicit SingleCameraSettingsDialog(SingleCamera *singleCamera, SerialSettingsDialog *serialSetting, QWidget *parent = nullptr);
+    explicit SingleCameraSettingsDialog(SingleCamera *cameraPtr, SerialSettingsDialog *serialSetting, QWidget *parent = nullptr);
 
     ~SingleCameraSettingsDialog() override;
 
@@ -44,7 +45,7 @@ protected:
 
 private:
 
-    SingleCamera *singleCamera;
+    SingleCamera *camera;
 
     QDir settingsDirectory;
     QSettings *applicationSettings;
@@ -53,36 +54,45 @@ private:
 
     QPushButton *saveButton;
     QPushButton *loadButton;
-    QPushButton *gainAutoOnceButton;
-    QPushButton *exposureAutoOnceButton;
-    QPushButton *startHWButton;
-    QPushButton *stopHWButton;
+    QPushButton *autoGainOnceButton;
+    QPushButton *autoExposureOnceButton;
+    QPushButton *HWTstartStopButton;
 
-    QDoubleSpinBox *gainInputBox;
+    QDoubleSpinBox *gainBox;
     QSpinBox *exposureInputBox;
 
     QLabel *frameRateValueLabel;
-    QCheckBox *framerateEnabled;
-    QSpinBox *framerateInputBox;
+    QRadioButton *SWTradioButton;
+    QCheckBox *SWTframerateEnabled;
+    QSpinBox *SWTframerateBox;
 
-    QCheckBox *hwTriggerEnabled;
     QPushButton *serialConfigButton;
-    QComboBox *lineSourceBox;
+    QFormLayout *HWTgroupLayout;
+    QLabel *HWTframerateLabel;
+    QLabel *HWTlineSourceLabel;
+    QLabel *HWTtimeSpanLabel;
+    QComboBox *HWTlineSourceBox;
+    QLabel *serialConnDisconnButtonLabel;
+    QLabel *HWTstartStopButtonLabel;
+    bool HWTrunning = false;
+    QRadioButton *HWTradioButton;
+    QHBoxLayout *HWTframerateLayout;
+    QSpinBox *HWTframerateBox;
+    QDoubleSpinBox *HWTtimeSpanBox;
 
-    QSpinBox *triggerFramerateInputBox;
-    QDoubleSpinBox *triggerTimeSpanInputBox;
+    QGroupBox *serialConnGroup;
+    QPushButton *serialConnDisconnButton;
+
+    QGroupBox *triggerGroup;
+    QGroupBox *analogGroup;
+    QGroupBox *acquisitionGroup;
 
     void createForm();
     void updateForms();
     void loadSettings();
     void saveSettings();
 
-    // BG added (+made global) begin
-    QGroupBox *hwTriggerGroup;
-    QGroupBox *analogGroup;
-    QGroupBox *acquisitionGroup;
-
-    QHBoxLayout *framerateInputLayout; 
+    QHBoxLayout *SWTframerateLayout;
     QLabel *frameRateLabel;
     QLabel *exposureLabel;
 
@@ -106,11 +116,6 @@ private:
     CamImageRegionsWidget *camImageRegionsWidget;
 
     int lastUsedBinningVal = 0;
-    //when binning value is 1. Must be divisible by 4 (camera dependent). 4*16
-    const int minImageSize = 64; 
-    //when binning value is 1. Must be divisible by 4 (camera dependent). 4*16
-    const int imageSizeChangeSingleStep = 32;
-    // BG added end
 
 public slots:
     void setLimitationsWhileTracking(bool state);
@@ -128,14 +133,11 @@ private slots:
     void autoExposureOnce();
 
     void onLineSourceChange(int index);
-    void onSerialConnect();
-    void onSerialDisconnect();
-
     void updateFrameRateValue();
     void startHardwareTrigger();
     void stopHardwareTrigger();
 
-    void onHardwareTriggerCheckbox(bool value);
+    void onHWTenabledChange(bool state);
 
     void onSettingsChange();
 
@@ -145,12 +147,14 @@ private slots:
     void onSetImageROIoffsetY(int val);
     void onBinningModeChange(int index);
 
-    void updateImageROISettingsMin(int binningVal);
+    void HWTstartStopButtonClicked();
+    void serialConnDisconnButtonClicked();
+
     void updateImageROISettingsMax();
 
     void setExposureTimeValue(int value);
     void setAcquisitionFPSValue(int value);
-    void enableAcquisitionFrameRate(bool value);
+    void enableAcquisitionFrameRate(bool state);
 
 signals:
     void onSerialConfig();

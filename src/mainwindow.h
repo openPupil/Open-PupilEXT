@@ -370,6 +370,8 @@ public slots:
     void onCameraPlaybackChanged();
 
     void onCameraUnexpectedlyDisconnected();
+
+    void onStereoCamerasOpened();
     // GB added end
 
 signals:

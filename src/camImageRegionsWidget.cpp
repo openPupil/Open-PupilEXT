@@ -98,8 +98,17 @@ QLine CamImageRegionsWidget::toDrawingArea(QLine line) {
 
 
 void CamImageRegionsWidget::resizeEvent(QResizeEvent *event) {
+    recalculateDrawingArea(event->size());
+}
+
+// Calling this is necessary if the camera sensor size changes (e.g. we open a camera that has a non-zero sensor size)
+void CamImageRegionsWidget::recalculateDrawingArea() {
+    recalculateDrawingArea(size());
+}
+
+void CamImageRegionsWidget::recalculateDrawingArea(const QSize& widgetSize) {
     // calculate aspect ratios for "fit in" view of the sensor size (image max size) in the widget
-    float widgetAR = (float)size().width()/size().height();
+    float widgetAR = (float)size().width() / widgetSize.height();
     float sensorAR = (float)imageMaxSize.width()/imageMaxSize.height();
 
     // -1 is needed because we cannot draw at the rightmost and bottom pixel lines of the widget sometimes
@@ -107,18 +116,18 @@ void CamImageRegionsWidget::resizeEvent(QResizeEvent *event) {
         // up and bottom edges of drawingArea touch the border of the widget
         // shrink the width of drawingArea AND center horizontally
         drawingArea = QRect(
-            0 + (float)event->size().width()/2 - ((float)event->size().height() * sensorAR /2), 
-            0, 
-            (float)event->size().height() * sensorAR -1, 
-            event->size().height() -1 );
+                0 + (float)widgetSize.width() / 2 - ((float)widgetSize.height() * sensorAR / 2),
+                0,
+                (float)widgetSize.height() * sensorAR - 1,
+                widgetSize.height() - 1 );
     } else {
         // left and right edges of drawingArea touch the border of the widget
         // shrink the height of drawingArea AND center vertically
         drawingArea = QRect(
-            0, 
-            0 + (float)event->size().height()/2 - ((float)event->size().width() / sensorAR /2), 
-            event->size().width() -1, 
-            (float)event->size().width() / sensorAR -1 );
+                0,
+                0 + (float)widgetSize.height() / 2 - ((float)widgetSize.width() / sensorAR / 2),
+                widgetSize.width() - 1,
+                (float)widgetSize.width() / sensorAR - 1 );
     }
 }
 

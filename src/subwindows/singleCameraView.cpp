@@ -382,24 +382,24 @@ SingleCameraView::~SingleCameraView() {
 void SingleCameraView::loadSettings() {
     // GB TODO: surely loads the bools always? Seems to be ok, but I remember to have seen cases in other code when the read value was "false" which was not parsed as 0
 
-    displayPupilView = applicationSettings->value("SingleCameraView.displayPupilView", displayPupilView).toBool();
+    displayPupilView = applicationSettings->value("SingleCameraView.displayPupilView", false).toBool();
     onDisplayPupilViewClick(displayPupilView);
     displayDetailAct->setChecked(displayPupilView);
 
-    plotPupilCenter = applicationSettings->value("SingleCameraView.plotPupilCenter", plotPupilCenter).toBool();
+    plotPupilCenter = applicationSettings->value("SingleCameraView.plotPupilCenter", false).toBool();
     onPlotPupilCenterClick(plotPupilCenter);
     plotCenterAct->setChecked(plotPupilCenter);
 
-    plotROIContour = applicationSettings->value("SingleCameraView.plotROIContour", plotROIContour).toBool();
+    plotROIContour = applicationSettings->value("SingleCameraView.plotROIContour", false).toBool();
     plotROIAct->setChecked(plotROIContour);
     onPlotROIClick(plotROIContour);
 
     // GB added/modified begin
-    showAutoParamOverlay = applicationSettings->value("SingleCameraView.showAutoParamOverlay", showAutoParamOverlay).toBool();
+    showAutoParamOverlay = applicationSettings->value("SingleCameraView.showAutoParamOverlay", false).toBool();
     showAutoParamAct->setChecked(showAutoParamOverlay);
     onShowAutoParamOverlay(showAutoParamOverlay);
 
-    showPositioningGuide = applicationSettings->value("SingleCameraView.showPositioningGuide", showPositioningGuide).toBool();
+    showPositioningGuide = applicationSettings->value("SingleCameraView.showPositioningGuide", false).toBool();
     if(camera->getType() == SINGLE_IMAGE_FILE) {
         showPositioningGuideAct->setDisabled(true);
         showPositioningGuideAct->setChecked(false);

@@ -62,6 +62,8 @@ void StereoCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
         if (camera.GetDeviceInfo().GetModelName().find("Emu") != String_t::npos){
             stereoImage.timestamp += frameNumber;
         }
+        //std::cout << "Image frameNumber: " << stereoImage.frameNumber << std::endl;
+        //std::cout << "Received frameNumber: " << frameNumber << " Device id: " << camera.GetDeviceInfo().GetDeviceGUID() <<  std::endl;
         if(stereoImage.frameNumber == frameNumber) {
             // If framenumber matches the already contained image in the stereo image this means the missing second images is now found
             // Cameracontextvalue describes the index of the camera in a basler camera array (main or secondary)
@@ -73,6 +75,7 @@ void StereoCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
             //std::cout<< "Stereoimage complete: " << stereoImage.frameNumber << " " << stereoImage.timestamp <<std::endl;
             //std::cout<< "-------------------------------" <<std::endl;
             emit onNewGrabResult(stereoImage);
+//            std::cout << "STEREO GRAB RESULT: " << stereoImage.frameNumber << " AT TIME: " << stereoImage.timestamp << std::endl;
         } else {
             // Else, we have a "new" stereo image, set the timestamp, image and wait for the second missing one, then emit
             stereoImage.timestamp = timeStamp;

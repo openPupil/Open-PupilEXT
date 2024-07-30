@@ -43,6 +43,9 @@ public:
     void resizeEvent(QResizeEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
 
+    void recalculateDrawingArea();
+    void recalculateDrawingArea(const QSize& widgetSize);
+
 private:
     
     QSettings *applicationSettings;

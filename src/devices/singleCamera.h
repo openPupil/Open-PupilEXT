@@ -16,6 +16,7 @@
 #include "../frameRateCounter.h"
 #include "../cameraCalibration.h"
 #include "../cameraFrameRateCounter.h"
+#include "hardwareTriggerConfiguration.h"
 
 
 using namespace Pylon;
@@ -75,6 +76,7 @@ public:
     int getExposureTimeMax();
 
     bool isEnabledAcquisitionFrameRate(); // ResultingFrameRate
+    bool isEmulated();
     double getResultingFrameRateValue(); // ResultingFrameRate
 
     int getAcquisitionFPSValue();
@@ -119,10 +121,11 @@ private:
 
     CBaslerUniversalInstantCamera camera;
     SingleCameraImageEventHandler *cameraImageEventHandler;
-    CameraConfigurationEventHandler *cameraConfigurationEventHandler;
 
+    CameraConfigurationEventHandler *cameraConfigurationEventHandler = nullptr;
+    HardwareTriggerConfiguration *hardwareTriggerConfiguration = nullptr;
+    CAcquireContinuousConfiguration *softwareTriggerConfiguration = nullptr;
     CameraFrameRateCounter *frameCounter;
-
     CameraCalibration *cameraCalibration;
     QThread *calibrationThread;
 
@@ -137,7 +140,7 @@ public slots:
     void setLineSource(String_t value);
     void enableAcquisitionFrameRate(bool enabled);
     void setAcquisitionFPSValue(int value);
-    void enableHardwareTrigger(bool enabled);
+    void enableHardwareTrigger(bool state);
 
     // GB added begin
     bool setBinningVal(int value);

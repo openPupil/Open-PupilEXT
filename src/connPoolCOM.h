@@ -251,6 +251,10 @@ public:
             if(instancePool[idx]->purposeFlags == 0) {
                 qDebug() << "No purpose left for this COM pool instance. Removing from pool.";
 
+                // Try to send the last message before closing, though not sure it this succeeds
+                // See: https://forum.qt.io/topic/112651/send-a-serial-message-before-closing-the-serial-port-in-qt/15
+                instancePool[idx]->port->waitForBytesWritten(1000);
+                instancePool[idx]->port->flush();
                 instancePool[idx]->port->close();
                 delete instancePool[idx]->port;
 

@@ -863,7 +863,8 @@ void MainWindow::updateCameraMenu() {
             if(!found) {
                 QAction *cameraAction = singleCameraDevicesMenu->addAction(deviceIt->GetFriendlyName().c_str());
                 cameraAction->setData(QString(deviceIt->GetFullName()));
-                if(QString(deviceIt->GetFriendlyName().c_str()).toLower().contains("emulat")) {
+
+                if(QString(deviceIt->GetModelName().c_str()).toLower().contains("emu")) {
                     cameraAction->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/composite-track-preview.svg"), applicationSettings));
                 }
             }
@@ -1411,6 +1412,8 @@ void MainWindow::singleCameraSelected(QAction *action) {
 
     cameraSettingsAct->setDisabled(false);
 
+    bool testtest = selectedCamera->isOpen();
+
     //pupilDetectionSettingsDialog->onSettingsChange(); // must come in this order, to set proc mode first
     pupilDetectionWorker->setCamera(selectedCamera);
     pupilDetectionSettingsDialog->onSettingsChange();
@@ -1529,8 +1532,8 @@ void MainWindow::stereoCameraSelected() {
     connect(stereoCameraSettingsDialog, &StereoCameraSettingsDialog::onSerialConfig, serialSettingsDialog, &SerialSettingsDialog::show);
     connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), stereoCameraSettingsDialog, SLOT (onSettingsChange()));
 
-    connect(serialSettingsDialog, SIGNAL (onConnect()), stereoCameraSettingsDialog, SLOT (onSerialConnect()));
-    connect(serialSettingsDialog, SIGNAL (onDisconnect()), stereoCameraSettingsDialog, SLOT (onSerialDisconnect()));
+//    connect(serialSettingsDialog, SIGNAL (onConnect()), stereoCameraSettingsDialog, SLOT (onSerialConnect()));
+//    connect(serialSettingsDialog, SIGNAL (onDisconnect()), stereoCameraSettingsDialog, SLOT (onSerialDisconnect()));
 
     connect(stereoCameraSettingsDialog, SIGNAL (onHardwareTriggerStart(QString)), serialSettingsDialog, SLOT (sendCommand(QString)));
     connect(stereoCameraSettingsDialog, SIGNAL (onHardwareTriggerStop(QString)), serialSettingsDialog, SLOT (sendCommand(QString)));
@@ -1538,13 +1541,15 @@ void MainWindow::stereoCameraSelected() {
     connect(stereoCameraSettingsDialog, SIGNAL (onHardwareTriggerEnable()), this, SLOT (onHwTriggerEnable()));
     connect(stereoCameraSettingsDialog, SIGNAL (onHardwareTriggerDisable()), this, SLOT (onHwTriggerDisable()));
 
+    connect(stereoCameraSettingsDialog, SIGNAL (stereoCamerasOpened()), this, SLOT (onStereoCamerasOpened()));
+
     connect(dynamic_cast<StereoCamera*>(selectedCamera)->getCameraCalibration(), SIGNAL (finishedCalibration()), this, SLOT (onCameraCalibrationEnabled()));
     connect(dynamic_cast<StereoCamera*>(selectedCamera)->getCameraCalibration(), SIGNAL (unavailableCalibration()), this, SLOT (onCameraCalibrationDisabled()));
 
 
     cameraViewClick();
 
-    pupilDetectionWorker->setCamera(selectedCamera);
+    pupilDetectionWorker->setCamera(selectedCamera); // NOTE: this should not be here, but in stereo camera settings dialog
     pupilDetectionSettingsDialog->onSettingsChange();
 
     recEventTracker = new RecEventTracker();
@@ -1655,8 +1660,8 @@ void MainWindow::onSingleCameraSettingsClick() {
 
     connect(subjectSelectionDialog, SIGNAL (onSettingsChange()), singleCameraSettingsDialog, SLOT (onSettingsChange()));
 
-    connect(serialSettingsDialog, SIGNAL (onConnect()), singleCameraSettingsDialog, SLOT (onSerialConnect()));
-    connect(serialSettingsDialog, SIGNAL (onDisconnect()), singleCameraSettingsDialog, SLOT (onSerialDisconnect()));
+//    connect(serialSettingsDialog, SIGNAL (onConnect()), singleCameraSettingsDialog, SLOT (onSerialConnect()));
+//    connect(serialSettingsDialog, SIGNAL (onDisconnect()), singleCameraSettingsDialog, SLOT (onSerialDisconnect()));
 
     connect(singleCameraSettingsDialog, SIGNAL (onHardwareTriggerStart(QString)), serialSettingsDialog, SLOT (sendCommand(QString)));
     connect(singleCameraSettingsDialog, SIGNAL (onHardwareTriggerStop(QString)), serialSettingsDialog, SLOT (sendCommand(QString)));
@@ -2550,4 +2555,8 @@ void MainWindow::dropEvent(QDropEvent* e)
 
     // TODO: add further checks and event handling
     e->acceptProposedAction();
+}
+
+void MainWindow::onStereoCamerasOpened() {
+    pupilDetectionSettingsDialog->onSettingsChange();
 }
