@@ -9,8 +9,8 @@
 // Creates a new live-view widget
 VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selectionColor2, QWidget *parent) : 
     QWidget(parent), 
-    graphicsScene(new QGraphicsScene(parent)),
-    graphicsView(new QGraphicsView(parent)), 
+    graphicsScene(new QGraphicsScene(this)),
+    graphicsView(new QGraphicsView(this)),
     initialFit(false), 
     mode(FIT), 
     scaleFactor(1.25), 

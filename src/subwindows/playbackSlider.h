@@ -36,6 +36,10 @@ public:
 //        this->update();
     }
 
+    PlaybackSlider(QWidget * parent) : QSlider(parent){}
+
+    PlaybackSlider() {};
+
 protected:
 
     void paintEvent(QPaintEvent * event) override {

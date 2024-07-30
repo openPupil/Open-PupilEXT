@@ -61,11 +61,11 @@ private:
 
 public slots:
 
-    void onNewImage(const CameraImage &cimg);
+    void onNewImage(CameraImage *cimg);
 
 signals:
 
-    void processedImage(const CameraImage &image);
+    void processedImage(CameraImage *image);
 
 };
 

@@ -19,7 +19,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
         playbackFrozen(playbackFrozen),
         //pupilViewSize(0, 0),
         currentCameraFPS(0.0),
-        applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
+        applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), this)) {
 
 
     setWindowTitle("Single camera view");
@@ -43,7 +43,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     toolBar->addSeparator();
     
 
-    QMenu *plotMenu = new QMenu("Show");
+    QMenu *plotMenu = new QMenu("Show", this);
     plotMenuAct = plotMenu->menuAction();
     connect(plotMenuAct, &QAction::triggered, this, &SingleCameraView::onPlotMenuClick);
 
@@ -91,7 +91,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     plotMenu->addSeparator();
 
 
-    QLabel *pupilColorLabel = new QLabel("Show pupil detection confidence:");
+    QLabel *pupilColorLabel = new QLabel("Show pupil detection confidence:", this);
     pupilColorLabel->setContentsMargins(8,0,8,0);
     QWidgetAction *act0 = new QWidgetAction(plotMenu);
     act0->setCheckable(false);
@@ -187,7 +187,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     QHBoxLayout *autoParamPupSizeLayout = new QHBoxLayout();
     autoParamPupSizeLayout->setContentsMargins(8,0,8,0); 
 
-    QLabel *autoParamPupSizeLabel = new QLabel("Expected max. pupil size [%]:");
+    QLabel *autoParamPupSizeLabel = new QLabel("Expected max. pupil size [%]:", this);
     autoParamPupSizeLabel->setFixedWidth(150);
 
     autoParamPupSizeBox = new QSpinBox();

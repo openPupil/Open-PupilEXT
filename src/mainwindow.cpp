@@ -65,7 +65,7 @@ MainWindow::MainWindow():
     pupilDetectionWorker = new PupilDetection(imageMutex, imagePublished, imageProcessed);
     serialSettingsDialog = new SerialSettingsDialog(connPoolCOM, this);
     serialSettingsDialog->setWindowIcon(cameraSerialConnectionIcon);
-    remoteCCDialog = new RemoteCCDialog(connPoolCOM,this); //connPoolCOM, pupilDetectionWorker, dataWriter, imageWriter, dataStreamer, offlineEventLogWriter, 
+    remoteCCDialog = new RemoteCCDialog(connPoolCOM,this); //connPoolCOM, pupilDetectionWorker, dataWriter, imageWriter, dataStreamer, offlineEventLogWriter,
     remoteCCDialog->setWindowIcon(remoteCCIcon);
     streamingSettingsDialog = new StreamingSettingsDialog(connPoolCOM, pupilDetectionWorker, dataStreamer, this);
     streamingSettingsDialog->setWindowIcon(streamingSettingsIcon);
@@ -189,6 +189,7 @@ MainWindow::MainWindow():
 
     setAcceptDrops(true);
 
+    playbackSynchroniser = nullptr;
     // GB added end
 }
 
@@ -1009,6 +1010,7 @@ void MainWindow::onStreamClick() {
         streamingSettingsDialog->setLimitationsWhileStreamingCOM(false);
 
         dataStreamer->close(); // TODO check if may terminate writing to early? because of the lag of the event queue in pupildetection
+        dataStreamer->deleteLater();
         // GB: this way we can safely check like if(var!=nullptr) or if(var)
         dataStreamer = nullptr;
 
@@ -1055,7 +1057,8 @@ void MainWindow::onRecordClick() {
         // Deactivate recording
 
         dataWriter->close(); // TODO check if may terminate writing to early? because of the lag of the event queue in pupildetection
-        // GB: this way we can safely check like if(var!=nullptr) or if(var)
+        dataWriter->deleteLater();
+        // GB added: this way we can safely check like if(var!=nullptr) or if(var)
         dataWriter = nullptr;
 
         if(generalSettingsDialog)
@@ -1082,6 +1085,7 @@ void MainWindow::onRecordClick() {
                 recEventTracker,
                 this);
         if(!dataWriter->isReady()) { // in case we failed to open csv file for writing
+            dataWriter->deleteLater();
             dataWriter = nullptr;
             return;
         }
@@ -1120,6 +1124,12 @@ void MainWindow::onRecordImageClick() {
         const QIcon recordOffIcon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-record-blue.svg"), applicationSettings); //QIcon::fromTheme("camera-video");
         recordImagesAct->setIcon(recordOffIcon);
         recordImagesOn = false;
+
+        if (imageWriter != nullptr){
+            imageWriter->deleteLater();
+            imageWriter = nullptr;
+        }
+
 
         // GB added begin
         if( applicationSettings->value("saveOfflineEventLog", "1") == "1" || 
@@ -1201,6 +1211,7 @@ void MainWindow::onCameraDisconnectClick() {
 
     for(auto mdiSubWindow : windows) {
         mdiSubWindow->close();
+        mdiSubWindow->deleteLater();
     }
 
     // GB added begin
@@ -1210,7 +1221,6 @@ void MainWindow::onCameraDisconnectClick() {
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStarted()), this, SLOT(onPlaybackSafelyStarted()));
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyPaused()), this, SLOT(onPlaybackSafelyPaused()));
         disconnect(imagePlaybackControlDialog, SIGNAL(onPlaybackSafelyStopped()), this, SLOT(onPlaybackSafelyStopped()));
-        delete imagePlaybackControlDialog;
         imagePlaybackControlDialog = nullptr;
     }
     if(camTempMonitor) {
@@ -1223,21 +1233,36 @@ void MainWindow::onCameraDisconnectClick() {
         camTempMonitor = nullptr; 
     }
 
-    cameraViewWindow = nullptr;
+    if (cameraViewWindow != nullptr) {
+        cameraViewWindow->deleteLater();
+        cameraViewWindow = nullptr;
 
-    singleCameraChildWidget = nullptr;
-    stereoCameraChildWidget = nullptr;
+    }
+
+    if (singleCameraChildWidget != nullptr) {
+        singleCameraChildWidget->deleteLater();
+        singleCameraChildWidget = nullptr;
+    }
+    if (stereoCameraChildWidget != nullptr) {
+        stereoCameraChildWidget->deleteLater();
+        stereoCameraChildWidget = nullptr;
+    }
     if(recEventTracker) {
         disconnect(this, SIGNAL(commitTrialCounterIncrement(quint64)), recEventTracker, SLOT(addTrialIncrement(quint64)));
         disconnect(this, SIGNAL(commitTrialCounterReset(quint64)), recEventTracker, SLOT(resetBufferTrialCounter(quint64)));
         disconnect(this, SIGNAL(commitRemoteMessage(quint64, QString)), recEventTracker, SLOT(addMessage(quint64, QString)));
 
         recEventTracker->close();
+        recEventTracker->deleteLater();
         //disconnect(selectedCamera, SIGNAL(onNewGrabResult(CameraImage)), recEventTracker, SLOT(updateGrabTimestamp(CameraImage)));
         recEventTracker = nullptr;
     }
     // GB added/modified end
-    calibrationWindow = nullptr;
+    if (calibrationWindow  != nullptr){
+        calibrationWindow->deleteLater();
+        calibrationWindow = nullptr;
+    }
+
 
     
 
@@ -1267,7 +1292,7 @@ void MainWindow::onCameraDisconnectClick() {
         onTrackActClick();
     }
 
-    if(selectedCamera) { 
+    if(selectedCamera  != nullptr) {
         // only if not "file camera":
         if(singleCameraSettingsDialog && (selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA ||
             selectedCamera->getType() == CameraImageType::LIVE_SINGLE_WEBCAM) ) {
@@ -1283,8 +1308,14 @@ void MainWindow::onCameraDisconnectClick() {
         // for all occasions:
         selectedCamera->close();
         // GB added: this way we can safely check like if(var!=nullptr) or if(var)
+        selectedCamera->deleteLater();
         selectedCamera = nullptr;
         // GB added end
+    }
+
+    if (playbackSynchroniser != nullptr){
+        playbackSynchroniser->deleteLater();
+        playbackSynchroniser = nullptr;
     }
 
     // GB: take care of fileOpenAct
@@ -1550,10 +1581,12 @@ void MainWindow::cameraViewClick() {
     if(cameraViewWindow && cameraViewWindow->isVisible()) {
         cameraViewWindow->close();
         // GB added begin
-        stereoCameraChildWidget = nullptr;
+        singleCameraChildWidget->deleteLater();
+        singleCameraChildWidget = nullptr;
+        stereoCameraChildWidget->deleteLater();
         stereoCameraChildWidget = nullptr;
         // GB added end
-        delete cameraViewWindow;
+        cameraViewWindow->deleteLater();
     }
 
     if(selectedCamera && (
@@ -1841,7 +1874,6 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
     if(selectedCamera) {
         selectedCamera->close();
         // GB added: this way we can safely check like if(var!=nullptr) or if(var)
-        delete selectedCamera;
         selectedCamera = nullptr;
         // GB added end
     }
@@ -1869,8 +1901,10 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
         recEventTracker = new RecEventTracker(offlineEventLogFileName);
         if(recEventTracker->isReady()) {
             //connect( ...
-        } else
-            recEventTracker=nullptr;
+        } else {
+            recEventTracker->deleteLater();
+            recEventTracker = nullptr;
+        }
     }
     safelyResetTrialCounter();
 

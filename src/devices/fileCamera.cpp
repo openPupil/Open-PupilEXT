@@ -1,11 +1,12 @@
 
+#include <iostream>
 #include "fileCamera.h"
 
 // Creates a virtual camera, behaving like a physical camera while playing image files from the given directory
 // Playback speed in frames per second can be adjusted through "playbackSpeed"
 FileCamera::FileCamera(const QString &directory, QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed, bool playbackLoop, QObject *parent) : Camera(parent),
-                        imageReader(new ImageReader(directory, imageMutex, imagePublished, imageProcessed, playbackSpeed, playbackLoop)),
-                        frameCounter(new FrameRateCounter()),
+                        imageReader(new ImageReader(directory, imageMutex, imagePublished, imageProcessed, playbackSpeed, playbackLoop, this)),
+                        frameCounter(new FrameRateCounter(this)),
                         stereoCameraCalibration(nullptr),
                         cameraCalibration(nullptr),
                         calibrationThread(nullptr) {
@@ -24,19 +25,17 @@ FileCamera::FileCamera(const QString &directory, QMutex *imageMutex, QWaitCondit
     // Its possible to load existing calibration files for offline pupil measuring
     // CAUTION: calibration file must correspond to the camera with which the offline files were recorded otherwise the calculations are incorrect
     if(imageReader->isStereo()) {
-        stereoCameraCalibration = new StereoCameraCalibration();
+        stereoCameraCalibration = new StereoCameraCalibration(nullptr);
         calibrationThread = new QThread();
         // Calibration worker thread
         stereoCameraCalibration->moveToThread(calibrationThread);
-        connect(calibrationThread, SIGNAL (finished()), calibrationThread, SLOT (deleteLater()));
         calibrationThread->start();
         calibrationThread->setPriority(QThread::HighPriority);
     } else {
-        cameraCalibration = new CameraCalibration();
+        cameraCalibration = new CameraCalibration(nullptr);
         calibrationThread = new QThread();
         // calibration worker thread
         cameraCalibration->moveToThread(calibrationThread);
-        connect(calibrationThread, SIGNAL (finished()), calibrationThread, SLOT (deleteLater()));
         calibrationThread->start();
         calibrationThread->setPriority(QThread::HighPriority);
     }
@@ -44,7 +43,16 @@ FileCamera::FileCamera(const QString &directory, QMutex *imageMutex, QWaitCondit
     open = true;
 }
 
-FileCamera::~FileCamera() = default;
+FileCamera::~FileCamera(){
+    if (cameraCalibration != nullptr)
+        cameraCalibration->deleteLater();
+    if (stereoCameraCalibration != nullptr)
+        stereoCameraCalibration->deleteLater();
+    if (calibrationThread != nullptr) {
+        calibrationThread->quit();
+        calibrationThread->deleteLater();
+    }
+}
 
 void FileCamera::startGrabbing(){
     start();

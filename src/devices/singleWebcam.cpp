@@ -147,7 +147,6 @@ SingleWebcam::SingleWebcam(int deviceID, QString friendlyName, QObject* parent)
 
     // calibration worker thread
     cameraCalibration->moveToThread(calibrationThread);
-    connect(calibrationThread, SIGNAL (finished()), calibrationThread, SLOT (deleteLater()));
     calibrationThread->start();
     calibrationThread->setPriority(QThread::HighPriority);
 
@@ -190,8 +189,12 @@ SingleWebcam::~SingleWebcam() {
     //grabbingThread->terminate();
     grabbingThread->deleteLater();
 
-    calibrationThread->quit();
-    calibrationThread->wait();
+    if (cameraCalibration != nullptr)
+        cameraCalibration->deleteLater();
+    if (calibrationThread != nullptr) {
+        calibrationThread->quit();
+        calibrationThread->deleteLater();
+    }
 }
 
 bool SingleWebcam::isOpen() {

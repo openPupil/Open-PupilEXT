@@ -25,6 +25,8 @@ RecEventTracker::RecEventTracker(const QString &fileName, QObject *parent) : QOb
     if (!dataFile->open(QIODevice::ReadOnly))
     { //| QIODevice::Text)
         std::cout << "Could not open offline event log XML file. Check file availability or file access permission." << std::endl;
+        delete dataFile;
+        dataFile = nullptr;
         return;
     }
 
@@ -329,13 +331,13 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
     // NOTE: search intervals are only inclusive on the left, but exclusive on the right. Consider this
     // TODO: clear file even if appended, as new XML is flushed into it
 
-    QTextStream *textStream = new QTextStream(dataFile);
-    textStream->seek(0); // rewrite the file
+    QTextStream textStream(dataFile);
+    textStream.seek(0); // rewrite the file
 
     // NOTE: the line below (XML processing instruction)  is not automatically added for some reason..
     // BUT if we add it like this, it will cumulatively add to the next file write, and it causes problems.. so we do not add it
     //*textStream << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-    *textStream << document.toString();
+    textStream << document.toString();
     dataFile->close();
 }
 

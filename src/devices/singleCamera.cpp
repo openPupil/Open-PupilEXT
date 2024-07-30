@@ -27,7 +27,6 @@ SingleCamera::SingleCamera(const CDeviceInfo &di, QObject* parent)
 
     // calibration worker thread
     cameraCalibration->moveToThread(calibrationThread);
-    connect(calibrationThread, SIGNAL (finished()), calibrationThread, SLOT (deleteLater()));
     calibrationThread->start();
     calibrationThread->setPriority(QThread::HighPriority);
 
@@ -87,8 +86,12 @@ SingleCamera::SingleCamera(const CDeviceInfo &di, QObject* parent)
 }
 
 SingleCamera::~SingleCamera() {
-    calibrationThread->quit();
-    calibrationThread->wait();
+    if (cameraCalibration != nullptr)
+        cameraCalibration->deleteLater();
+    if (calibrationThread != nullptr) {
+        calibrationThread->quit();
+        calibrationThread->deleteLater();
+    }
 }
 
 void SingleCamera::genericExceptionOccured(const GenericException &e) {

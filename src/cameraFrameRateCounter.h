@@ -72,7 +72,7 @@ public slots:
             if(cumDiff==0 || secFrameCount==0) {
                 fps_ = 0.0;
             } else {
-                fps_ =  (double) 1000.0f / (cumDiff / secFrameCount);
+                fps_ = 1000.0 / ((double) cumDiff / secFrameCount);
             }            m_timer.restart();
             timeout_timer.start(4000);
             secFrameCount = 0;

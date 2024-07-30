@@ -20,7 +20,7 @@ SingleFileCameraCalibrationView::SingleFileCameraCalibrationView(FileCamera *cam
         settingsDirectory.mkdir(".");
     }
 
-    QVBoxLayout* layout = new QVBoxLayout(this);
+    QVBoxLayout* layout = new QVBoxLayout();
 
     textField = new QTextEdit();
     textField->setText("Not calibrated.");

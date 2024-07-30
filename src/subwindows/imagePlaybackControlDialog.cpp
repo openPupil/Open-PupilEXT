@@ -18,7 +18,7 @@ ImagePlaybackControlDialog::ImagePlaybackControlDialog(FileCamera *fileCamera, P
         fileCamera(fileCamera),
         pupilDetection(pupilDetection),
         recEventTracker(recEventTracker),
-        applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
+        applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), this)) {
  
 
     //this->setMinimumSize(500, 400); 
@@ -47,9 +47,9 @@ ImagePlaybackControlDialog::~ImagePlaybackControlDialog() {
 }
 
 void ImagePlaybackControlDialog::createForm() {
-    QGridLayout *layout = new QGridLayout(this);
+    QGridLayout *layout = new QGridLayout();
 
-    QFormLayout *infoLayout = new QFormLayout;
+    QFormLayout *infoLayout = new QFormLayout();
     infoGroup = new QGroupBox("Playback info");
 
     QLabel *timestampLabel = new QLabel(tr("Timestamp [ms]:"));
@@ -112,7 +112,7 @@ void ImagePlaybackControlDialog::createForm() {
     infoGroup->setLayout(infoLayout);
     layout->addWidget(infoGroup, 0, 0, 1, 1);
 
-    QGridLayout *controlLayout = new QGridLayout;
+    QGridLayout *controlLayout = new QGridLayout();
     QGroupBox *controlGroup = new QGroupBox("Control");
 
     slider = new PlaybackSlider();

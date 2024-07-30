@@ -124,7 +124,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 
 if(MSVC OR WIN32)
-    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE /W3)
+    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE /W3 /MP)
 else()
     target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall -pedantic)
 endif()

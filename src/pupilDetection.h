@@ -180,7 +180,9 @@ public:
             return false;
     }
     bool hasOpenCamera() {
-        return (camera && camera->isOpen());
+        if (camera)
+            return camera->isOpen();
+        return false;
     }
     // GB added end
 
@@ -268,10 +270,10 @@ private:
         return getCurrentMethod1();
     };
 
-    void onNewSingleImageForOnePupilImpl(const CameraImage &image);
-    void onNewSingleImageForTwoPupilImpl(const CameraImage &cimg);
-    void onNewStereoImageForOnePupilImpl(const CameraImage &simg);
-    void onNewStereoImageForTwoPupilImpl(const CameraImage &simg);
+    void onNewSingleImageForOnePupilImpl(CameraImage *image);
+    void onNewSingleImageForTwoPupilImpl(CameraImage *cimg);
+    void onNewStereoImageForOnePupilImpl(CameraImage *simg);
+    void onNewStereoImageForTwoPupilImpl(CameraImage *simg);
 
     void configureCameraConnection(bool connectOrDisconnect);
 
@@ -281,10 +283,10 @@ public slots:
     void setConfigLabel(QString config);
     
     // GB added/modified:
-    void onNewSingleImageForOnePupil(const CameraImage &img); // formerly onNewImage
-    void onNewSingleImageForTwoPupil(const CameraImage &img); // formerly did not exist
-    void onNewStereoImageForOnePupil(const CameraImage &simg); // formerly onNewStereoImage
-    void onNewStereoImageForTwoPupil(const CameraImage &simg); // formerly did not exist
+    void onNewSingleImageForOnePupil(CameraImage *img); // formerly onNewImage
+    void onNewSingleImageForTwoPupil(CameraImage *img); // formerly did not exist
+    void onNewStereoImageForOnePupil(CameraImage *simg); // formerly onNewStereoImage
+    void onNewStereoImageForTwoPupil(CameraImage *simg); // formerly did not exist
 
     void setAutoParamEnabled(bool state);
     void setAutoParamPupSizePercent(float value);
@@ -327,11 +329,11 @@ public slots:
 
 signals:
 
-    void processedImage(const CameraImage &image);
+    void processedImage(CameraImage *image);
     
     // GB added/modified begin
-    void processedPlaybackImage(CameraImage mimg);
-    void processedImage(CameraImage mimg, int currentProcMode, std::vector<cv::Rect> ROIs, std::vector<Pupil> Pupils);
+    void processedPlaybackImage(CameraImage *mimg);
+    void processedImage(CameraImage *mimg, int currentProcMode, std::vector<cv::Rect> ROIs, std::vector<Pupil> Pupils);
     void processedPupilData(quint64 timestamp, int currentProcMode, const std::vector<Pupil> &Pupils, const QString &filename);
 
     void onROIPreprocessingChanged(bool state);

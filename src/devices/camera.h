@@ -27,8 +27,8 @@ enum CameraImageType { LIVE_SINGLE_CAMERA=0, LIVE_STEREO_CAMERA=1, SINGLE_IMAGE_
 */
 struct CameraImage {
     int type;
-    cv::Mat img;
-    cv::Mat imgSecondary;
+    mutable cv::Mat img;
+    mutable cv::Mat imgSecondary;
     uint64_t timestamp;
     uint64_t frameNumber; // GB NOTE: it was originally already there in beta 0.1.1, and it holds the INDEX of image (not starting from 1)
     std::string filename;
