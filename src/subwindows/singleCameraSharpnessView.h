@@ -40,7 +40,7 @@ private:
     CameraCalibration *cameraCalibration;
 
     SharpnessCalculation *sharpnessWorker;
-    QThread *sharpnessThread;
+    QThread sharpnessThread;
 
     CalibrationHelpDialog *calibrationHelpDialog;
 
