@@ -25,6 +25,8 @@ public:
 
         setWidget(child);
         setAttribute(Qt::WA_DeleteOnClose);
+//        setWindowFlags(Qt::Drawer);
+        setWindowFlags(windowFlags() &(~Qt::WindowMaximizeButtonHint));
     }
 
     void restoreGeometry() {

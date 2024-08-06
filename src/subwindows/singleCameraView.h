@@ -3,7 +3,7 @@
 #define PUPILEXT_SINGLECAMERAVIEW_H
 
 /**
-    @author Moritz Lode, Gábor Bényei
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include <QtCore/qobjectdefs.h>
@@ -20,7 +20,7 @@
 
     setUpdateFPS(): define the rate with which the camera view is updated, not changing the camera framerate or the pupil detection framerate
 
-    NOTE: Modified by Gábor Bényei, 2023 jan
+    NOTE: Modified by Gabor Benyei, 2023 jan
     GB NOTE: onShowROI() onShowPupilCenter() and not handled in pupilDetection anymore
 */
 class SingleCameraView : public QWidget {
@@ -50,11 +50,11 @@ private:
 
     QToolBar *toolBar;
     QAction *freezeAct;
-    QString freezeText;
     bool playbackFrozen;
     QAction *saveROI;
     QAction *resetROI;
     QAction *discardROISelection;
+    QAction *viewportMenuAct;
     QAction *plotMenuAct;
     QAction *displayDetailAct;
     QAction *plotCenterAct;
@@ -116,6 +116,7 @@ private:
 
 public slots:
 
+    void onViewportMenuClick();
     void onPlotMenuClick();
     //void onROIMenuClick();
 

@@ -28,22 +28,26 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     QVBoxLayout* layout = new QVBoxLayout(this);
 
     toolBar = new QToolBar();
-    toolBar->addAction("Fit", this, &SingleCameraView::onFitClick);
-    toolBar->addAction("100%", this, &SingleCameraView::on100pClick);
-    toolBar->addSeparator();
-    toolBar->addAction("+Zoom", this, &SingleCameraView::onZoomPlusClick);
-    toolBar->addAction("-Zoom", this, &SingleCameraView::onZoomMinusClick);
-    toolBar->addSeparator();
-    if (playbackFrozen)
-        freezeText = "Unfreeze";
-    else 
-        freezeText = "Freeze";
+    QMenu *viewportMenu = new QMenu("Viewport");
+    viewportMenuAct = viewportMenu->menuAction();
+    connect(viewportMenuAct, &QAction::triggered, this, &SingleCameraView::onViewportMenuClick);
 
-    freezeAct = toolBar->addAction(freezeText, this, &SingleCameraView::onFreezeClicked);
-    toolBar->addSeparator();
-    
+    viewportMenu->addAction("Fit", this, &SingleCameraView::onFitClick);
+    viewportMenu->addAction("100%", this, &SingleCameraView::on100pClick);
+    viewportMenu->addSeparator();
+    viewportMenu->addAction("+Zoom", this, &SingleCameraView::onZoomPlusClick);
+    viewportMenu->addAction("-Zoom", this, &SingleCameraView::onZoomMinusClick);
+    viewportMenu->addSeparator();
 
-    QMenu *plotMenu = new QMenu("Show", this);
+    std::cerr << playbackFrozen << std::endl;
+
+    freezeAct = viewportMenu->addAction("Freeze", this, &SingleCameraView::onFreezeClicked);
+    freezeAct->setCheckable(true);
+    freezeAct->setChecked(playbackFrozen);
+    toolBar->addAction(viewportMenuAct);
+    toolBar->addSeparator();
+
+    QMenu *plotMenu = new QMenu("Show");
     plotMenuAct = plotMenu->menuAction();
     connect(plotMenuAct, &QAction::triggered, this, &SingleCameraView::onPlotMenuClick);
 
@@ -73,6 +77,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(plotROIAct, SIGNAL(toggled(bool)), this, SLOT(onPlotROIClick(bool)));
 
     // GB added/modified begin
+//    showAutoParamAct = plotMenu->addAction(QChar(0x21D2) +' '+ tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct = plotMenu->addAction(tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct->setCheckable(true);
     showAutoParamAct->setChecked(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
@@ -344,8 +349,8 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     // In the normal state, images are shown from the camera directly, when pupil detection is activated,
     // this signal is stopped and images from the detection are displayed
     //connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateView(CameraImage)));
-    connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
-    connect(camera, SIGNAL(fps(double)), this, SLOT(updateCameraFPS(double)));
+    bool succ1 = connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
+    bool succ2 = connect(camera, SIGNAL(fps(double)), this, SLOT(updateCameraFPS(double)));
     
 
     // GB modified/added begin
@@ -445,6 +450,12 @@ void SingleCameraView::loadSettings() {
         videoView->setROI1SelectionR(SupportFunctions::calculateRoiR(initRoi, roi2D, roi2));
     }
     // GB added/modified end
+}
+
+// Opens a contextmenu on the toolbar for settings the viewport options
+void SingleCameraView::onViewportMenuClick() {
+    // fix to open submenu in the camera menu
+    viewportMenuAct->menu()->exec(QCursor::pos());
 }
 
 void SingleCameraView::onPlotMenuClick() {
@@ -804,21 +815,13 @@ void SingleCameraView::onAutoParamPupSize(int value) {
     videoView->drawOverlay();
 }
 
-void SingleCameraView::onFreezeClicked()
-{
+void SingleCameraView::onFreezeClicked() {
     emit cameraPlaybackChanged();
 }
 
-void SingleCameraView::onCameraPlaybackChanged()
-{
-    if (playbackFrozen)
-        freezeText = "Freeze";
-    else 
-        freezeText = "Unfreeze";
-
-    freezeAct->setText(freezeText);
-
+void SingleCameraView::onCameraPlaybackChanged() {
     playbackFrozen = !playbackFrozen;
+    freezeAct->setChecked(playbackFrozen);
 }
 
 void SingleCameraView::updateForPupilDetectionProcMode() {

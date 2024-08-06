@@ -3,7 +3,7 @@
 #define PUPILEXT_VIDEOVIEW_H
 
 /**
-    @author Moritz Lode, Gábor Bényei
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include <QtWidgets/QWidget>
@@ -128,6 +128,8 @@ public:
     }
 
 private:
+
+    QSettings *applicationSettings;
 
     QGraphicsView *graphicsView;
     QGraphicsView *roi1GraphicsView; // GB renamed

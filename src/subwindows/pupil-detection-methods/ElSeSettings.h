@@ -3,7 +3,7 @@
 #define PUPILEXT_ELSESETTINGS_H
 
 /**
-    @authors Moritz Lode, Gábor Bényei
+    @authors Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include "PupilMethodSetting.h"
@@ -34,9 +34,9 @@ public:
         
         PupilMethodSetting::setDefaultParameters(defaultParameters);
         createForm();
-        parameterConfigs->setCurrentText(settingsMap.key(configIndex));
+        configsBox->setCurrentText(settingsMap.key(configIndex));
         // GB added begin
-        if(parameterConfigs->currentText()=="Automatic Parametrization") {
+        if(isAutoParamEnabled()) {
             minAreaBox->setEnabled(false);
             maxAreaBox->setEnabled(false);
         } else {
@@ -108,7 +108,7 @@ public slots:
         PupilMethodSetting::loadSettings();
 
         // GG added begin
-        if(parameterConfigs->currentText()=="Automatic Parametrization") {
+        if(isAutoParamEnabled()) {
             float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
             pupilDetection->setAutoParamEnabled(true);
             pupilDetection->setAutoParamPupSizePercent(autoParamPupSizePercent);
@@ -128,10 +128,10 @@ public slots:
 //        minAreaBox->setValue(selectedParameter[0]);
 //        maxAreaBox->setValue(selectedParameter[1]);
 
-        updateSettings();
+        applySpecificSettings();
     }
 
-    void updateSettings() override {
+    void applySpecificSettings() override {
 
         // GB modified begin
 
@@ -140,7 +140,7 @@ public slots:
 
         // Then the specific ones that are set by autoParam
         int procMode = pupilDetection->getCurrentProcMode();
-        if(parameterConfigs->currentText()=="Automatic Parametrization") {
+        if(isAutoParamEnabled()) {
             float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
             pupilDetection->setAutoParamPupSizePercent(autoParamPupSizePercent);
             pupilDetection->setAutoParamScheduled(true);
@@ -175,9 +175,12 @@ public slots:
         }
         // GB modified end
 
-        emit onConfigChange(parameterConfigs->currentText());
+        emit onConfigChange(configsBox->currentText());
+    }
 
-        PupilMethodSetting::updateSettings();
+    void applyAndSaveSpecificSettings() override {
+        applySpecificSettings();
+        PupilMethodSetting::saveSpecificSettings();
     }
 
 private:
@@ -206,20 +209,20 @@ private:
 
         QHBoxLayout *configsLayout = new QHBoxLayout();
 
-        parameterConfigs = new QComboBox();
+        configsBox = new QComboBox();
         // GB modified begin
         QLabel *parameterConfigsLabel = new QLabel(tr("Parameter configuration:"));
-        parameterConfigs->setFixedWidth(250);
+        configsBox->setFixedWidth(250);
         configsLayout->addWidget(parameterConfigsLabel);
         // GB modified end
-        configsLayout->addWidget(parameterConfigs);
+        configsLayout->addWidget(configsBox);
 
         for (QMap<QString, Settings>::const_iterator cit = settingsMap.cbegin(); cit != settingsMap.cend(); cit++)
         {
-            parameterConfigs->addItem(cit.key());
+            configsBox->addItem(cit.key());
         }
 
-        connect(parameterConfigs, SIGNAL(currentTextChanged(QString)), this, SLOT(onParameterConfigSelection(QString)));
+        connect(configsBox, SIGNAL(currentTextChanged(QString)), this, SLOT(onParameterConfigSelection(QString)));
 
         mainLayout->addLayout(configsLayout);
 
@@ -315,7 +318,7 @@ private slots:
         // (NONE HERE)
 
         // Then the specific ones that are set by autoParam
-        if(parameterConfigs->currentText()=="Automatic Parametrization") {
+        if(isAutoParamEnabled()) {
             minAreaBox->setEnabled(false);
             maxAreaBox->setEnabled(false);
             // TODO: hide value text too
@@ -328,7 +331,7 @@ private slots:
         }
         // GB modified end
 
-        //updateSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
+        //applySpecificSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
     }
 
 };

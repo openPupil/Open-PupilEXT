@@ -3,7 +3,7 @@
 #define PUPILEXT_PUPILMETHODSETTING_H
 
 /**
-    @authors Moritz Lode, Gábor Bényei
+    @authors Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include <QtWidgets/QWidget>
@@ -62,7 +62,7 @@ public:
     //virtual void addSecondary(PupilDetectionMethod *method) = 0;
 
     QList<float>& getParameter(QString configKey){
-        Settings config = settingsMap[configKey.toUpper()];
+        Settings config = settingsMap[configKey.toUpper().replace("*","").replace(" ","_")];
         return configParameters[config];
     }
 
@@ -71,7 +71,9 @@ public:
     }
 
     void setConfigIndex(QString configKey){
-        configIndex = QVariant::fromValue(configKey.toUpper()).value<Settings>();
+        // NOTE: It is very important that the (.toUpper().replace("*","").replace(" ","_")) version of the
+        // congifsBox widget selected item HAS TO MATCH the map key name
+        configIndex = QVariant::fromValue(configKey.toUpper().replace("*","").replace(" ","_")).value<Settings>();
     }
 
     QMap<Settings, QList<float>>& getConfigParameters() {
@@ -89,7 +91,7 @@ public:
 
     // GB modified begin
     virtual bool isAutoParamEnabled() {
-        return (parameterConfigs->currentText()=="Automatic Parametrization");
+        return (configsBox->currentText() == "Automatic Parametrization");
     }
     // GB modified end
 
@@ -98,7 +100,7 @@ protected:
     QMap<Settings, QList<float>> configParameters;
     Settings configIndex;
     QPushButton *resetButton;
-    QComboBox *parameterConfigs;
+    QComboBox *configsBox;
     QPushButton *fileButton;
 
     QString settingsConfigParametersName;
@@ -112,10 +114,10 @@ protected:
     void insertCustomEntry(QList<float> customParameters){
         configParameters.insert(Settings::CUSTOM, customParameters);
 
-        if(parameterConfigs->findText(settingsMap.key(Settings::CUSTOM)) < 0) {
-            parameterConfigs->addItem(settingsMap.key(Settings::CUSTOM));
+        if(configsBox->findText(settingsMap.key(Settings::CUSTOM)) < 0) {
+            configsBox->addItem(settingsMap.key(Settings::CUSTOM));
         }
-        parameterConfigs->setCurrentText(settingsMap.key(Settings::CUSTOM));
+        configsBox->setCurrentText(settingsMap.key(Settings::CUSTOM));
     }
 
 public slots:
@@ -149,7 +151,13 @@ public slots:
         }
     }
 
-    virtual void updateSettings(){
+    virtual void applyAndSaveSpecificSettings(){
+        saveSpecificSettings();
+    }
+
+    virtual void applySpecificSettings(){}
+
+    virtual void saveSpecificSettings() {
         QMap<QString, QList<float>> confToWrite;
         QString indexToWrite = QVariant::fromValue(configIndex).toString();
 
@@ -165,7 +173,7 @@ public slots:
 virtual void onParameterConfigSelection(QString configKey){}
 
     void onResetClick(){
-        QString configKey = parameterConfigs->itemText(parameterConfigs->currentIndex());
+        QString configKey = configsBox->itemText(configsBox->currentIndex());
         Settings config = settingsMap[configKey];
         configParameters[config] = defaultParameters.value(config);
         onParameterConfigSelection(configKey);

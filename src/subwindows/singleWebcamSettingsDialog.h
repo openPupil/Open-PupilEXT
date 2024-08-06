@@ -1,7 +1,7 @@
 #pragma once
 
 /**
-    @author Gábor Bényei
+    @author Gabor Benyei, Attila Boncser
 */
 
 
@@ -28,7 +28,8 @@ public:
     ~SingleWebcamSettingsDialog() override;
 
     void accept() override;
-    void setLimitationsWhileTracking(bool state); // GB added
+    void setLimitationsWhileTracking(bool state);
+    void setLimitationsWhileWaitingToOpen(bool state);
 
 protected:
 

@@ -3,7 +3,7 @@
 #define PUPILEXT_STEREOCAMERAIMAGEEVENTHANDLER_H
 
 /**
-    @author Moritz Lode
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 

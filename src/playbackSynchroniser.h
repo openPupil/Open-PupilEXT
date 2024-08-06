@@ -5,6 +5,9 @@
 #ifndef PUPILEXT_PLAYBACKSYNCHRONISER_H
 #define PUPILEXT_PLAYBACKSYNCHRONISER_H
 
+/**
+    @author Attila Boncser
+*/
 
 #include "pupilDetection.h"
 #include "devices/fileCamera.h"

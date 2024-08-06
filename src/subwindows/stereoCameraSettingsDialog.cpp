@@ -41,17 +41,17 @@ void StereoCameraSettingsDialog::createForm() {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    serialConnGroup = new QGroupBox("1. Camera Serial Connection (needed for Hardware-triggered image acquisition)");
+    serialConnGroup = new QGroupBox("1. Microcontroller Connection (needed for Hardware-triggered image acquisition)");
     QFormLayout *serialConnGroupLayout = new QFormLayout();
 
     QSpacerItem *sp10 = new QSpacerItem(70, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     serialConfigButton = new QPushButton();
-//    serialConfigButton->setText("Camera Serial Connection Settings");
-    serialConfigButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/rs232.svg"), applicationSettings));
+//    serialConfigButton->setText("Microcontroller Connection Settings");
+    serialConfigButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/show-gpu-effects.svg"), applicationSettings));
 //    serialConfigButton->setStyleSheet("text-align:left; padding-left : 10px; padding-top : 3px; padding-bottom : 3px;"); //
     serialConfigButton->setStyleSheet("text-align:left;");
     serialConfigButton->setLayout(new QGridLayout);
-    QLabel* serialConfigButtonLabel = new QLabel("Camera Serial Connection Settings");
+    QLabel* serialConfigButtonLabel = new QLabel("Microcontroller Connection Settings");
     serialConfigButtonLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     serialConfigButtonLabel->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     serialConfigButton->layout()->addWidget(serialConfigButtonLabel);
@@ -326,7 +326,7 @@ void StereoCameraSettingsDialog::createForm() {
     HWTstartStopButton->layout()->addWidget(HWTstartStopButtonLabel);
     HWTstartStopButton->layout()->setContentsMargins(5,5,5,5);
     HWTstartStopButton->setFixedWidth(150);
-    HWTstartStopButton->setEnabled(serialSettings->isConnected());
+    HWTstartStopButton->setEnabled(serialSettings->isCOMConnected());
 
     HWTframerateLayout->addSpacerItem(sp5);
     HWTframerateLayout->addWidget(HWTframerateLabel);
@@ -432,10 +432,10 @@ void StereoCameraSettingsDialog::createForm() {
     setLimitationsWhileCameraNotOpen(true);
 
     connect(exposureInputBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameRateValue()));
-    connect(exposureInputBox, SIGNAL(valueChanged(int)), camera, SLOT(setExposureTimeValue(int)));
+    connect(exposureInputBox, SIGNAL(valueChanged(int)), this, SLOT(setExposureTimeValue(int)));
     connect(binningBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onBinningModeChange(int)));
     connect(gainBox, SIGNAL(valueChanged(double)), this, SLOT(updateFrameRateValue()));
-    connect(gainBox, SIGNAL(valueChanged(double)), camera, SLOT(setGainValue(double)));
+    connect(gainBox, SIGNAL(valueChanged(double)), this, SLOT(setGainValue(double)));
 
     connect(imageROIwidthInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIwidth(int)));
     connect(imageROIheightInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIheight(int)));
@@ -475,7 +475,7 @@ void StereoCameraSettingsDialog::accept() {
         stopHardwareTrigger();
     }
 
-//    saveSettings(); // closing stereo camera already saves settings
+//    saveUniversalSettings(); // closing stereo camera already saves settings
     closeStereoCamera();
     QDialog::accept();
 }
@@ -601,7 +601,7 @@ void StereoCameraSettingsDialog::onLineSourceChange(int index) {
         camera->setLineSource(HWTlineSourceBox->itemText(index).toStdString().c_str());
         HWTframerateBox->setEnabled(true);
         HWTtimeSpanBox->setEnabled(true);
-        HWTstartStopButton->setEnabled(serialSettings->isConnected());
+        HWTstartStopButton->setEnabled(serialSettings->isCOMConnected());
     } else {
         HWTframerateBox->setEnabled(false);
         HWTtimeSpanBox->setEnabled(false);
@@ -758,6 +758,8 @@ void StereoCameraSettingsDialog::closeStereoCamera() {
     // Disable all camera settings groups underneath
     // BG: migrated into a separate function
     setLimitationsWhileCameraNotOpen(true);
+
+    emit stereoCamerasClosed();
 }
 
 // Slot receiving signal that the settings changed, reload settings
@@ -1048,6 +1050,16 @@ void StereoCameraSettingsDialog::setLimitationsWhileCameraNotOpen(bool state) {
     }
 }
 
+void StereoCameraSettingsDialog::setExposureTimeValue(int value) {
+    camera->setExposureTimeValue(value);
+    updateFrameRateValue();
+}
+
+void StereoCameraSettingsDialog::setGainValue(double value) {
+    camera->setGainValue(value);
+    updateFrameRateValue();
+}
+
 void StereoCameraSettingsDialog::mainCameraBoxCurrentIndexChanged(int) {
     applicationSettings->setValue("StereoCameraSettingsDialog.mainCamera", mainCameraBox->currentText());
 }
@@ -1057,10 +1069,10 @@ void StereoCameraSettingsDialog::secondaryCameraBoxCurrentIndexChanged(int) {
 }
 
 void StereoCameraSettingsDialog::serialConnDisconnButtonClicked() {
-    if(serialSettings->isConnected()) {
+    if(serialSettings->isCOMConnected()) {
         stopHardwareTrigger();
 
-        serialSettings->disconnectSerialPort();
+        serialSettings->disconnectCOM();
         serialConnDisconnButtonLabel->setText("Connect");
         serialConnDisconnButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red
         HWTstartStopButton->setEnabled(false);
@@ -1072,6 +1084,22 @@ void StereoCameraSettingsDialog::serialConnDisconnButtonClicked() {
     }
 }
 
+void StereoCameraSettingsDialog::setHWTlineSource(int lineSourceNum) {
+    if(!camera->isOpen() || HWTrunning)
+        return;
+    HWTlineSourceBox->setCurrentIndex(lineSourceNum-1);
+}
 
+void StereoCameraSettingsDialog::setHWTruntime(double runtimeMinutes) {
+    if(!camera->isOpen() || HWTrunning)
+        return;
+    HWTtimeSpanBox->setValue(runtimeMinutes);
+}
+
+void StereoCameraSettingsDialog::setHWTframerate(int fps) {
+    if(!camera->isOpen() || HWTrunning)
+        return;
+    HWTframerateBox->setValue(fps);
+}
 
 

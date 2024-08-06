@@ -2,7 +2,7 @@
 #define PUPILALGOSIMPLE_DATAWRITER_H
 
 /**
-    @authors Moritz Lode, Gábor Bényei
+    @authors Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include <QtCore/QObject>
@@ -30,7 +30,7 @@ enum DataWriterDataStyle {
 
     File is created and opened upon construction, and closed upon destruction
 
-    NOTE: Modified by Gábor Bényei, 2023 jan
+    NOTE: Modified by Gabor Benyei, 2023 jan
     GB NOTE:
         Reorganized code to let it handle an std::vector of Pupils, in order to comply with new signal-slot strategy, which
         I introduced to manage different pupil detection processing modes (procModes).

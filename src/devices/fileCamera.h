@@ -3,7 +3,7 @@
 #define PUPILEXT_FILECAMERA_H
 
 /**
-    @authors Moritz Lode, Gábor Bényei
+    @authors Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include "camera.h"
@@ -16,7 +16,7 @@
 /**
     FileCamera represents virtual camera which replays images from disk given a directory of images
 
-    NOTE: Modified by Gábor Bényei, 2023 jan
+    NOTE: Modified by Gabor Benyei, 2023 jan
     BG NOTE: 
         Added methods for FileCamera to work nicely with the new PlaybackControlDialog
 

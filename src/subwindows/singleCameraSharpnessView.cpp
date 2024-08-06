@@ -125,10 +125,10 @@ void SingleCameraSharpnessView::onSizeBoxChange() {
     std::cout<<"boardSize: "<<boardSize<<std::endl;
 }
 
-void SingleCameraSharpnessView::updateView(CameraImage *cimg) {
+void SingleCameraSharpnessView::updateView(const CameraImage &cimg) {
 
-    if(!cimg->img.empty()) {
-        videoView->updateView(cimg->img);
+    if(!cimg.img.empty()) {
+        videoView->updateView(cimg.img);
         //delete &cimg;
     }
 }

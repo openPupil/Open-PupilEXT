@@ -3,7 +3,7 @@
 #define PUPILEXT_SINGLECAMERA_H
 
 /**
-    @authors Moritz Lode, Gábor Bényei
+    @authors Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 
@@ -28,7 +28,7 @@ using namespace Basler_UniversalCameraParams;
 /**
     SingleCamera represents a single camera (Basler camera)
 
-    NOTE: Modified by Gábor Bényei, 2023 jan
+    NOTE: Modified by Gabor Benyei, 2023 jan
     BG NOTE: 
         Added getters/setters for changing image acquisition ROI size and offset,
         binning, as well as camera coreboard temperature

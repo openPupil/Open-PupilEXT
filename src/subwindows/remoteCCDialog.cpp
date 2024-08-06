@@ -209,6 +209,10 @@ void RemoteCCDialog::onConnectUDPClick() {
 }
 
 void RemoteCCDialog::onDisconnectUDPClick() {
+    disconnectUDP();
+}
+
+void RemoteCCDialog::disconnectUDP() {
     disconnect(UDPsocket, SIGNAL(readyRead()), this, SLOT(processPendingUDPDatagrams()));
 
     UDPsocket->close();
@@ -248,8 +252,12 @@ void RemoteCCDialog::onConnectCOMClick() {
 }
 
 void RemoteCCDialog::onDisconnectCOMClick() {
+    disconnectCOM();
+}
+
+void RemoteCCDialog::disconnectCOM() {
     if(connPoolCOMIndex < 0) {
-        qDebug() << "RemoteCCDialog::onDisconnectCOMClick(): connPoolCOMIndex value is invalid";
+        qDebug() << "RemoteCCDialog::disconnectCOM(): connPoolCOMIndex value is invalid";
         return;
     }
 
@@ -389,7 +397,7 @@ void RemoteCCDialog::saveSettings() {
 }
 
 /*
-bool RemoteCCDialog::isConnected() {
+bool RemoteCCDialog::isCOMConnected() {
     return serialPort->isOpen();
 }
 */
@@ -495,7 +503,61 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
             w->PRGsetPupilDetectionCompOutlineConf(str.mid(3, str.length()-3).toLower());
         }
         return;
-    } 
+    }
+
+    if(str[0].toLower() == 'i' && str.size()>=4) { // changing camera-related and Image acquisition settings
+        if(str[1].toLower() == 't' && str.size()>=4) { // set image acquisition triggering mode
+            if(str[3].toLower() == 'h') { // hardware-based triggering
+                w->PRGenableHWT(true);
+            } if(str[3].toLower() == 's') { // software-based triggering
+                w->PRGenableHWT(false);
+            }
+        } else if(str[1].toLower() == 'h') { // set hardware-based triggering settings
+            if(str[2].toLower() == 'q') { // start image acquisition triggering
+                w->PRGstartHWT();
+            } else if(str[2].toLower() == 'y') { // stop image acquisition triggering
+                w->PRGstopHWT();
+            } else if(str[2].toLower() == 'l' && str.size()>=5 && str[4].digitValue() <=4 && str[4].digitValue() >=1) { // set line source
+                w->PRGsetHWTlineSource(str[4].digitValue());
+            } else if(str[2].toLower() == 'r' && str.size()>=5) {
+                bool ok;
+                float val = str.mid(4, str.length()-4).toFloat(&ok);
+                if(!ok || (ok && val < 0.0f))
+                    return;
+                w->PRGsetHWTruntime(val);
+            } else if(str[2].toLower() == 'f' && str.size()>=5) {
+                bool ok;
+                int val = str.mid(4, str.length()-4).toInt(&ok);
+                if(!ok || (ok && val <= 0))
+                    return;
+                w->PRGsetHWTframerate(val);
+            }
+        } else if(str[1].toLower() == 'h') { // set software-based triggering settings
+            if(str[2].toLower() == 'c' && str.size()>=5 && str[4].digitValue() <=1 && str[4].digitValue() >=0) { // set line source
+                bool state = (str[4].digitValue() == 1);
+                w->PRGenableSWTframerateLimiting(state);
+            } else if(str[2].toLower() == 'f' && str.size()>=5) {
+                bool ok;
+                int val = str.mid(4, str.length()-4).toInt(&ok);
+                if(!ok || (ok && val <= 0))
+                    return;
+                w->PRGsetSWTframerate(val);
+            }
+        } else if(str[1].toLower() == 'e' && str.size()>=4) { // set exposure
+            bool ok;
+            int val = str.mid(3, str.length()-3).toInt(&ok);
+            if(!ok || (ok && val <= 0))
+                return;
+            w->PRGsetExposure(val);
+        } else if(str[1].toLower() == 'g' && str.size()>=4) { // set gain
+            bool ok;
+            int val = str.mid(3, str.length()-3).toDouble(&ok);
+            if(!ok || (ok && val <= 0))
+                return;
+            w->PRGsetGain(val);
+        }
+        return;
+    }
 
     if(str[0].toLower() == 'c' && str.size()>=6) { // establish connection
         if(str[1].toLower() == 'r') { // for remote control
@@ -521,6 +583,19 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
                     w->PRGdisconnectStreamUDP();
                 else if(str.mid(3,3).toLower() == 'com')
                     w->PRGdisconnectStreamCOM();
+            }
+        } else if(str[1].toLower() == 'c') { // for Microcontroller ("camera serial") connection
+            if(str[2].toLower() == 'c') {
+                // TODO: UDP connection to MCU, using W5500 ethernet module and the like
+                /*if(str.mid(3,3).toLower() == 'udp' && str.size()>=8)
+                    w->PRGconnectMicrocontrollerUDP(str.mid(7, str.length()-7));
+                else*/ if(str.mid(3,3).toLower() == 'com' && str.size()>=8)
+                    w->PRGconnectMicrocontrollerCOM(str.mid(7, str.length()-7).toUpper());
+            } else if(str[2].toLower() == 'd') {
+                /*if(str.mid(3,3).toLower() == 'udp')
+                    w->PRGdisconnectMicrocontrollerUDP();
+                else*/ if(str.mid(3,3).toLower() == 'com')
+                    w->PRGdisconnectMicrocontrollerCOM();
             }
         }
         return;

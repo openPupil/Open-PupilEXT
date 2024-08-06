@@ -2,7 +2,7 @@
 #pragma once
 
 /**
-    @author Gábor Bényei
+    @author Gabor Benyei
 */
 
 #include <QDialog>
@@ -134,9 +134,9 @@ public slots:
     bool isCOMConnected();
 
     void onConnectUDPClick();
-    void onDisconnectUDPClick();
+    void disconnectUDP();
     void onConnectCOMClick();
-    void onDisconnectCOMClick();
+    void disconnectCOM();
 
     void connectUDP();
     void connectCOM(const ConnPoolCOMInstanceSettings &p);

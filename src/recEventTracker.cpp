@@ -372,7 +372,7 @@ uint RecEventTracker::getTrialAtTimestamp(quint64 timestamp)
     return 1;
 }
 
-TrialIncrement RecEventTracker::getTrialIncrement(quint64 timestamp)
+RecEventTracker::TrialIncrement RecEventTracker::getTrialIncrement(quint64 timestamp)
 {
     TrialIncrement emptyElem;
     if (trialIncrements.size() < 1)
@@ -395,7 +395,7 @@ TrialIncrement RecEventTracker::getTrialIncrement(quint64 timestamp)
     return (emptyElem);
 }
 
-TemperatureCheck RecEventTracker::getTemperatureCheck(quint64 timestamp)
+RecEventTracker::TemperatureCheck RecEventTracker::getTemperatureCheck(quint64 timestamp)
 {
     TemperatureCheck emptyElem;
     if (temperatureChecks.size() < 1)

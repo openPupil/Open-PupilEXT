@@ -20,7 +20,7 @@ SerialSettingsDialog::SerialSettingsDialog(ConnPoolCOM *connPoolCOM, QWidget *pa
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     this->setMinimumSize(520, 380);
-    this->setWindowTitle("Camera Serial Connection Settings");
+    this->setWindowTitle("Microcontroller Connection Settings");
 
     createForm();
 
@@ -43,14 +43,8 @@ SerialSettingsDialog::SerialSettingsDialog(ConnPoolCOM *connPoolCOM, QWidget *pa
     //connect(serialPort, &QSerialPort::readyRead, this, &SerialSettingsDialog::readData);
 }
 
-// Connects the serial port with the configured settings, if successful, displays a connected message to the textfield
-// Sends an onConnect signal on success
-void SerialSettingsDialog::connectSerialPort() {
+void SerialSettingsDialog::connectCOM(const ConnPoolCOMInstanceSettings &p) {
 
-    updateSettings();
-
-    const ConnPoolCOMInstanceSettings p = m_currentSettings;
-    
     int index = connPoolCOM->setupAndOpenConnection(p, ConnPoolPurposeFlag::CAMERA_TRIGGER);
     if(index >= 0) {
         textField->clear();
@@ -75,12 +69,21 @@ void SerialSettingsDialog::connectSerialPort() {
     }
 }
 
+// Connects the serial port with the configured settings, if successful, displays a connected message to the textfield
+// Sends an onConnect signal on success
+void SerialSettingsDialog::connectSerialPort() {
+
+    updateSettings();
+
+    connectCOM(m_currentSettings);
+}
+
 // Disconnects the connected serial port
 // Sends an onDisconnect signal
-void SerialSettingsDialog::disconnectSerialPort() {
+void SerialSettingsDialog::disconnectCOM() {
 
     if(connPoolCOMIndex < 0) {
-        qDebug() << "SerialSettingsDialog::disconnectSerialPort(): connPoolCOMIndex value is invalid";
+        qDebug() << "SerialSettingsDialog::disconnectCOM(): connPoolCOMIndex value is invalid";
         return;
     }
 
@@ -238,7 +241,7 @@ void SerialSettingsDialog::createForm() {
 }
 
 SerialSettingsDialog::~SerialSettingsDialog() {
-    disconnectSerialPort();
+    disconnectCOM();
 }
 
 ConnPoolCOMInstanceSettings SerialSettingsDialog::settings() const
@@ -414,7 +417,7 @@ void SerialSettingsDialog::saveSettings() {
     applicationSettings->setValue("SerialSettings.localEchoEnabled", localEchoCheckBox->isChecked());
 }
 
-bool SerialSettingsDialog::isConnected() {
+bool SerialSettingsDialog::isCOMConnected() {
     if(connPoolCOMIndex >= 0)
         return connPoolCOM->getInstance(connPoolCOMIndex)->isOpen();
     

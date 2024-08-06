@@ -3,7 +3,7 @@
 #define PUPILEXT_STEREOCAMERAVIEW_H
 
 /**
-    @author Moritz Lode, Gábor Bényei
+    @authors Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include <QtCore/qobjectdefs.h>
@@ -56,11 +56,11 @@ private:
 
     QToolBar *toolBar;
     QAction *freezeAct;
-    QString freezeText;
     bool playbackFrozen;
     QAction *saveROI;
     QAction *resetROI;
     QAction *discardROISelection;
+    QAction *viewportMenuAct;
     QAction *plotMenuAct;
     QAction *displayDetailAct;
     QAction *plotCenterAct;
@@ -125,6 +125,7 @@ private:
 
 public slots:
 
+    void onViewportMenuClick();
     void onPlotMenuClick();
     //void onROIMenuClick();
 

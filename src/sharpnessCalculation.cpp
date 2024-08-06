@@ -24,22 +24,22 @@ SharpnessCalculation::~SharpnessCalculation() {
 
 // Receives a new image and performs pattern detection on it
 // If successful, emits a processed image containing the detected pattern and sharpness value
-void SharpnessCalculation::onNewImage(CameraImage *cimg) {
+void SharpnessCalculation::onNewImage(const CameraImage &cimg) {
 
 
-    if(timer.elapsed() > updateDelay && !cimg->img.empty()) {
+    if(timer.elapsed() > updateDelay && !cimg.img.empty()) {
         timer.restart();
 
         // If user changes boardsize in between frames it could result in errors
         cv::Size currentBoardSize = boardSize;
-        CameraImage* mimg = cimg;
+        const CameraImage &mimg = cimg;
 
-        if (cimg->img.channels() == 1) {
-            cv::cvtColor(cimg->img, mimg->img, cv::COLOR_GRAY2BGR);
+        if (cimg.img.channels() == 1) {
+            cv::cvtColor(cimg.img, mimg.img, cv::COLOR_GRAY2BGR);
         } else {
-            mimg->img = cimg->img.clone();
+            mimg.img = cimg.img.clone();
         }
-        cv::Mat img = mimg->img;
+        cv::Mat img = mimg.img;
 
         cv::Mat downscaledImg;
         cv::resize(img, downscaledImg, cv::Size(), scalingFactor, scalingFactor);

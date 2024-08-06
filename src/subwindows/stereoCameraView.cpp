@@ -30,18 +30,21 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     QVBoxLayout* layout = new QVBoxLayout(this);
 
     toolBar = new QToolBar();
-    toolBar->addAction("Fit", this, &StereoCameraView::onFitClick);
-    toolBar->addAction("100%", this, &StereoCameraView::on100pClick);
-    toolBar->addSeparator();
-    toolBar->addAction("+Zoom", this, &StereoCameraView::onZoomPlusClick);
-    toolBar->addAction("-Zoom", this, &StereoCameraView::onZoomMinusClick);
-    toolBar->addSeparator();
-    if (playbackFrozen)
-        freezeText = "Unfreeze";
-    else 
-        freezeText = "Freeze";
+    QMenu *viewportMenu = new QMenu("Viewport");
+    viewportMenuAct = viewportMenu->menuAction();
+    connect(viewportMenuAct, &QAction::triggered, this, &StereoCameraView::onViewportMenuClick);
+
+    viewportMenu->addAction("Fit", this, &StereoCameraView::onFitClick);
+    viewportMenu->addAction("100%", this, &StereoCameraView::on100pClick);
+    viewportMenu->addSeparator();
+    viewportMenu->addAction("+Zoom", this, &StereoCameraView::onZoomPlusClick);
+    viewportMenu->addAction("-Zoom", this, &StereoCameraView::onZoomMinusClick);
+    viewportMenu->addSeparator();
             
-    freezeAct = toolBar->addAction(freezeText, this, &StereoCameraView::onFreezeClicked);
+    freezeAct = viewportMenu->addAction("Freeze", this, &StereoCameraView::onFreezeClicked);
+    freezeAct->setCheckable(true);
+    freezeAct->setChecked(playbackFrozen);
+    toolBar->addAction(viewportMenuAct);
     toolBar->addSeparator();
 
     QMenu *plotMenu = new QMenu("Show");
@@ -70,6 +73,7 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     connect(plotROIAct, SIGNAL(toggled(bool)), this, SLOT(onPlotROIClick(bool)));
 
     // GB added/modified begin
+//    showAutoParamAct = plotMenu->addAction(QChar(0x21D2) +' '+ tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct = plotMenu->addAction(tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct->setCheckable(true);
     showAutoParamAct->setChecked(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
@@ -477,7 +481,11 @@ void StereoCameraView::loadSettings() {
 
 }
 
-
+// Opens a contextmenu on the toolbar for settings the viewport options
+void StereoCameraView::onViewportMenuClick() {
+    // fix to open submenu in the camera menu
+    viewportMenuAct->menu()->exec(QCursor::pos());
+}
 
 // Opens a contextmenu on the toolbar for settings the plottable options
 void StereoCameraView::onPlotMenuClick() {
@@ -936,21 +944,13 @@ void StereoCameraView::onAutoParamPupSize(int value) {
     secondaryVideoView->drawOverlay();
 }
 
-void StereoCameraView::onFreezeClicked()
-{
+void StereoCameraView::onFreezeClicked() {
     emit cameraPlaybackChanged();
 }
 
-void StereoCameraView::onCameraPlaybackChanged()
-{
-    if (playbackFrozen)
-    freezeText = "Freeze";
-    else 
-        freezeText = "Unfreeze";
-
-    freezeAct->setText(freezeText);
-
+void StereoCameraView::onCameraPlaybackChanged() {
     playbackFrozen = !playbackFrozen;
+    freezeAct->setChecked(playbackFrozen);
 }
 
 void StereoCameraView::updateForPupilDetectionProcMode() {
@@ -974,7 +974,8 @@ void StereoCameraView::updateForPupilDetectionProcMode() {
         //qDebug() << "STEREO_IMAGE_ONE_PUPIL" << Qt::endl;
         mainVideoView->setDoubleROI(false);
         secondaryVideoView->setDoubleROI(false);
-        secondaryVideoView->setSelectionColor1(Qt::blue);
+        mainVideoView->setSelectionColor1(QColor(0,0,255,76)); // Qt::blue
+        secondaryVideoView->setSelectionColor1(QColor(0,255,0,76)); // Qt::green
         mainVideoView->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
         secondaryVideoView->setROI1AllowedArea(VideoView::ROIAllowedArea::ALL);
 

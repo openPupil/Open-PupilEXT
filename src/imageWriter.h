@@ -3,7 +3,7 @@
 #define PUPILEXT_IMAGEWRITER_H
 
 /**
-    @author Moritz Lode, Gábor Bényei
+    @author Moritz Lode, Gabor Benyei
 */
 
 #include <QCoreApplication>
@@ -19,7 +19,7 @@
 
     CAUTION: Chosen image format has a large performance impact due to size and disk write speeds
 
-    NOTE: Modified by Gábor Bényei, 2023 jan
+    NOTE: Modified by Gabor Benyei, 2023 jan
     GB NOTE:
         Added getOpenableDirectoryName() and added string preparatory step for output directory name. Now using const qstring reference
 */

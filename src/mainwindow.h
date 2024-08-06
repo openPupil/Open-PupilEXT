@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 /**
-    @authors Moritz Lode, Gábor Bényei
+    @authors Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include "subwindows/serialSettingsDialog.h"
@@ -23,7 +23,6 @@
 #include <QSettings>
 #include <pylon/TlFactory.h>
 
-// GB added begin
 #include "supportFunctions.h"
 #include "metaSnapshotOrganizer.h"
 #include "dataStreamer.h"
@@ -40,11 +39,11 @@
 #include <QDragMoveEvent>
 #include <QDropEvent>
 #include <QMimeData>
-//#include <QCameraInfo> // Qt 5.3 would be necessary. For OpenCV device enumeration
 #include "recEventTracker.h"
 #include "SVGIconColorAdjuster.h"
 #include "playbackSynchroniser.h"
-// GB added end
+#include "dataTypes.h"
+//#include <QtMultimedia/QCameraInfo>
 
 
 /**
@@ -54,7 +53,7 @@
 
     Creates threads for concurrent processing for i.e. calibration and pupil detection
 
-    NOTE: Modified by Gábor Bényei, 2023 jan
+    NOTE: Modified by Gabor Benyei, 2023 jan
     GB NOTE:
         Moved image playback button functionality into a new dialog called ImagePlaybackSettingsDialog.
             Thus, onPlayImageDirectoryClick(), onPlayImageDirectoryFinished(), 
@@ -110,6 +109,7 @@ private:
     RestorableQMdiSubWindow *calibrationWindow; 
     RestorableQMdiSubWindow *cameraViewWindow;
     RestorableQMdiSubWindow *sharpnessWindow;
+    RestorableQMdiSubWindow *dataTableWindow;
 
     QIcon fileOpenIcon;
     QIcon cameraSerialConnectionIcon;
@@ -126,9 +126,14 @@ private:
     QIcon outputDataFileIcon;
     QIcon streamingSettingsIcon;
     QIcon imagePlaybackControlIcon;
+    QIcon dataTableIcon;
 
     QMenu *windowMenu;
-    QMenu *singleCameraDevicesMenu; // GB: refactored name
+    QMenu *baslerCamerasMenu;
+//    QMenu *openCVCamerasMenu;
+
+    QAction *cameraViewAct;
+    QAction *dataTableAct;
 
     QAction *cameraAct;
     QAction *cameraSettingsAct;
@@ -140,9 +145,9 @@ private:
     QAction *outputDirectoryAct;
     QAction *recordImagesAct;
 
-    QAction *closeAct;
-    QAction *closeAllAct;
-    QAction *tileAct;
+//    QAction *closeAct;
+//    QAction *closeAllAct;
+//    QAction *tileAct;
     QAction *cascadeAct;
     QAction *resetGeometryAct;
 
@@ -154,9 +159,10 @@ private:
 
     QLabel *serialStatusIcon;
     QLabel *hwTriggerStatusIcon;
+    QLabel *warmedUpStatusIcon;
     QLabel *calibrationStatusIcon;
     QLabel *subjectConfigurationLabel;
-    QLabel *currentDirectoryLabel;
+    QLabel *currentStatusMessageLabel;
     
     // GB: TODO: Move trackingOn into class instance, and get rid of others, use nullptr check instead. better like that I think. Also 
     bool trackingOn = false; // GB: also accessible in pupildetection now
@@ -208,6 +214,7 @@ private:
     QSpinBox *webcamDeviceBox;
 
     QAction *fileOpenAct; // GB: made global to let it disable when image directory is already open
+    QAction *toggleFullscreenAct;
     QAction *streamingSettingsAct;
     QAction *streamAct;
 
@@ -229,6 +236,7 @@ private:
 
     void loadCalibrationWindow();
     void loadSharpnessWindow();
+    void loadDataTableWindow();
 
     void stopCamera();
     void startCamera();
@@ -248,6 +256,14 @@ private slots:
     void onHwTriggerEnable();
     void onHwTriggerDisable();
 
+    void onDeviceWarmupHasDeltaTimeData();
+    void onDeviceWarmedUp();
+    void onDeviceWarmedUpReset();
+
+    void onWebcamStartedToOpen();
+    void onWebcamCouldNotBeOpened();
+    void onWebcamSuccessfullyOpened();
+
     void onCameraCalibrationEnabled();
     void onCameraCalibrationDisabled();
 
@@ -257,6 +273,7 @@ private slots:
     void onCameraDisconnectClick();
     void onCameraSettingsClick();
     void onSingleCameraSettingsClick();
+    void onStereoCameraSettingsClick();
 
     void onCalibrateClick();
     void onSubjectsClick();
@@ -273,19 +290,23 @@ private slots:
     void singleCameraSelected(QAction *action);
     void stereoCameraSelected();
 
-    void onCreateGraphPlot(const QString &value);
+    void onCreateGraphPlot(const DataTypes::DataType &value);
 
     void dataTableClick();
+    void toggleFullscreen();
 
     void setLogFile();
     void setOutputDirectory();
 
     void updateMenus();
-    void updateCameraMenu();
+    void updateBaslerCamerasMenu();
+//    void updateOpenCVCamerasMenu();
     void updateWindowMenu();
     void about();
     void openSourceDialog();
     void resetGeometry();
+//    void closeActiveSubWindow();
+//    void closeAllSubWindows();
 
     void onSubjectsSettingsChange(QString subject);
     void onSharpnessClick();
@@ -293,7 +314,7 @@ private slots:
     void onGettingsStartedWizardFinish();
 
     // GB added begin
-    void singleWebcamSelected();
+    void singleWebcamSelected(QAction *action);
     void onSingleWebcamSettingsClick();
 
     void onStreamClick();
@@ -325,6 +346,9 @@ private slots:
 
     void onImagesSkipped();
     void onImagesSkippedMsgClose();
+
+    void createCamTempMonitor();
+    void destroyCamTempMonitor();
     // GB added end
 
 public slots:
@@ -360,10 +384,24 @@ public slots:
     void PRGconnectRemoteCOM(QString conf);
     void PRGconnectStreamUDP(QString conf);
     void PRGconnectStreamCOM(QString conf);
+    void PRGconnectMicrocontrollerCOM(QString conf);
     void PRGdisconnectRemoteUDP();
     void PRGdisconnectRemoteCOM();
     void PRGdisconnectStreamUDP();
     void PRGdisconnectStreamCOM();
+    void PRGdisconnectMicrocontrollerCOM();
+
+    void PRGenableHWT(bool state);
+    void PRGstartHWT();
+    void PRGstopHWT();
+    void PRGsetHWTlineSource(int lineSourceNum);
+    void PRGsetHWTruntime(float runtimeMinutes);
+    void PRGsetHWTframerate(int fps);
+    void PRGenableSWTframerateLimiting(bool state);
+    void PRGsetSWTframerate(int fps);
+
+    void PRGsetExposure(int value);
+    void PRGsetGain(double value);
 
     void onCameraFreezePressed();
 
@@ -372,6 +410,7 @@ public slots:
     void onCameraUnexpectedlyDisconnected();
 
     void onStereoCamerasOpened();
+    void onStereoCamerasClosed();
     // GB added end
 
 signals:

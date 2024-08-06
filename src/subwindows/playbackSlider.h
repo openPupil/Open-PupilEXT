@@ -1,7 +1,7 @@
 #pragma once
 
 /**
-    @author Gábor Bényei
+    @author Gabor Benyei, Attila Boncser
 */
 
 #include <QtWidgets/QWidget>

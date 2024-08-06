@@ -3,7 +3,7 @@
 #define PUPILEXT_STEREOCAMERASETTINGSDIALOG_H
 
 /**
-    @author Moritz Lode, Gábor Bényei
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 
@@ -136,6 +136,15 @@ public slots:
     void updateCamImageRegionsWidget();
     void updateSensorSize();
 
+    void startHardwareTrigger();
+    void stopHardwareTrigger();
+    void setHWTlineSource(int lineSourceNum);
+    void setHWTruntime(double runtimeMinutes);
+    void setHWTframerate(int fps);
+
+    void setExposureTimeValue(int value);
+    void setGainValue(double value);
+
 private slots:
 
     void updateDevicesBox();
@@ -150,8 +159,6 @@ private slots:
 
     void onLineSourceChange(int index);
     void updateFrameRateValue();
-    void startHardwareTrigger();
-    void stopHardwareTrigger();
 
     void onSettingsChange();
 
@@ -184,6 +191,7 @@ signals:
     void onSensorSizeChanged(QSize size);
 
     void stereoCamerasOpened();
+    void stereoCamerasClosed();
 
 };
 

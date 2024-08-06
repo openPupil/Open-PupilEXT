@@ -3,7 +3,7 @@
 #define PUPILEXT_PUPILDETECTIONSETTINGSDIALOG_H
 
 /**
-    @author Moritz Lode, Gábor Bényei
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include <QDialog>
@@ -72,7 +72,7 @@ private:
     void createForm();
     void updateForm();
     void loadSettings();
-    void saveSettings();
+    void saveUniversalSettings();
 
 private slots:
 

@@ -1,7 +1,7 @@
 #pragma once
 
 /**
-    @authors Gábor Bényei
+    @authors Gabor Benyei
 */
 
 #include <QtWidgets/QWidget>
@@ -91,6 +91,6 @@ public slots:
 
 signals:
 
-    void onNewImage(const CameraImage &img);
+    void onNewImage(CameraImage img);
 
 };

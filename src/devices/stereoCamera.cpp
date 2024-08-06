@@ -126,6 +126,10 @@ void StereoCamera::open(bool enableHardwareTrigger) {
             hardwareTriggerConfiguration1 = new HardwareTriggerConfiguration(lineSource);
             cameras[0].RegisterConfiguration(hardwareTriggerConfiguration0, RegistrationMode_Append, Cleanup_Delete);
             cameras[1].RegisterConfiguration(hardwareTriggerConfiguration1, RegistrationMode_Append, Cleanup_Delete);
+//            cameras[0].TriggerActivation.SetValue(TriggerActivation_RisingEdge);
+//            cameras[1].TriggerActivation.SetValue(TriggerActivation_RisingEdge);
+//            cameras[0].TriggerMode.SetValue(TriggerMode_On);
+//            cameras[1].TriggerMode.SetValue(TriggerMode_On);
         }
 
         cameraImageEventHandler = new StereoCameraImageEventHandler(this->parent());
@@ -814,8 +818,9 @@ CameraImageType StereoCamera::getType() {
 
 void StereoCamera::startGrabbing()
 {
-    if (cameras.IsOpen() && !cameras.IsGrabbing())
+    if (cameras.IsOpen() && !cameras.IsGrabbing()) {
         cameras.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
+    }
 }
 
 void StereoCamera::stopGrabbing()
@@ -1133,7 +1138,8 @@ bool StereoCamera::setImageROIwidth(int width) {
     int modVal=width%16;
     if(modVal != 0)
         width -= modVal;
-    int bestWidth = (offsetX >= maxWidth-16) ? 16 : width;
+    int bestWidth = (offsetX+width > maxWidth) ? maxWidth-offsetX-((maxWidth-offsetX)%16) : width;
+//    int bestWidth = (offsetX >= maxWidth-16) ? 16 : width;
 
     if (cameras[0].Width.IsWritable() && cameras[1].Width.IsWritable() ) {
         success = cameras[0].Width.TrySetValue(bestWidth) &&
@@ -1164,7 +1170,8 @@ bool StereoCamera::setImageROIheight(int height) {
     int modVal=height%16;
     if(modVal != 0)
         height -= modVal;
-    int bestHeight = (offsetY >= maxHeight-16) ? 16 : height;
+    int bestHeight = (offsetY+height > maxHeight) ? maxHeight-offsetY-((maxHeight-offsetY)%16) : height;
+//    int bestHeight = (offsetY >= maxHeight-16) ? 16 : height;
 
     if (cameras[0].Height.IsWritable() && cameras[1].Height.IsWritable() ) {
         success = cameras[0].Height.TrySetValue(bestHeight) &&
@@ -1254,7 +1261,8 @@ bool StereoCamera::setImageROIwidthEmu(int width) {
     int modVal=width%16;
     if(modVal != 0)
         width -= modVal;
-    int bestWidth = (offsetX >= maxWidth-16) ? 16 : width;
+    int bestWidth = (offsetX+width > maxWidth) ? maxWidth-offsetX-((maxWidth-offsetX)%16) : width;
+//    int bestWidth = (offsetX >= maxWidth-16) ? 16 : width;
 
     if (cameras[0].Width.IsWritable() && cameras[1].Width.IsWritable() ) {
         success = cameras[0].Width.TrySetValue(bestWidth) &&
@@ -1285,7 +1293,8 @@ bool StereoCamera::setImageROIheightEmu(int height) {
     int modVal=height%16;
     if(modVal != 0)
         height -= modVal;
-    int bestHeight = (offsetY >= maxHeight-16) ? 16 : height;
+    int bestHeight = (offsetY+height > maxHeight) ? maxHeight-offsetY-((maxHeight-offsetY)%16) : height;
+//    int bestHeight = (offsetY >= maxHeight-16) ? 16 : height;
 
     if (cameras[0].Height.IsWritable() && cameras[1].Height.IsWritable() ) {
         success = cameras[0].Height.TrySetValue(bestHeight) &&

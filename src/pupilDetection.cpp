@@ -103,6 +103,11 @@ void PupilDetection::setCamera(Camera *m_camera) {
     if (camera != m_camera) {
         camera = m_camera;
 
+        // This can happen upon camera disconnect, especially important upon main window closing when a camera was open
+        // The m_camera is set to nullptr then, but the following code does not get executed because of this return;
+        if(!m_camera)
+            return;
+
         calibrated = false;
 
         if (camera->getType() == CameraImageType::LIVE_STEREO_CAMERA) {
@@ -196,7 +201,7 @@ void PupilDetection::setAlgorithm(QString method) {
 // GB: renamed and modified
 
 
-void PupilDetection::onNewSingleImageForOnePupil(CameraImage *cimg) {
+void PupilDetection::onNewSingleImageForOnePupil(const CameraImage &cimg) {
     if (synchronised) {
         const QMutexLocker locker(imageMutex);
         onNewSingleImageForOnePupilImpl(cimg);
@@ -204,7 +209,7 @@ void PupilDetection::onNewSingleImageForOnePupil(CameraImage *cimg) {
   //      qDebug() << "pupilDetection image processed, unlocking";
         imagePublished->wakeAll();
         if (trackingOn) {
-            qDebug() << "Locking image processing";
+//            qDebug() << "Locking image processing";
             imageProcessed->wait(imageMutex);
         }
     }
@@ -213,7 +218,7 @@ void PupilDetection::onNewSingleImageForOnePupil(CameraImage *cimg) {
     }
 }
 
-void PupilDetection::onNewSingleImageForOnePupilImpl(CameraImage *image) {
+void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
 
     // Processing fps restriction not working correctly, timers overhead seem to break timing, left out for now
     //qDebug()<<cimg->filename;
@@ -224,12 +229,12 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(CameraImage *image) {
         return;
     }
 
-    cv::Mat bwFrame = image->img;
+    cv::Mat bwFrame = image.img;
 
     // Undistorting the whole image is rather slow (~4ms on our test system), use contour point undistort instead (>~1ms)
     if(!usePupilUndistort && useImageUndistort) {
         //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-        bwFrame = singleCalibration->undistortImage(image->img);
+        bwFrame = singleCalibration->undistortImage(image.img);
         //qDebug()<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 ;
     }
 
@@ -294,16 +299,16 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(CameraImage *image) {
 
     // Drawing of pupil detections on the image is only performed at ~30fps
     if ((trackingOn && drawTimer.elapsed() > drawDelay) ||
-        (camera->getType() == SINGLE_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == image->frameNumber)) {
+        (camera->getType() == SINGLE_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == image.frameNumber)) {
         // GB NOTE: need to emit the processed image and data also when the user hits pause or stop, and we are waiting there for the last read image to arrive processed
 
         drawTimer.start();
 
-        CameraImage *mimg = image;
-        mimg->img = image->img.clone();
+        const CameraImage &mimg = image;
+        mimg.img = image.img.clone();
 
         if(!usePupilUndistort && useImageUndistort) {
-            mimg->img = singleCalibration->undistortImage(image->img);
+            mimg.img = singleCalibration->undistortImage(image.img);
         }
         // GB modified: not necessary to copy twice
         //else {
@@ -343,14 +348,14 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(CameraImage *image) {
         // to inform imagePlaybackControlDialog about the just processed image
         if(camera->getType() == SINGLE_IMAGE_FILE) {
             emit processedImage(mimg);
-            qDebug() << image->frameNumber;
+//            qDebug() << image.frameNumber;
         }
         //qDebug() << "frameNumber left pupilDetection: " << cimg->frameNumber;
     }
 
     //emit processedSingleImageForOnePupilData(cimg->timestamp, pupil, QString::fromStdString(cimg->filename)); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
 
-    emit processedPupilData(image->timestamp, currentProcMode, Pupils, QString::fromStdString(image->filename));
+    emit processedPupilData(image.timestamp, currentProcMode, Pupils, QString::fromStdString(image.filename));
     // GB modified end
 
 
@@ -361,7 +366,7 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(CameraImage *image) {
 // Performs the processing/pupil detection
 // Emits the pupil detection result as a signal, as well as processed images with plotted pupil contours
 // Depending on the configuration, performs undistortion on the images or pupil detections
-void PupilDetection::onNewSingleImageForTwoPupil(CameraImage *cimg) {
+void PupilDetection::onNewSingleImageForTwoPupil(const CameraImage &cimg) {
     if (synchronised) {
         const QMutexLocker locker(imageMutex);
         onNewSingleImageForTwoPupilImpl(cimg);
@@ -379,19 +384,19 @@ void PupilDetection::onNewSingleImageForTwoPupil(CameraImage *cimg) {
 
 }
 
-void PupilDetection::onNewSingleImageForTwoPupilImpl(CameraImage *cimg) {
+void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
 
     if (!trackingOn) {
-        qDebug() << cimg->frameNumber;
+        qDebug() << cimg.frameNumber;
         emit processedImage(cimg);
         return;
     }
 
     // BG: NOTE: by default we only use the left and right halves of the input image
-    cv::Rect roiA = cv::Rect(0, 0, (int)std::floor(cimg->img.cols/2)-1, cimg->img.rows);
-    cv::Rect roiB = cv::Rect((int)std::ceil(cimg->img.cols/2)+1, 0, cimg->img.cols, cimg->img.rows);
-    cv::Mat bwFrameA = cimg->img;
-    cv::Mat bwFrameB = cimg->img;
+    cv::Rect roiA = cv::Rect(0, 0, (int)std::floor(cimg.img.cols/2)-1, cimg.img.rows);
+    cv::Rect roiB = cv::Rect((int)std::ceil(cimg.img.cols/2)+1, 0, cimg.img.cols, cimg.img.rows);
+    cv::Mat bwFrameA = cimg.img;
+    cv::Mat bwFrameB = cimg.img;
 
     // GB: like this the global ROI variables can inform performAutoParam() about ROI sizes
     if(useROIPreProcessing && !ROIsingleImageTwoPupilA.empty() && roiA != ROIsingleImageTwoPupilA && ROIsingleImageTwoPupilA.width<=bwFrameA.cols && ROIsingleImageTwoPupilA.height<=bwFrameA.rows) {
@@ -411,7 +416,7 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(CameraImage *cimg) {
         autoParamScheduled = false;
     }
 
-    if (cimg->img.channels() > 1) {
+    if (cimg.img.channels() > 1) {
         cv::cvtColor(bwFrameA, bwFrameA, cv::COLOR_BGR2GRAY);
         cv::cvtColor(bwFrameB, bwFrameB, cv::COLOR_BGR2GRAY);
     }
@@ -463,19 +468,19 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(CameraImage *cimg) {
     Pupils.push_back(pupilB);
 
     if ((trackingOn && drawTimer.elapsed() > drawDelay) ||
-        (camera->getType() == SINGLE_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber()==cimg->frameNumber)) {
+        (camera->getType() == SINGLE_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber()==cimg.frameNumber)) {
         // GB NOTE: need to emit the processed image and data also when the user hits pause or stop, and we are waiting there for the last read image to arrive processed
 
         drawTimer.start();
 
-        CameraImage *mimg = cimg;
+        const CameraImage &mimg = cimg;
 //        mimg->img = cimg->img.clone();
 // //        mimg->imgB = cimg->img.clone(); // would be the same
 
         if(!usePupilUndistort && useImageUndistort) {
-            mimg->img = singleCalibration->undistortImage(cimg->img);
+            mimg.img = singleCalibration->undistortImage(cimg.img);
         } else {
-            mimg->img = cimg->img.clone();
+            mimg.img = cimg.img.clone();
         }
 
         std::vector<cv::Rect> ROIs;
@@ -494,7 +499,7 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(CameraImage *cimg) {
         if(camera->getType() == SINGLE_IMAGE_FILE)
                 emit processedImage(mimg);
     }
-    emit processedPupilData(cimg->timestamp, currentProcMode, Pupils, QString::fromStdString(cimg->filename));
+    emit processedPupilData(cimg.timestamp, currentProcMode, Pupils, QString::fromStdString(cimg.filename));
 
 }
 
@@ -503,7 +508,7 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(CameraImage *cimg) {
 // Emits the pupil detection result as a signal, as well as processed images with plotted pupil contours
 // Depending on the configuration, performs undistortion on the pupil detections
 // GB: renamed and modified
-void PupilDetection::onNewStereoImageForOnePupil(CameraImage *simg) {
+void PupilDetection::onNewStereoImageForOnePupil(const CameraImage &simg) {
 
     if (synchronised) {
         const QMutexLocker locker(imageMutex);
@@ -523,20 +528,20 @@ void PupilDetection::onNewStereoImageForOnePupil(CameraImage *simg) {
 }
 
 
-void PupilDetection::onNewStereoImageForOnePupilImpl(CameraImage *simg) {
+void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
 
     // at the moment, the images are not undistorted completely but only the major axis points are undistorted after detection for absolute unit conversion
     // This creates a discrepancy between the undistorted pixel size and the physical measure, as a fix, undistortedDiamter can be calculated using useUndistort
     if (!trackingOn) {
-        qDebug() << simg->frameNumber;
+        qDebug() << simg.frameNumber;
         emit processedImage(simg);
         return;
     }
 
-    cv::Rect roi = cv::Rect(0, 0, simg->img.cols, simg->img.rows);
-    cv::Rect roiSecondary = cv::Rect(0, 0, simg->img.cols, simg->img.rows);
-    cv::Mat bwFrame = simg->img;
-    cv::Mat bwFrameSecondary = simg->imgSecondary;
+    cv::Rect roi = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Rect roiSecondary = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Mat bwFrame = simg.img;
+    cv::Mat bwFrameSecondary = simg.imgSecondary;
 
     // GB modified begin
     // GB: like this the global ROI variables can inform performAutoParam() about ROI sizes
@@ -558,7 +563,7 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(CameraImage *simg) {
     }
     // GB modified end
 
-    if (simg->img.channels() > 1) {
+    if (simg.img.channels() > 1) {
         cv::cvtColor(bwFrame, bwFrame, cv::COLOR_BGR2GRAY);
         cv::cvtColor(bwFrameSecondary, bwFrameSecondary, cv::COLOR_BGR2GRAY);
     }
@@ -641,13 +646,13 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(CameraImage *simg) {
     Pupils.push_back(pupilSecondary);
 
     if ((trackingOn && drawTimer.elapsed() > drawDelay) ||
-        (camera->getType() == STEREO_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber()==simg->frameNumber)) {
+        (camera->getType() == STEREO_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber()==simg.frameNumber)) {
         // GB NOTE: need to emit the processed image and data also when the user hits pause or stop, and we are waiting there for the last read image to arrive processed
 
         drawTimer.start();
-        CameraImage *mimg = simg;
-        mimg->img = simg->img.clone();
-        mimg->imgSecondary = simg->imgSecondary.clone();
+        const CameraImage &mimg = simg;
+        mimg.img = simg.img.clone();
+        mimg.imgSecondary = simg.imgSecondary.clone();
 
 
         std::vector<cv::Rect> ROIs;
@@ -668,14 +673,14 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(CameraImage *simg) {
     }
 
     //emit processedStereoImageForOnePupilData(simg->timestamp, pupil, pupilSecondary, QString::fromStdString(simg->filename)); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
-    emit processedPupilData(simg->timestamp, currentProcMode, Pupils, QString::fromStdString(simg->filename));
+    emit processedPupilData(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
     // GB modified end
 }
 // Slot callback for receiving new stereo camera images, associated with two viewpoints, both looking at both eyes
 // Performs the processing/pupil detection
 // Emits the pupil detection result as a signal, as well as processed images with plotted pupil contours
 // Depending on the configuration, performs undistortion on the pupil detections
-void PupilDetection::onNewStereoImageForTwoPupil(CameraImage *simg) {
+void PupilDetection::onNewStereoImageForTwoPupil(const CameraImage &simg) {
 
     if (synchronised) {
         const QMutexLocker locker(imageMutex);
@@ -693,25 +698,25 @@ void PupilDetection::onNewStereoImageForTwoPupil(CameraImage *simg) {
     }
 }
 
-void PupilDetection::onNewStereoImageForTwoPupilImpl(CameraImage *simg) {
+void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
 
     // at the moment, the images are not undistorted completely but only the major axis points are undistorted after detection for absolute unit conversion
     // This creates a discrepancy between the undistorted pixel size and the physical measure, as a fix, undistortedDiamter can be calculated using useUndistort
 
     if (!trackingOn) {
-        qDebug() << simg->frameNumber;
+        qDebug() << simg.frameNumber;
         emit processedImage(simg);
         return;
     }
 
-    cv::Rect roiA1 = cv::Rect(0, 0, simg->img.cols, simg->img.rows);
-    cv::Rect roiA2 = cv::Rect(0, 0, simg->img.cols, simg->img.rows);
-    cv::Rect roiB1 = cv::Rect(0, 0, simg->img.cols, simg->img.rows);
-    cv::Rect roiB2 = cv::Rect(0, 0, simg->img.cols, simg->img.rows);
-    cv::Mat bwFrameA1 = simg->img;
-    cv::Mat bwFrameA2 = simg->imgSecondary;
-    cv::Mat bwFrameB1 = simg->img;
-    cv::Mat bwFrameB2 = simg->imgSecondary;
+    cv::Rect roiA1 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Rect roiA2 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Rect roiB1 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Rect roiB2 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Mat bwFrameA1 = simg.img;
+    cv::Mat bwFrameA2 = simg.imgSecondary;
+    cv::Mat bwFrameB1 = simg.img;
+    cv::Mat bwFrameB2 = simg.imgSecondary;
 
     // GB: like this the global ROI variables can inform performAutoParam() about ROI sizes
     if(useROIPreProcessing && !ROIstereoImageTwoPupilA1.empty() && roiA1 != ROIstereoImageTwoPupilA1 && ROIstereoImageTwoPupilA1.width<=bwFrameA1.cols && ROIstereoImageTwoPupilA1.height<=bwFrameA1.rows) {
@@ -743,7 +748,7 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(CameraImage *simg) {
         autoParamScheduled = false;
     }
 
-    if (simg->img.channels() > 1) {
+    if (simg.img.channels() > 1) {
         cv::cvtColor(bwFrameA1, bwFrameA1, cv::COLOR_BGR2GRAY);
         cv::cvtColor(bwFrameA2, bwFrameA2, cv::COLOR_BGR2GRAY);
         cv::cvtColor(bwFrameB1, bwFrameB1, cv::COLOR_BGR2GRAY);
@@ -879,13 +884,13 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(CameraImage *simg) {
     Pupils.push_back(pupilB2);
 
     if ((trackingOn && drawTimer.elapsed() > drawDelay) ||
-        (camera->getType() == STEREO_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber()==simg->frameNumber)) {
+        (camera->getType() == STEREO_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber()==simg.frameNumber)) {
         // GB NOTE: need to emit the processed image and data also when the user hits pause or stop, and we are waiting there for the last read image to arrive processed
 
         drawTimer.start();
-        CameraImage *mimg = simg;
-        mimg->img = simg->img.clone();
-        mimg->imgSecondary = simg->imgSecondary.clone();
+        const CameraImage &mimg = simg;
+        mimg.img = simg.img.clone();
+        mimg.imgSecondary = simg.imgSecondary.clone();
 
         std::vector<cv::Rect> ROIs;
         if(useROIPreProcessing) {
@@ -907,7 +912,7 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(CameraImage *simg) {
                 emit processedImage(mimg);
     }
 
-    emit processedPupilData(simg->timestamp, currentProcMode, Pupils, QString::fromStdString(simg->filename));
+    emit processedPupilData(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
 }
 
 // GB: I found this function like this, and did not bother it
@@ -1105,21 +1110,21 @@ void PupilDetection::performAutoParam() {
             break;
         default:
             return;
-    } 
-
-    // TODO: MEG KELL OLDANI !!
+    }
 
     // useROIPreProcessing &&  (( NEMJÓ, MINDENKÉPP KELL LÉTEZŐ ROI))
     if((rois[0].width == 0 || rois[0].height == 0))
         return;
 
-
-    // min 2 and max 8 mm means that the minimum is 1/4th of 8, 
+    // min 2 and max 8 mm means that the minimum is 1/4th of 8,
     // or in other words: 2 = 0.25 *8;
     // This rule of thumb however, affects e.g. ElSe's capabilities negatively sometimes,
     // so I used 0.2 here
+    float minToMaxDia = 0.25f;
 
-    float minToMaxDia = 0.2f;
+//    // min 1 and max 8 mm means that the minimum is 1/8th of 8,
+//    // or in other words: 1 = 0.125 *8;
+//    float minToMaxDia = 0.125f;
 
     // NOTE: These are only DIAMETER values!
     float pupSizeFactorMin = (autoParamPupSizePercent/100.0f *minToMaxDia);
@@ -1131,12 +1136,15 @@ void PupilDetection::performAutoParam() {
         // for each algorithm instance, we perform the pupilDetectionMethod-type-specific automatic parametrization
 
         //std::string algName = pupilDetectionMethods1[pupilDetectionIndex]->title();
-        float roiWidth = (float)rois[c].width;
-        float roiHeight = (float)rois[c].height;
+        float roiWidth = static_cast<float>( rois[c].width );
+        float roiHeight = static_cast<float>( rois[c].height );
+
         float minDim = (roiWidth<=roiHeight) ? roiWidth : roiHeight;
+        // bool isWidthTheMinDim = (roiWidth<=roiHeight) ? true : false;
+
         // now we get the RADIUS values
-        float minRadius = pupSizeFactorMin*minDim /2;
-        float maxRadius = pupSizeFactorMax*minDim /2;
+        float minRadius = pupSizeFactorMin*minDim /2.0f;
+        float maxRadius = pupSizeFactorMax*minDim /2.0f;
 
         //qDebug() << "roiWidth = " << roiWidth;
         //qDebug() << "roiHeight =" << roiHeight;
@@ -1145,81 +1153,85 @@ void PupilDetection::performAutoParam() {
         //qDebug() << "maxRadius =" << maxRadius;
         
         if(pupilDetectionIndex == 0) {
-                // ELSE
-                ElSe *alg = dynamic_cast<ElSe*>(algInstances[c]);
-                
-                alg->minAreaRatio = minRadius*minRadius*M_PI / (roiWidth*roiHeight);
-                alg->maxAreaRatio = maxRadius*maxRadius*M_PI / (roiWidth*roiHeight);
+            // ELSE
+            ElSe *alg = dynamic_cast<ElSe*>(algInstances[c]);
 
-                qDebug() << "Set AutoParam for algorithm ElSe, instance " << c;
-                qDebug() << "minAreaRatio =" << alg->minAreaRatio;
-                qDebug() << "maxAreaRatio =" << alg->maxAreaRatio;
+            // GB Note: Empirical correction
+            maxRadius *= 1.1;
+
+            alg->minAreaRatio = static_cast<float>( minRadius*minRadius*M_PI / (roiWidth*roiHeight) );
+            alg->maxAreaRatio = static_cast<float>( maxRadius*maxRadius*M_PI / (roiWidth*roiHeight) );
+
+            qDebug() << "Set AutoParam for algorithm ElSe, instance " << c;
+            qDebug() << "minAreaRatio =" << alg->minAreaRatio;
+            qDebug() << "maxAreaRatio =" << alg->maxAreaRatio;
                 
         } else if(pupilDetectionIndex == 1) {
-                // EXCUSE
-                ExCuSe *alg = dynamic_cast<ExCuSe*>(algInstances[c]);
+            // EXCUSE
+            ExCuSe *alg = dynamic_cast<ExCuSe*>(algInstances[c]);
 
-                alg->max_ellipse_radi = maxRadius;
+            alg->max_ellipse_radi = static_cast<int>(round(maxRadius));
 
-                qDebug() << "Set AutoParam for algorithm ExCuSe, instance " << c;
-                qDebug() << "max_ellipse_radi =" << alg->max_ellipse_radi;
-                
+            qDebug() << "Set AutoParam for algorithm ExCuSe, instance " << c;
+            qDebug() << "max_ellipse_radi =" << alg->max_ellipse_radi;
+
         } if(pupilDetectionIndex == 2) {
-                // PURE
-                PuRe *alg = dynamic_cast<PuRe*>(algInstances[c]);
+            // PURE
+            PuRe *alg = dynamic_cast<PuRe*>(algInstances[c]);
 
-                // These are just a relative reference. User cannot set these to keep them constant
-                // Anyway I guess a camera calibration that supports a precise px-to-mm mapping, could also be utilized here
-                // Now we just back-calculate the roi width (= inter-canthi distance) 
-                
-                // GB TODO: distance or half of distance is the ROI width? check paper!
-                
-                alg->meanCanthiDistanceMM = 8.0f / maxRadius * roiWidth;
-                alg->maxPupilDiameterMM = 8.0f;
-                alg->minPupilDiameterMM = 8.0f * minToMaxDia; //2.0f;
+            // These are just a relative reference. User cannot set these to keep them constant
+            // Anyway I guess a camera calibration that supports a precise px-to-mm mapping, could also be utilized here
+            // Now we just back-calculate the roi width (= inter-canthi distance)
 
-                qDebug() << "Set AutoParam for algorithm PuRe, instance " << c;
-                qDebug() << "meanCanthiDistanceMM =" << alg->meanCanthiDistanceMM;
-                qDebug() << "maxPupilDiameterMM =" << alg->maxPupilDiameterMM;
-                qDebug() << "minPupilDiameterMM =" << alg->minPupilDiameterMM;
+            alg->meanCanthiDistanceMM = (roiWidth / 2.0f) / maxRadius *8.0f; // THIS /2.0f is important. Image width is HALF of the canthi distance
+            alg->maxPupilDiameterMM = 8.0f;
+            alg->minPupilDiameterMM = 8.0f * minToMaxDia;
+
+            qDebug() << "Set AutoParam for algorithm PuRe, instance " << c;
+            qDebug() << "meanCanthiDistanceMM =" << alg->meanCanthiDistanceMM;
+            qDebug() << "maxPupilDiameterMM =" << alg->maxPupilDiameterMM;
+            qDebug() << "minPupilDiameterMM =" << alg->minPupilDiameterMM;
 
         } if(pupilDetectionIndex == 3) {
-                // PUREST
-                PuReST *alg = dynamic_cast<PuReST*>(algInstances[c]);
+            // PUREST
+            PuReST *alg = dynamic_cast<PuReST*>(algInstances[c]);
 
-                // same:
-                alg->meanCanthiDistanceMM = 8.0f / maxRadius * roiWidth;
-                alg->maxPupilDiameterMM = 8.0f;
-                alg->minPupilDiameterMM = 8.0f * minToMaxDia; //2.0f;
+            alg->meanCanthiDistanceMM = (roiWidth / 2.0f) / maxRadius *8.0f; // THIS /2.0f is important. Image width is HALF of the canthi distance
+            alg->maxPupilDiameterMM = 8.0f;
+            alg->minPupilDiameterMM = 8.0f * minToMaxDia; //2.0f;
 
-                qDebug() << "Set AutoParam for algorithm PuReSt, instance " << c;
-                qDebug() << "meanCanthiDistanceMM =" << alg->meanCanthiDistanceMM;
-                qDebug() << "maxPupilDiameterMM =" << alg->maxPupilDiameterMM;
-                qDebug() << "minPupilDiameterMM =" << alg->minPupilDiameterMM;
+            qDebug() << "Set AutoParam for algorithm PuReSt, instance " << c;
+            qDebug() << "meanCanthiDistanceMM =" << alg->meanCanthiDistanceMM;
+            qDebug() << "maxPupilDiameterMM =" << alg->maxPupilDiameterMM;
+            qDebug() << "minPupilDiameterMM =" << alg->minPupilDiameterMM;
 
         } if(pupilDetectionIndex == 4) {
-                // STARBURST
-                Starburst *alg = dynamic_cast<Starburst*>(algInstances[c]);
+            // STARBURST
+            Starburst *alg = dynamic_cast<Starburst*>(algInstances[c]);
 
-                alg->edge_threshold = 20;		//threshold of pupil edge points detection
-                alg->corneal_reflection_ratio_to_image_size = roiHeight / (maxRadius* 0.2f); // approx max size of the reflection relative to image height -> height/this
-                alg->crWindowSize = maxRadius * 1.5;		    //corneal reflection search window size
+            //threshold of pupil edge points detection
+            alg->edge_threshold = 18;
+            // approx max size of the reflection relative to image height -> height/this
+            alg->corneal_reflection_ratio_to_image_size = static_cast<int>( roiHeight / round((maxRadius* 0.2f)) );
+            //corneal reflection search window size
+            alg->crWindowSize = static_cast<int>( round(maxRadius * 2.0f) );
 
-                qDebug() << "Set AutoParam for algorithm Starburst, instance " << c;
-                qDebug() << "edge_threshold =" << alg->edge_threshold;
-                qDebug() << "corneal_reflection_ratio_to_image_size =" << alg->corneal_reflection_ratio_to_image_size;
-                qDebug() << "crWindowSize =" << alg->crWindowSize;
+            qDebug() << "Set AutoParam for algorithm Starburst, instance " << c;
+            qDebug() << "set now: edge_threshold =" << alg->edge_threshold;
+            qDebug() << "set now: corneal_reflection_ratio_to_image_size =" << alg->corneal_reflection_ratio_to_image_size;
+            qDebug() << "set now: crWindowSize =" << alg->crWindowSize;
 
         } if(pupilDetectionIndex == 5) {
-                // SWIRSKI2D
-                Swirski2D *alg = dynamic_cast<Swirski2D*>(algInstances[c]);
+            // SWIRSKI2D
+            Swirski2D *alg = dynamic_cast<Swirski2D*>(algInstances[c]);
 
-                alg->params.Radius_Min = minRadius;
-                alg->params.Radius_Max = maxRadius;
+            alg->params.Radius_Min = static_cast<int>( round(minRadius) );
+            alg->params.Radius_Max = static_cast<int>( round(maxRadius) );
 
-                qDebug() << "Set AutoParam for algorithm Swirski2D, instance " << c;
-                qDebug() << "params.Radius_Min =" << alg->params.Radius_Min;
-                qDebug() << "params.Radius_Max =" << alg->params.Radius_Max;
+            qDebug() << "Set AutoParam for algorithm Swirski2D, instance " << c;
+            qDebug() << "set now: params.Radius_Min =" << alg->params.Radius_Min;
+            qDebug() << "set now: params.Radius_Max =" << alg->params.Radius_Max;
+
         }
 
     }

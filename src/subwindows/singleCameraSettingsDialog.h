@@ -2,7 +2,7 @@
 #define PUPILEXT_SINGLECAMERASETTINGSDIALOG_H
 
 /**
-    @author Moritz Lode, Gábor Bényei
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 
@@ -124,6 +124,18 @@ public slots:
     void updateCamImageRegionsWidget();
     void updateSensorSize();
 
+    void startHardwareTrigger();
+    void stopHardwareTrigger();
+    void setHWTlineSource(int lineSourceNum);
+    void setHWTruntime(double runtimeMinutes);
+    void setHWTframerate(int fps);
+
+    void enableAcquisitionFrameRate(bool state);
+    void setAcquisitionFPSValue(int value);
+
+    void setExposureTimeValue(int value);
+    void setGainValue(double value);
+
 private slots:
 
     void saveButtonClick();
@@ -134,8 +146,6 @@ private slots:
 
     void onLineSourceChange(int index);
     void updateFrameRateValue();
-    void startHardwareTrigger();
-    void stopHardwareTrigger();
 
     void onHWTenabledChange(bool state);
 
@@ -152,9 +162,7 @@ private slots:
 
     void updateImageROISettingsMax();
 
-    void setExposureTimeValue(int value);
-    void setAcquisitionFPSValue(int value);
-    void enableAcquisitionFrameRate(bool state);
+    void SWTframerateEnabledToggled(bool state);
 
 signals:
     void onSerialConfig();

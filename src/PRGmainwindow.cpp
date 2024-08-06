@@ -163,9 +163,10 @@ void MainWindow::PRGrecordImageStop() {
 void MainWindow::PRGopenSingleWebcam(int deviceID) {
     if(selectedCamera && selectedCamera->isOpen())
         return;
-    
-    webcamDeviceBox->setValue(deviceID);
-    singleWebcamSelected();
+
+    QAction *action = new QAction();
+    action->setData(deviceID);
+    singleWebcamSelected(action);
 }
 
 /*void MainWindow::PRGincrementTrial() {
@@ -452,20 +453,169 @@ void MainWindow::PRGconnectStreamCOM(QString conf) {
 
     streamingSettingsDialog->connectCOM(p);
 }
+void MainWindow::PRGconnectMicrocontrollerCOM(QString conf) {
+    if(serialSettingsDialog->isCOMConnected())
+        return;
+
+    ConnPoolCOMInstanceSettings p;
+    bool valid;
+
+    conf.replace(" ", "");
+    //QStringList subStrings = conf.split(',');
+    QRegExp separator("[,|;|*|&|#|:]");
+    QStringList subStrings = conf.split(separator);
+    if(subStrings.length() < 7)
+        return;
+
+    const auto infos = QSerialPortInfo::availablePorts();
+    valid = false;
+    QString portName = "";
+    for(int h=1; h < infos.length(); h++) {
+        if(infos[h].portName() == subStrings[0]) {
+            portName=subStrings[h];
+            valid = true;
+            break;
+        }
+    }
+    if(!valid || subStrings[0].isEmpty())
+        return;
+
+    valid = false;
+    qint32 baudRate = subStrings[1].toInt(&valid, 10);
+    if(!valid)
+        return;
+
+    valid = false;
+    qint32 dataBits = subStrings[2].toInt(&valid, 10);
+    if(!valid)
+        return;
+
+    valid = false;
+    qint32 parity = subStrings[3].toInt(&valid, 10);
+    if(!valid)
+        return;
+
+    // NOTE: only integer values supported now
+    valid = false;
+    qint32 stopBits = subStrings[4].toInt(&valid, 10);
+    if(!valid)
+        return;
+
+    valid = false;
+    qint32 flowControl = subStrings[5].toInt(&valid, 10);
+    if(!valid)
+        return;
+
+    p.name = portName;
+    p.baudRate = baudRate;
+    p.stringBaudRate = QString::number(baudRate);
+    p.dataBits = (QSerialPort::DataBits)dataBits;
+    p.stringDataBits = QString::number(baudRate);
+    p.parity = (QSerialPort::Parity)parity;
+    p.stringParity = QString::number(parity);
+    p.stopBits = (QSerialPort::StopBits)stopBits;
+    p.stringStopBits = QString::number(stopBits);
+    p.flowControl = (QSerialPort::FlowControl)flowControl;
+    p.stringFlowControl = QString::number(flowControl);
+    p.localEchoEnabled = true; // always on now
+
+    serialSettingsDialog->connectCOM(p);
+}
 void MainWindow::PRGdisconnectRemoteUDP() {
     if(remoteCCDialog->isUDPConnected())
-        remoteCCDialog->onDisconnectUDPClick();
+        remoteCCDialog->disconnectUDP();
 }
 void MainWindow::PRGdisconnectRemoteCOM() {
     if(remoteCCDialog->isCOMConnected())
-        remoteCCDialog->onDisconnectCOMClick();
+        remoteCCDialog->disconnectCOM();
 }
 void MainWindow::PRGdisconnectStreamUDP() {
     if(streamingSettingsDialog->isUDPConnected())
-        streamingSettingsDialog->onDisconnectUDPClick();
+        streamingSettingsDialog->disconnectUDP();
 }
 void MainWindow::PRGdisconnectStreamCOM() {
     if(streamingSettingsDialog->isCOMConnected())
-        streamingSettingsDialog->onDisconnectCOMClick();
+        streamingSettingsDialog->disconnectCOM();
+}
+void MainWindow::PRGdisconnectMicrocontrollerCOM() {
+    if(serialSettingsDialog->isCOMConnected())
+        serialSettingsDialog->disconnectCOM();
+}
+
+void MainWindow::PRGenableHWT(bool state) {
+    if(!selectedCamera || selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+        return;
+    if(state)
+        singleCameraSettingsDialog->onHardwareTriggerEnable();
+    else
+        singleCameraSettingsDialog->onHardwareTriggerDisable();
+}
+void MainWindow::PRGstartHWT() {
+    if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
+        return;
+    if(selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+        singleCameraSettingsDialog->startHardwareTrigger();
+    else /*if(selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA)*/
+        stereoCameraSettingsDialog->startHardwareTrigger();
+}
+void MainWindow::PRGstopHWT() {
+    if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
+        return;
+    if(selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+        singleCameraSettingsDialog->stopHardwareTrigger();
+    else /*if(selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA)*/
+        stereoCameraSettingsDialog->stopHardwareTrigger();
+}
+void MainWindow::PRGsetHWTlineSource(int lineSourceNum) {
+    if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
+        return;
+    if(selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+        singleCameraSettingsDialog->setHWTlineSource(lineSourceNum);
+    else /*if(selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA)*/
+        stereoCameraSettingsDialog->setHWTlineSource(lineSourceNum);
+}
+void MainWindow::PRGsetHWTruntime(float runtimeMinutes) {
+    if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
+        return;
+    if(selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+        singleCameraSettingsDialog->setHWTruntime(runtimeMinutes);
+    else /*if(selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA)*/
+        stereoCameraSettingsDialog->setHWTruntime(runtimeMinutes);
+}
+void MainWindow::PRGsetHWTframerate(int fps) {
+    if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
+        return;
+    if(selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+        singleCameraSettingsDialog->setHWTframerate(fps);
+    else /*if(selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA)*/
+        stereoCameraSettingsDialog->setHWTframerate(fps);
+}
+void MainWindow::PRGenableSWTframerateLimiting(bool state) {
+    if(!selectedCamera || selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+        return;
+
+    singleCameraSettingsDialog->enableAcquisitionFrameRate(state);
+}
+void MainWindow::PRGsetSWTframerate(int fps) {
+    if(!selectedCamera || selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+        return;
+
+    singleCameraSettingsDialog->setAcquisitionFPSValue(fps);
+}
+void MainWindow::PRGsetExposure(int value) {
+    if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
+        return;
+    if(selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+        singleCameraSettingsDialog->setExposureTimeValue(value);
+    else /*if(selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA)*/
+        stereoCameraSettingsDialog->setExposureTimeValue(value);
+}
+void MainWindow::PRGsetGain(double value) {
+    if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
+        return;
+    if(selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+        singleCameraSettingsDialog->setGainValue(value);
+    else /*if(selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA)*/
+        stereoCameraSettingsDialog->setGainValue(value);
 }
 

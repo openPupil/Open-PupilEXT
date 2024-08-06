@@ -55,6 +55,10 @@
         <file>icons/Breeze/actions/22/composite-track-preview.svg</file>
         <file>icons/Breeze/actions/16/highlight-pointer-spot.svg</file>
         <file>icons/Breeze/actions/22/adjustlevels.svg</file>
+        <file>icons/Breeze/actions/22/table.svg</file>
+        <file>icons/Breeze/actions/22/labplot-xy-interpolation-curve.svg</file>
+        <file>icons/Breeze/applets/22/webcam.svg</file>
+        <file>icons/Breeze/actions/22/show-gpu-effects.svg</file>
 
     </qresource>
 </RCC>

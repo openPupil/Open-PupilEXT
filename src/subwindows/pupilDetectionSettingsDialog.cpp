@@ -314,7 +314,7 @@ void PupilDetectionSettingsDialog::updateForm() {
     pupilUndistortionBox->setChecked(pupilDetection->isPupilUndistortionEnabled());
     imageUndistortionBox->setChecked(pupilDetection->isImageUndistortionEnabled());
 
-    pupilMethodSettings[algorithmBox->currentIndex()]->updateSettings();
+    pupilMethodSettings[algorithmBox->currentIndex()]->applyAndSaveSpecificSettings();
 
     // GB begin
     procModeBox->setCurrentIndex(pupilDetection->getCurrentProcMode());
@@ -366,7 +366,7 @@ void PupilDetectionSettingsDialog::loadSettings() {
 }
 
 // Save the detection settings to the application settings which are persisted on disk
-void PupilDetectionSettingsDialog::saveSettings() {
+void PupilDetectionSettingsDialog::saveUniversalSettings() {
     // GB begin
     if(!pupilDetection->isTrackingOn() && procModeBox->currentIndex()!=0) {
         if(!pupilDetection->isStereo())
@@ -426,7 +426,6 @@ void PupilDetectionSettingsDialog::onAlgorithmSelection(int idx) {
 
 // Apply the settings to the pupil detection process and save them to the application settings
 void PupilDetectionSettingsDialog::applyButtonClick() {
-
     // GB begin
     if(pupilDetection->hasOpenCamera() && !pupilDetection->isTrackingOn()) {
         // NOTE: so the combobox change itself does not change procMode, but we need to hit Apply too
@@ -442,15 +441,15 @@ void PupilDetectionSettingsDialog::applyButtonClick() {
     pupilDetection->enablePupilUndistortion(pupilUndistortionBox->isChecked());
     pupilDetection->enableImageUndistortion(imageUndistortionBox->isChecked());
 
-    pupilMethodSettings[algorithmBox->currentIndex()]->updateSettings();
+    pupilMethodSettings[algorithmBox->currentIndex()]->applyAndSaveSpecificSettings();
 
-    /*if(pupilMethodSettings[algorithmBox->currentIndex()]->isAutoParamEnabled()) {
+    if(pupilMethodSettings[algorithmBox->currentIndex()]->isAutoParamEnabled()) {
         pupilDetection->setAutoParamEnabled(true);
     } else {
         pupilDetection->setAutoParamEnabled(false);
-    }*/
+    }
 
-    saveSettings();
+    saveUniversalSettings();
 }
 
 void PupilDetectionSettingsDialog::cancelButtonClick() {

@@ -3,7 +3,7 @@
 #define PUPILEXT_STARBURSTSETTINGS_H
 
 /**
-    @authors Moritz Lode, Gábor Bényei
+    @authors Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include "PupilMethodSetting.h"
@@ -34,9 +34,9 @@ public:
 
         PupilMethodSetting::setDefaultParameters(defaultParameters);
         createForm();
-        parameterConfigs->setCurrentText(settingsMap.key(configIndex));
+        configsBox->setCurrentText(settingsMap.key(configIndex));
         // GB added begin
-        if(parameterConfigs->currentText()=="Automatic Parametrization") {
+        if(isAutoParamEnabled()) {
             edgeThresholdBox->setEnabled(false);
             //
             crRatioBox->setEnabled(false);
@@ -112,7 +112,7 @@ public slots:
         PupilMethodSetting::loadSettings();
 
         // GB added begin
-        if(parameterConfigs->currentText()=="Automatic Parametrization") {
+        if(isAutoParamEnabled()) {
             float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
             pupilDetection->setAutoParamEnabled(true);
             pupilDetection->setAutoParamPupSizePercent(autoParamPupSizePercent);
@@ -131,10 +131,10 @@ public slots:
         } 
         // GB added end
 
-        updateSettings();
+        applySpecificSettings();
     }
 
-    void updateSettings() override {
+    void applySpecificSettings() override {
 
         // GB modified begin
         
@@ -164,7 +164,7 @@ public slots:
 
         // Then the specific ones that are set by autoParam
         int procMode = pupilDetection->getCurrentProcMode();
-        if(parameterConfigs->currentText()=="Automatic Parametrization") {
+        if(isAutoParamEnabled()) {
             // TODO: GET VALUE FROM pupildetection failsafe
             float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
             pupilDetection->setAutoParamPupSizePercent(autoParamPupSizePercent);
@@ -209,9 +209,12 @@ public slots:
         }
         // GB modified end
 
-        emit onConfigChange(parameterConfigs->currentText());
+        emit onConfigChange(configsBox->currentText());
+    }
 
-        PupilMethodSetting::updateSettings();
+    void applyAndSaveSpecificSettings() override {
+        applySpecificSettings();
+        PupilMethodSetting::saveSpecificSettings();
     }
 
 private:
@@ -247,19 +250,19 @@ private:
 
         QHBoxLayout *configsLayout = new QHBoxLayout();
 
-        parameterConfigs = new QComboBox();
+        configsBox = new QComboBox();
         // GB modified begin
         QLabel *parameterConfigsLabel = new QLabel(tr("Parameter configuration:"));
-        parameterConfigs->setFixedWidth(250);
+        configsBox->setFixedWidth(250);
         configsLayout->addWidget(parameterConfigsLabel);
         // GB modified end
-        configsLayout->addWidget(parameterConfigs);
+        configsLayout->addWidget(configsBox);
 
         for (QMap<QString, Settings>::const_iterator cit = settingsMap.cbegin(); cit != settingsMap.cend(); cit++)
         {
-            parameterConfigs->addItem(cit.key());
+            configsBox->addItem(cit.key());
         }
-        connect(parameterConfigs, SIGNAL(currentTextChanged(QString)), this, SLOT(onParameterConfigSelection(QString)));
+        connect(configsBox, SIGNAL(currentTextChanged(QString)), this, SLOT(onParameterConfigSelection(QString)));
 
         mainLayout->addLayout(configsLayout);
 
@@ -361,7 +364,7 @@ private:
             { Settings::ROI_0_3_OPTIMIZED, {77.0f, 8.0f, 2.0f, 4.0f, 417.0f} },
             { Settings::ROI_0_6_OPTIMIZED, {27.0f, 8.0f, 1.0f, 10.0f, 197.0f} },
             { Settings::FULL_IMAGE_OPTIMIZED, {21.0f, 32.0f, 7.0f, 10.0f, 433.0f} },
-            { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, 8.0f, 7.0f, -1.0f, -1.0f} },
+            { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, 12.0f, 8.0f, -1.0f, -1.0f} },
             { Settings::CUSTOM, {-1.0f, 8.0f, 7.0f, -1.0f, -1.0f} } // GB added
     };
 
@@ -379,7 +382,7 @@ private slots:
         minFeatureCandidatesBox->setValue(selectedParameter[2]);
 
         // Then the specific ones that are set by autoParam
-        if(parameterConfigs->currentText()=="Automatic Parametrization") {
+        if(isAutoParamEnabled()) {
             edgeThresholdBox->setEnabled(false);
             //
             crRatioBox->setEnabled(false);
@@ -398,7 +401,7 @@ private slots:
         }
         // GB modified end
 
-        //updateSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
+        //applySpecificSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
     }
 
 };

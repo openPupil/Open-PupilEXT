@@ -3,7 +3,7 @@
 #define PUPILEXT_SINGLECAMERASHARPNESSVIEW_H
 
 /**
-    @author Moritz Lode
+    @authors Moritz Lode, Attila Boncser
 */
 
 #include <QtCore/qobjectdefs.h>
@@ -58,7 +58,7 @@ private:
 
 private slots:
 
-    void updateView(CameraImage *img);
+    void updateView(const CameraImage &img);
     void updateCameraFPS(double fps);
 
     void onFitClick();

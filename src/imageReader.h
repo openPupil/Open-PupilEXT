@@ -3,7 +3,7 @@
 #define PUPILEXT_IMAGEREADER_H
 
 /**
-    @author Moritz Lode, Gábor Bényei
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include <QtCore/QObject>
@@ -35,7 +35,7 @@ enum PlaybackState { STOPPED=0, PAUSED=1, PLAYING=2 };
 
     TODO Improvement: Speed could be improved by pre-loading images of the directory into memory, disk read speed is limiting the playback speed
 
-    NOTE: Modified by Gábor Bényei, 2023 jan
+    NOTE: Modified by Gabor Benyei, 2023 jan
     IMPORTANT:
         Read images now have their CameraImage.timestamp property set to their filename (marking the timestamp of acquisition) 
         instead of the image read operation timestamp. This is I think more clear, and the previous implementation could give rise to mistakes 
@@ -166,7 +166,6 @@ public:
     }
 
     void setSynchronised(bool synchronised);
-    // GB added end
 
 private:
 
@@ -223,7 +222,7 @@ public slots:
 
 signals:
 
-    void onNewImage(const CameraImage &image);
+    void onNewImage(CameraImage image);
     void finished();
 
     void paused();

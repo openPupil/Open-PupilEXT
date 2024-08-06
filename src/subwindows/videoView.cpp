@@ -16,7 +16,8 @@ VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selecti
     scaleFactor(1.25), 
     usingDoubleROI(usingDoubleROI),
     selectionColorCorrect1(selectionColor1),
-    selectionColorCorrect2(selectionColor2)  {
+    selectionColorCorrect2(selectionColor2),
+    applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
 
     roi1GraphicsView = new QGraphicsView(graphicsView);
@@ -41,6 +42,13 @@ VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selecti
             static_cast<int>(msize * 0.01), 
             static_cast<int>(msize * 0.2), 
             static_cast<int>(msize * 0.2));
+    }
+
+    bool darkMode = applicationSettings->value("GUIDarkAdaptMode", "0") == "1" || (applicationSettings->value("GUIDarkMode", "0") == "2");
+    if(darkMode) {
+        graphicsScene->setBackgroundBrush(QBrush("#242424"));
+    } else {
+        graphicsScene->setBackgroundBrush(QBrush("white"));
     }
 
     penROIprocessed.setWidth(2);
@@ -305,6 +313,8 @@ void VideoView::drawAutoParamOverlay() {
         return;
     }
 
+    float minToMaxDia = 0.25f;
+
     float lineWidth = (float)imageSize.width / (float)graphicsView->width();
     //qDebug() << "graphicsView->width()" << graphicsView->width();
     //qDebug() << "imageSize.width" << imageSize.width;
@@ -328,7 +338,7 @@ void VideoView::drawAutoParamOverlay() {
 
     float minDim1 = (roi1D.width()<=roi1D.height()) ? roi1D.width() : roi1D.height();
 
-    float pxDiaInner1 = minDim1/100*(float)autoParamPupSizePercent *0.2f;
+    float pxDiaInner1 = minDim1/100*(float)autoParamPupSizePercent *minToMaxDia;
     float pxDiaOuter1 = minDim1/100*(float)autoParamPupSizePercent;
     QPainterPath pp1;
     pp1.addEllipse(roi1D.x()+(roi1D.width()/2)-pxDiaOuter1/2, roi1D.y()+(roi1D.height()/2)-pxDiaOuter1/2, pxDiaOuter1, pxDiaOuter1);
@@ -354,7 +364,7 @@ void VideoView::drawAutoParamOverlay() {
         roi2R = QRectF(0,0,1,1);
     QRectF roi2D = QRectF(roi2R.x()*imageSize.width, roi2R.y()*imageSize.height, roi2R.width()*imageSize.width, roi2R.height()*imageSize.height);
 
-    float pxDiaInner2 = minDim1/100*(float)autoParamPupSizePercent *0.15f;
+    float pxDiaInner2 = minDim1/100*(float)autoParamPupSizePercent *minToMaxDia;
     float pxDiaOuter2 = minDim1/100*(float)autoParamPupSizePercent;
     QPainterPath pp2;
     pp2.addEllipse(roi2D.x()+(roi2D.width()/2)-pxDiaOuter2/2, roi2D.y()+(roi2D.height()/2)-pxDiaOuter2/2, pxDiaOuter2, pxDiaOuter2);

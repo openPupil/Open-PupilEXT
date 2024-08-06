@@ -874,11 +874,12 @@ bool SingleCamera::setImageROIwidth(int width) {
     if(modVal != 0)
         width -= modVal;
 
-    if (offsetX >= maxWidth-16)
-        width = maxWidth-offsetX;
+    int bestWidth = (offsetX+width > maxWidth) ? maxWidth-width-((maxWidth-width)%16) : width;
+//    if (offsetX >= maxWidth-16)
+//        width = maxWidth-offsetX;
 
-    if (width + offsetX <= maxWidth && camera.Width.IsWritable() ) {
-        success = camera.Width.TrySetValue(width);
+    if (camera.Width.IsWritable() ) {
+        success = camera.Width.TrySetValue(bestWidth);
     }
     camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
     return success;
@@ -905,12 +906,13 @@ bool SingleCamera::setImageROIheight(int height) {
     int modVal=height%16;
     if(modVal != 0)
         height -= modVal;
-    
-    if (offsetY >= maxHeight-16)
-        height = maxHeight-offsetY;
 
-    if (height + offsetY <= maxHeight && camera.Height.IsWritable() ) {
-        success = camera.Height.TrySetValue(height);
+    int bestHeight = (offsetY+height > maxHeight) ? maxHeight-height-((maxHeight-height)%16) : height;
+//    if (offsetY >= maxHeight-16)
+//        height = maxHeight-offsetY;
+
+    if (camera.Height.IsWritable() ) {
+        success = camera.Height.TrySetValue(bestHeight);
     } 
     camera.StartGrabbing(GrabStrategy_OneByOne, GrabLoop_ProvidedByInstantCamera);
     return success;

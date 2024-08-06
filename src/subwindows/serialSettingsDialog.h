@@ -3,7 +3,7 @@
 
 /**
     Partially code used from https://doc.qt.io/qt-5/qtserialport-terminal-example.html
-    @authors Moritz Lode, Qt Company Ltd.
+    @authors Moritz Lode, Qt Company Ltd., Gabor Benyei, Attila Boncser
 */
 
 #include <QDialog>
@@ -64,7 +64,7 @@ public:
 
     ConnPoolCOMInstanceSettings settings() const;
 
-    bool isConnected();
+    bool isCOMConnected();
 
 private:
 
@@ -121,8 +121,9 @@ private slots:
 
 public slots:
 
+    void connectCOM(const ConnPoolCOMInstanceSettings &p);
     void connectSerialPort();
-    void disconnectSerialPort();
+    void disconnectCOM();
     void sendCommand(QString cmd);
 
 signals:

@@ -3,7 +3,7 @@
 #define PUPILEXT_STEREOCAMERA_H
 
 /**
-    @authors Moritz Lode, Bényei Gábor
+    @authors Moritz Lode, Bényei Gábor, Attila Boncser
 */
 
 
@@ -26,7 +26,7 @@ using namespace Basler_UniversalCameraParams;
 
     The camera settings of the main camera are used for the secondary camera
 
-    NOTE: Modified by Gábor Bényei, 2023 jan
+    NOTE: Modified by Gabor Benyei, 2023 jan
     BG NOTE: 
         Added getters/setters for changing image acquisition ROI size and offset,
         binning, as well as camera coreboard temperature

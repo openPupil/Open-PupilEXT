@@ -1,7 +1,7 @@
 #pragma once
 
 /**
-    @author Gábor Bényei
+    @author Gabor Benyei, Attila Boncser
 */
 
 #include <QtCore/QObject>
@@ -24,21 +24,6 @@
 #include "devices/camera.h"
 #include "supportFunctions.h"
 
-
-
-struct TrialIncrement {
-    quint64 timestamp = 0;
-    uint trialNumber = 1;
-};
-struct TemperatureCheck {
-    quint64 timestamp = 0;
-    std::vector<double> temperatures = {0,0};
-};
-struct Message {
-    quint64 timestamp = 0;
-    QString messageString;
-};
-
 /**
     
     Purpose of this class is threefold:
@@ -60,6 +45,19 @@ class RecEventTracker : public QObject {
     };
 
 public:
+
+    struct TrialIncrement {
+        quint64 timestamp = 0;
+        uint trialNumber = 1;
+    };
+    struct TemperatureCheck {
+        quint64 timestamp = 0;
+        std::vector<double> temperatures = {-1.0, -1.0};
+    };
+    struct Message {
+        quint64 timestamp = 0;
+        QString messageString;
+    };
 
     // buffer mode (used for live camera input)
     explicit RecEventTracker(QObject *parent = 0);

@@ -121,3 +121,22 @@ Important: The "smaller than" and "less than" signs (i.e. "<>") below are for de
 
 `CSD <interface>` - Disconnect streaming target. Interface type should be provided: "udp" or "com".
 
+`IT <image acq. triggering mode>` Set Image Acquisition triggering mode. Valid inputs are: `H` for hardware-based and: `S` for software-based image acquisition triggering
+
+`IHQ` Start hardware triggering
+
+`IHY` Stop hardware triggering
+
+`IHL <value>` Set hardware triggering line source, valid values are: `1`, `2`, `3`, `4`
+
+`IHR <value>` Set hardware triggering runtime length in minutes, any positive floating point number is accepted. Value `0` can be used to set infinite triggering
+
+`IHT <value>` Set hardware triggering framerate, any >=1 positive integer number is accepted
+
+`ISC <value>` Enable framerate limiting for software triggering. Accepted values are: `0` or `1`
+
+`IST <value>` Set software triggering framerate, any >=1 positive integer number is accepted
+
+`IE <value>` Set exposure in microseconds, any positive floating point number is accepted
+
+`IG <value>` Set gain, any floating point number is accepted

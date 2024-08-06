@@ -1,7 +1,7 @@
 #pragma once
 
 /**
-    @author Gábor Bényei
+    @author Gabor Benyei, Attila Boncser
 */
 
 #include <QtWidgets/QWidget>
@@ -138,7 +138,7 @@ private:
     void enableWidgets();
     void disableWidgets();
     void resetState();
- //   void saveSettings();
+ //   void saveUniversalSettings();
  //   void updateForm();
 
 public slots:
@@ -149,7 +149,7 @@ public slots:
     void onAutomaticFinish();
     
     void readSettings();
-    //void saveSettings();
+    //void saveUniversalSettings();
     void updateForm();
 
     void onFrameSelected(int frameNumber);

@@ -164,3 +164,7 @@ SingleWebcamSettingsDialog::~SingleWebcamSettingsDialog() = default;
 void SingleWebcamSettingsDialog::setLimitationsWhileTracking(bool state) {
     resizeInputBox->setDisabled(state);
 }
+
+void SingleWebcamSettingsDialog::setLimitationsWhileWaitingToOpen(bool state) {
+    this->setDisabled(state);
+}

@@ -2,7 +2,7 @@
 #define PUPILEXT_TIMESTAMPSPINBOX_H
 
 /**
-    @author Attila Boncsér
+    @author Attila Boncser
 */
 
 #include <QtWidgets>

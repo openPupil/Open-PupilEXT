@@ -79,6 +79,8 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         subwindows/outputDataRuleDialog.h
         subwindows/outputDataRuleDialog.cpp
         devices/cameraConfigurationEventHandler.h
+        dataTypes.cpp
+        dataTypes.h
 )
 
 # On linux with GCC and QT 5.15.2 setting standard here is recognized and is not overwritten by QT

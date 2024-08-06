@@ -184,9 +184,9 @@ void StreamingSettingsDialog::createForm() {
     mainLayout->addWidget(comGroup);
 
     connect(connectUDPButton, SIGNAL(clicked()), this, SLOT(onConnectUDPClick()));
-    connect(disconnectUDPButton, SIGNAL(clicked()), this, SLOT(onDisconnectUDPClick()));
+    connect(disconnectUDPButton, SIGNAL(clicked()), this, SLOT(disconnectUDP()));
     connect(connectCOMButton, SIGNAL(clicked()), this, SLOT(onConnectCOMClick()));
-    connect(disconnectCOMButton, SIGNAL(clicked()), this, SLOT(onDisconnectCOMClick()));
+    connect(disconnectCOMButton, SIGNAL(clicked()), this, SLOT(disconnectCOM()));
     connect(refreshButton, SIGNAL(clicked()), this, SLOT(updateCOMDevices()));
 
     setLayout(mainLayout);
@@ -205,7 +205,7 @@ void StreamingSettingsDialog::onConnectUDPClick() {
     connectUDP();
 }
 
-void StreamingSettingsDialog::onDisconnectUDPClick() {
+void StreamingSettingsDialog::disconnectUDP() {
     // TODO GB: ok like this?
     UDPSocket->close();
     delete UDPSocket;
@@ -243,9 +243,9 @@ void StreamingSettingsDialog::onConnectCOMClick() {
     connectCOM(m_currentSettingsCOM);
 }
 
-void StreamingSettingsDialog::onDisconnectCOMClick() {
+void StreamingSettingsDialog::disconnectCOM() {
     if(connPoolCOMIndex < 0) {
-        qDebug() << "StreamingSettingsDialog::onDisconnectCOMClick(): connPoolCOMIndex value is invalid";
+        qDebug() << "StreamingSettingsDialog::disconnectCOM(): connPoolCOMIndex value is invalid";
         return;
     }
 
@@ -394,7 +394,7 @@ void StreamingSettingsDialog::saveSettings() {
 }
 
 /*
-bool StreamingSettingsDialog::isConnected() {
+bool StreamingSettingsDialog::isCOMConnected() {
     return serialPort->isOpen();
 }
 */

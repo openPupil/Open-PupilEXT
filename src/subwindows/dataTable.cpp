@@ -5,30 +5,12 @@
 #include <QtGui/QtGui>
 #include <iostream>
 #include "dataTable.h"
-
-// GB: capitalized forst letters, nicer
-const QString DataTable::TIME = "Time";
-const QString DataTable::FRAME_NUMBER = "Frame#";
-const QString DataTable::CAMERA_FPS = "Camera fps";
-const QString DataTable::PUPIL_FPS = "Pupil tracking fps";
-const QString DataTable::PUPIL_CENTER_X = "Pupil center x";
-const QString DataTable::PUPIL_CENTER_Y = "Pupil center y";
-const QString DataTable::PUPIL_MAJOR = "Pupil major axis";
-const QString DataTable::PUPIL_MINOR = "Pupil minor axis";
-const QString DataTable::PUPIL_WIDTH = "Pupil width";
-const QString DataTable::PUPIL_HEIGHT = "Pupil height";
-const QString DataTable::PUPIL_DIAMETER = "Pupil diameter";
-const QString DataTable::PUPIL_UNDIST_DIAMETER = "Pupil undistorted diameter";
-const QString DataTable::PUPIL_PHYSICAL_DIAMETER = "Pupil physical diameter";
-const QString DataTable::PUPIL_CONFIDENCE = "Pupil confidence";
-const QString DataTable::PUPIL_OUTLINE_CONFIDENCE = "Pupil outline confidence";
-const QString DataTable::PUPIL_CIRCUMFERENCE = "Pupil circumference";
-const QString DataTable::PUPIL_RATIO = "Pupil axis ratio";
+#include "./../SVGIconColorAdjuster.h"
 
 
 // Create a new DataTable, stereoMode decides wherever two or one column is displayed.
 // The different columns of the Datatable are defined in the header file using the constants.
-DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), procMode(procMode) {
+DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), procMode(procMode), applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     setWindowTitle("Data Table");
 
@@ -38,6 +20,8 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
 
     // Create table view, for stereo mode the table has two columns
     tableView = new QTableView();
+
+//    tableView->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents); // Does not work yet. TODO: track the height of the table, accounting for nr. of rows
 
     tableView->verticalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(tableView->verticalHeader(), SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(customMenuRequested(QPoint)));
@@ -51,8 +35,11 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
 
     tableContextMenu = new QMenu(this);
     // Caution when adding new actions to this menu, the handler onContextMenuClick depends on the plot value action to be the first
-    tableContextMenu->addAction(new QAction("Plot Value", this));
+    tableContextMenu->addAction(new QAction(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/labplot-xy-interpolation-curve.svg"), applicationSettings),"Plot Value", this));
     connect(tableContextMenu, SIGNAL(triggered(QAction*)), this, SLOT(onContextMenuClick(QAction*)));
+
+    // TODO: make this menu for header items too (bit complicated), and for each row (cell) make a contextmenu too
+    connect(tableView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(onTableRowDoubleClick(QModelIndex)));
 
 
     // GB added/modified begin
@@ -94,36 +81,41 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
             break;
     }
 
-    tableModel->setHeaderData(0, Qt::Vertical, TIME);
-    tableModel->setHeaderData(1, Qt::Vertical, FRAME_NUMBER);
-    tableModel->setHeaderData(2, Qt::Vertical, CAMERA_FPS);
-    tableModel->setHeaderData(3, Qt::Vertical, PUPIL_FPS);
-    tableModel->setHeaderData(4, Qt::Vertical, PUPIL_CENTER_X);
-    tableModel->setHeaderData(5, Qt::Vertical, PUPIL_CENTER_Y);
-    tableModel->setHeaderData(6, Qt::Vertical, PUPIL_MAJOR);
-    tableModel->setHeaderData(7, Qt::Vertical, PUPIL_MINOR);
-    tableModel->setHeaderData(8, Qt::Vertical, PUPIL_WIDTH);
-    tableModel->setHeaderData(9, Qt::Vertical, PUPIL_HEIGHT);
-    tableModel->setHeaderData(10, Qt::Vertical, PUPIL_DIAMETER);
-    tableModel->setHeaderData(11, Qt::Vertical, PUPIL_UNDIST_DIAMETER);
-    tableModel->setHeaderData(12, Qt::Vertical, PUPIL_PHYSICAL_DIAMETER);
-    tableModel->setHeaderData(13, Qt::Vertical, PUPIL_CONFIDENCE);
-    tableModel->setHeaderData(14, Qt::Vertical, PUPIL_OUTLINE_CONFIDENCE);
-    tableModel->setHeaderData(15, Qt::Vertical, PUPIL_CIRCUMFERENCE);
-    tableModel->setHeaderData(16, Qt::Vertical, PUPIL_RATIO);
+    for(int v = 0; v < DataTypes::map.size(); v++) {
+        tableModel->setHeaderData(v, Qt::Vertical, DataTypes::map.value((DataTypes::DataType)v));
+    }
+
+    // Make the table contents read-only in the GUI
+    tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     tableView->setModel(tableModel);
     tableView->resizeRowsToContents();
     tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
+    // Items are now made here, not on each pupil detection arrival
+    for(int r = 0; r < tableModel->rowCount(); r++) {
+        for (int c = 0; c < tableModel->columnCount(); c++)
+            tableModel->setItem(r, c, new QStandardItem(""));
+    }
 
-    // // GB: Marking every second row with different background for better readibility
-    // // GB TODO: somehow it does not work now. Cant access that memory
-    // for(int r=0; r<tableModel->rowCount(); r++)
-    //     if(r%2==0)
-    //         for(int c=0; c<tableModel->columnCount(); c++)
-    //             tableModel->item(r,c)->setBackground(QColor(220, 220, 220, 255));
-                 
+    // Marking every second row with different background for better readibility, also adapting to dark mode
+    QBrush cellColor1;
+    QBrush cellColor2;
+    bool darkMode = applicationSettings->value("GUIDarkAdaptMode", "0") == "1" || (applicationSettings->value("GUIDarkMode", "0") == "2");
+    if(darkMode) {
+        cellColor1 = QBrush("#3d3d3d");
+        cellColor2 = QBrush("#696969");
+    } else {
+        cellColor1 = QBrush("#f5f4f2");
+        cellColor2 = QBrush("#e6e6e6");
+    }
+    QBrush cellColor;
+    for(int r = 0; r < tableModel->rowCount(); r++) {
+        for (int c = 0; c < tableModel->columnCount(); c++) {
+            cellColor = (r % 2 != 0) ? cellColor1 : cellColor2;
+            tableModel->item(r, c)->setBackground(cellColor);
+        }
+    }
 
     switch(procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
@@ -143,11 +135,17 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
             break;
     }
 
-    //resize(tableView->width(), tableView->height());
-    resize(160 + numCols*80, 500);
-    // GB added/modified end
-
     tableView->show();
+
+    //resize(tableView->width(), tableView->height());
+//    resize(160 + numCols*80, 500);
+
+//    // TODO: Make this work. Somehow there is no effect of this
+//    int tableHeight = tableView->height(); // Seems to return correct value
+////    int oneItemHeight = tableModel->item(0)->sizeHint().height(); // returns -1 for some reason
+//    int minimumHeight = tableHeight + 60;
+//    int minimumWidth = 120 * (tableModel->columnCount() + 1) + 20;
+//    parent->setMinimumSize(minimumWidth, minimumHeight);
 
     timer.start();
 }
@@ -157,11 +155,9 @@ DataTable::~DataTable() {
 }
 
 QSize DataTable::sizeHint() const {
-    //return QSize(330, 500);
-    
-    // GB: adapt to num of columns
-    return QSize(160 + numCols*80, 500);
-    // GB end
+    return QSize(330, 500);
+
+//    return QSize(160 + numCols*80, 500);
 }
 
 // On right-click in the table header
@@ -169,7 +165,7 @@ QSize DataTable::sizeHint() const {
 void DataTable::customMenuRequested(QPoint pos){
     int row = tableView->verticalHeader()->logicalIndexAt(pos);
 
-    tableContextMenu->actions().first()->setData(tableModel->verticalHeaderItem(row)->text());
+    tableContextMenu->actions().first()->setData(row);
     tableContextMenu->popup(tableView->verticalHeader()->viewport()->mapToGlobal(pos));
 }
 
@@ -184,8 +180,7 @@ void DataTable::onPupilData(quint64 timestamp, int procMode, const std::vector<P
         // QDateTime::fromMSecsSinceEpoch converts the UTC timestamp into localtime
         QDateTime date = QDateTime::fromMSecsSinceEpoch(timestamp);
         // Display the date/time in the system specific locale format
-        QStandardItem *item = new QStandardItem(QLocale::system().toString(date));
-        tableModel->setItem(0, 0, item);
+        tableModel->item(0,0)->setText(QLocale::system().toString(date));
 
         // GB: modified to work with new Pupil vector signals
         for(int i=0; i<Pupils.size(); i++)
@@ -197,64 +192,38 @@ void DataTable::onPupilData(quint64 timestamp, int procMode, const std::vector<P
 }
 
 // Updates the table column entries given pupil data and a column index (0, 1)
+// TODO: Figure out something cleaner using the key-value map we yet have
 void DataTable::setPupilData(const Pupil &pupil, int column) {
 
-    QStandardItem *item = new QStandardItem(QString::number(pupil.center.x));
-    tableModel->setItem(4, column, item);
+    tableModel->item(4, column)->setText(QString::number(pupil.center.x));
+    tableModel->item(5, column)->setText(QString::number(pupil.center.y));
+    tableModel->item(6, column)->setText(QString::number(pupil.majorAxis()));
+    tableModel->item(7, column)->setText(QString::number(pupil.minorAxis()));
+    tableModel->item(8, column)->setText(QString::number(pupil.width()));
+    tableModel->item(9, column)->setText(QString::number(pupil.height()));
+    tableModel->item(10, column)->setText(QString::number(pupil.diameter()));
+    tableModel->item(11, column)->setText(QString::number(pupil.undistortedDiameter));
+    tableModel->item(12, column)->setText(QString::number(pupil.physicalDiameter));
+    tableModel->item(13, column)->setText(QString::number(pupil.confidence));
+    tableModel->item(14, column)->setText(QString::number(pupil.outline_confidence));
+    tableModel->item(15, column)->setText(QString::number(pupil.circumference()));
+    tableModel->item(16, column)->setText(QString::number((double)pupil.majorAxis() / pupil.minorAxis()));
 
-    item = new QStandardItem(QString::number(pupil.center.y));
-    tableModel->setItem(5, column, item);
-
-    item = new QStandardItem(QString::number(pupil.majorAxis()));
-    tableModel->setItem(6, column, item);
-
-    item = new QStandardItem(QString::number(pupil.minorAxis()));
-    tableModel->setItem(7, column, item);
-
-    item = new QStandardItem(QString::number(pupil.width()));
-    tableModel->setItem(8, column, item);
-
-    item = new QStandardItem(QString::number(pupil.height()));
-    tableModel->setItem(9, column, item);
-
-    item = new QStandardItem(QString::number(pupil.diameter()));
-    tableModel->setItem(10, column, item);
-
-    item = new QStandardItem(QString::number(pupil.undistortedDiameter));
-    tableModel->setItem(11, column, item);
-
-    item = new QStandardItem(QString::number(pupil.physicalDiameter));
-    tableModel->setItem(12, column, item);
-
-    item = new QStandardItem(QString::number(pupil.confidence));
-    tableModel->setItem(13, column, item);
-
-    item = new QStandardItem(QString::number(pupil.outline_confidence));
-    tableModel->setItem(14, column, item);
-
-    item = new QStandardItem(QString::number(pupil.circumference()));
-    tableModel->setItem(15, column, item);
-
-    item = new QStandardItem(QString::number((double)pupil.majorAxis() / pupil.minorAxis()));
-    tableModel->setItem(16, column, item);
 }
 
 // Slot handler receiving FPS data from a camera framecounter
 void DataTable::onCameraFPS(double fps) {
-    QStandardItem *item = new QStandardItem(QString::number(fps));
-    tableModel->setItem(2, item);
+    tableModel->item(2)->setText(QString::number(fps));
 }
 
 // Slot handler receiving FPS data from a camera framecounter
 void DataTable::onCameraFramecount(int framecount) {
-    QStandardItem *item = new QStandardItem(QString::number(framecount));
-    tableModel->setItem(1, item);
+    tableModel->item(1)->setText(QString::number(framecount));
 }
 
 // Slot handler receiving processing FPS data from the pupil detection process
 void DataTable::onProcessingFPS(double fps) {
-    QStandardItem *item = new QStandardItem(QString::number(fps));
-    tableModel->setItem(3, item);
+    tableModel->item(3)->setText(QString::number(fps));
 }
 
 // Event handler that is called on click of an action in the context menu of the table
@@ -262,7 +231,23 @@ void DataTable::onProcessingFPS(double fps) {
 // Data inside the action which describes the clicked column is read and the corresponding graphplot is created
 void DataTable::onContextMenuClick(QAction *action) {
 
-    QString value = action->data().toString();
+    DataTypes::DataType value = (DataTypes::DataType)action->data().toInt();
+
+    if(value == DataTypes::DataType::TIME || value == DataTypes::DataType::FRAME_NUMBER)
+        return;
+
+    emit createGraphPlot(value);
+}
+
+void DataTable::onTableRowDoubleClick(const QModelIndex &modelIndex) {
+
+    DataTypes::DataType value = (DataTypes::DataType)modelIndex.row();
+
+//    QString value = modelIndex.data().toString();
+//    // nemtudom jó-e
+
+    if(value == DataTypes::DataType::TIME || value == DataTypes::DataType::FRAME_NUMBER)
+        return;
 
     emit createGraphPlot(value);
 }

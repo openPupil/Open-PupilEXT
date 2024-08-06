@@ -3,7 +3,7 @@
 #define PUPILEXT_CAMERA_H
 
 /**
-    @authors Moritz Lode, Gábor Bényei
+    @authors Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 

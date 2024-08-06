@@ -1,7 +1,7 @@
 #pragma once
 
 /**
-    @authors Gábor Bényei
+    @authors Gabor Benyei
 */
 
 #include <QFrame>

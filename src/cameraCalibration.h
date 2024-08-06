@@ -233,7 +233,7 @@ public slots:
 
 signals:
 
-    void processedImage(const CameraImage &image);
+    void processedImage(CameraImage image);
     void finishedCalibration();
     void unavailableCalibration();
 

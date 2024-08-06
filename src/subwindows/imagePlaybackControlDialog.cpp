@@ -260,7 +260,7 @@ void ImagePlaybackControlDialog::updateInfo(const CameraImage &img) {
     // NOTE: this img.frameNumber field existed already/originally in pupilEXT beta 0.1.1 and is used in calibration code
     // Pay attention, it is an INDEX, so it starts from 0
 
-    qDebug() << "New image arrived, framenumber: " << img.frameNumber;
+//    qDebug() << "New image arrived, framenumber: " << img.frameNumber;
     updateInfo((quint64)img.timestamp, (int)img.frameNumber);
 }
 
@@ -316,7 +316,7 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
         // NOTE: workaround to not emit valuechanged signals, so it gets emitted only if the user interacts with it
         slider->blockSignals(true);
         int gg = floor(99*((frameNumber)/(float)(numImagesTotal - 1)));
-        qDebug() << "Set slider to: " << gg;
+//        qDebug() << "Set slider to: " << gg;
         slider->setValue( gg );
         slider->blockSignals(false);
         //}
@@ -337,7 +337,7 @@ void ImagePlaybackControlDialog::onStartPauseButtonClick() {
 }
 
 void ImagePlaybackControlDialog::onStopButtonClick() {
-    qDebug()<<"Stopping FileCamera Click";
+//    qDebug()<<"Stopping FileCamera Click";
     fileCamera->stop();
     /*
     //playImagesOn = false;
@@ -446,7 +446,7 @@ void ImagePlaybackControlDialog::readSettings() {
 
 /*
 // Save settings to QT application settings 
-void ImagePlaybackControlDialog::saveSettings() {
+void ImagePlaybackControlDialog::saveUniversalSettings() {
 
     applicationSettings->setValue("playbackSpeed", playbackSpeed);
     applicationSettings->setValue("playbackLoop", playbackLoop);
@@ -542,7 +542,7 @@ void ImagePlaybackControlDialog::setSyncStream(bool m_state) {
 void ImagePlaybackControlDialog::onCameraPlaybackChanged()
 {
     if(!paused) {
-        qDebug()<<"Pausing FileCamera Click";
+//        qDebug()<<"Pausing FileCamera Click";
         fileCamera->pause();
 
         const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
@@ -555,7 +555,7 @@ void ImagePlaybackControlDialog::onCameraPlaybackChanged()
         playImagesOn = false;
         //playImagesOn = false;
 
-        qDebug() << "Playback paused";
+//        qDebug() << "Playback paused";
     } else {
         
         //stalledTimestamp = 0;
@@ -566,7 +566,7 @@ void ImagePlaybackControlDialog::onCameraPlaybackChanged()
 
         emit onPlaybackSafelyStarted();
 
-        qDebug()<<"Starting FileCamera Click";
+//        qDebug()<<"Starting FileCamera Click";
         fileCamera->start();
 
         const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-pause.svg"), applicationSettings);
@@ -581,14 +581,14 @@ void ImagePlaybackControlDialog::onCameraPlaybackChanged()
 }
 
 void ImagePlaybackControlDialog::onFrameSelected(int frameNumber){
-    qDebug() << "Frame number arrived: " << frameNumber;
+//    qDebug() << "Frame number arrived: " << frameNumber;
     selectedFrameVal = frameNumber;
     if (!playImagesOn){
 
         slider->blockSignals(true);
         int gg = floor(99*((selectedFrameVal - 1)/(float)(numImagesTotal - 1)));
         //slider->setColorTickPos((selectedFrameVal)/(float)numImagesTotal);
-        qDebug() << "Set slider to: " << gg;
+//        qDebug() << "Set slider to: " << gg;
         slider->setValue( gg );
         slider->blockSignals(false);
         fileCamera->seekToFrame(selectedFrameVal -1);
@@ -658,7 +658,7 @@ void ImagePlaybackControlDialog::resetState() {
         playImagesOn = false;
         paused = true;
 
-        qDebug() << "Playback stopped";
+//        qDebug() << "Playback stopped";
         //if(recEventTracker)
         //    recEventTracker->resetReplay();
         selectedFrameVal = 1;

@@ -2,7 +2,7 @@
 #define PUPILEXT_GENERALSETTINGSDIALOG_H
 
 /**
-    @author Moritz Lode, Gábor Bényei
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include <QtWidgets/QDialog>
@@ -16,7 +16,7 @@
 /**
     General settings window (dialog) containing all general settings of the pupilext software
 
-    NOTE: Modified by Gábor Bényei, 2023 jan
+    NOTE: Modified by Gabor Benyei, 2023 jan
     GB NOTE:
         Playback speed and playback loop settings were moved to ImagePlaybackControlDialog.
         Other new settings are added.

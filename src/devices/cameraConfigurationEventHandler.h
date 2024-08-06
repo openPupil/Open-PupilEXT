@@ -2,7 +2,7 @@
 #define PUPILEXT_CAMERACONFIGURATIONEVENTHANDLER_H
 
 /**
-    @author Gábor Bényei
+    @author Gabor Benyei
 */
 
 #include <QtCore/QObject>

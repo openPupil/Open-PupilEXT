@@ -43,17 +43,17 @@ void SingleCameraSettingsDialog::createForm() {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    serialConnGroup = new QGroupBox("1. Camera Serial Connection (needed only for Hardware-triggered image acquisition)");
+    serialConnGroup = new QGroupBox("1. Microcontroller Connection (needed only for Hardware-triggered image acquisition)");
     QFormLayout *serialConnGroupLayout = new QFormLayout();
 
     QSpacerItem *sp10 = new QSpacerItem(70, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
     serialConfigButton = new QPushButton();
-//    serialConfigButton->setText("Camera Serial Connection Settings");
-    serialConfigButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/rs232.svg"), applicationSettings));
+//    serialConfigButton->setText("Microcontroller Connection Settings");
+    serialConfigButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/show-gpu-effects.svg"), applicationSettings));
 //    serialConfigButton->setStyleSheet("text-align:left; padding-left : 10px; padding-top : 3px; padding-bottom : 3px;"); //
     serialConfigButton->setStyleSheet("text-align:left;");
     serialConfigButton->setLayout(new QGridLayout);
-    QLabel* serialConfigButtonLabel = new QLabel("Camera Serial Connection Settings");
+    QLabel* serialConfigButtonLabel = new QLabel("Microcontroller Connection Settings");
     serialConfigButtonLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     serialConfigButtonLabel->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     serialConfigButton->layout()->addWidget(serialConfigButtonLabel);
@@ -287,7 +287,7 @@ void SingleCameraSettingsDialog::createForm() {
     HWTstartStopButton->layout()->addWidget(HWTstartStopButtonLabel);
     HWTstartStopButton->layout()->setContentsMargins(5,5,5,5);
     HWTstartStopButton->setFixedWidth(150);
-    HWTstartStopButton->setEnabled(camera->isHardwareTriggerEnabled() && serialSettings->isConnected());
+    HWTstartStopButton->setEnabled(camera->isHardwareTriggerEnabled() && serialSettings->isCOMConnected());
 
     HWTframerateLayout->addSpacerItem(sp5);
     HWTframerateLayout->addWidget(HWTframerateLabel);
@@ -398,14 +398,14 @@ void SingleCameraSettingsDialog::createForm() {
     connect(exposureInputBox, SIGNAL(valueChanged(int)), this, SLOT(setExposureTimeValue(int)));
     connect(binningBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onBinningModeChange(int)));
     connect(gainBox, SIGNAL(valueChanged(double)), this, SLOT(updateFrameRateValue()));
-    connect(gainBox, SIGNAL(valueChanged(double)), camera, SLOT(setGainValue(double)));
+    connect(gainBox, SIGNAL(valueChanged(double)), this, SLOT(setGainValue(double)));
 
     connect(imageROIwidthInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIwidth(int)));
     connect(imageROIheightInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIheight(int)));
     connect(imageROIoffsetXInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIoffsetX(int)));
     connect(imageROIoffsetYInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIoffsetY(int)));
 
-    connect(SWTframerateEnabled, SIGNAL(toggled(bool)), SWTframerateBox, SLOT(setEnabled(bool)));
+    connect(SWTframerateEnabled, SIGNAL(toggled(bool)), this, SLOT(SWTframerateEnabledToggled(bool)));
     connect(SWTframerateEnabled, SIGNAL(toggled(bool)), this, SLOT(enableAcquisitionFrameRate(bool)));
     connect(SWTframerateBox, SIGNAL(valueChanged(int)), this, SLOT(setAcquisitionFPSValue(int)));
 
@@ -531,9 +531,9 @@ void SingleCameraSettingsDialog::updateFrameRateValue() {
 void SingleCameraSettingsDialog::onLineSourceChange(int index) {
     if(index!=0) {
         camera->setLineSource(HWTlineSourceBox->itemText(index).toStdString().c_str());
-        HWTframerateBox->setEnabled(true);
-        HWTtimeSpanBox->setEnabled(true);
-        HWTstartStopButton->setEnabled(serialSettings->isConnected());
+        HWTframerateBox->setEnabled(camera->isHardwareTriggerEnabled());
+        HWTtimeSpanBox->setEnabled(camera->isHardwareTriggerEnabled());
+        HWTstartStopButton->setEnabled(serialSettings->isCOMConnected());
     } else {
         HWTframerateBox->setEnabled(false);
         HWTtimeSpanBox->setEnabled(false);
@@ -585,9 +585,9 @@ void SingleCameraSettingsDialog::stopHardwareTrigger() {
     emit onHardwareTriggerStop(QString("<SX>"));
 
     HWTrunning = false;
-    HWTframerateBox->setEnabled(true);
-    HWTlineSourceBox->setEnabled(true);
-    HWTtimeSpanBox->setEnabled(true);
+    HWTframerateBox->setEnabled(camera->isHardwareTriggerEnabled());
+    HWTlineSourceBox->setEnabled(camera->isHardwareTriggerEnabled());
+    HWTtimeSpanBox->setEnabled(camera->isHardwareTriggerEnabled());
 //    HWTstartStopButton->setText("Start Image Acquisition");
     HWTstartStopButtonLabel->setText("Start Image Acquisition");
     HWTstartStopButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red
@@ -601,10 +601,12 @@ void SingleCameraSettingsDialog::onHWTenabledChange(bool state) {
 
     SWTframerateEnabled->setEnabled(!state);
     SWTframerateBox->setEnabled(!state && camera->isEnabledAcquisitionFrameRate());
-    if(!state)
-        camera->setAcquisitionFPSValue(camera->getAcquisitionFPSMax());
-    else
-        camera->setAcquisitionFPSValue(SWTframerateBox->value());
+    if(state || !SWTframerateEnabled->isChecked()) {
+        //camera->setAcquisitionFPSValue(camera->getAcquisitionFPSMax());
+        setAcquisitionFPSValue(camera->getAcquisitionFPSMax());
+    } else {
+        setAcquisitionFPSValue(SWTframerateBox->value());
+    }
 
     HWTframerateLayout->setEnabled(state);
     HWTgroupLayout->setEnabled(state); // Note: not sure if this does anything
@@ -612,7 +614,7 @@ void SingleCameraSettingsDialog::onHWTenabledChange(bool state) {
     HWTlineSourceLabel->setEnabled(state);
     HWTtimeSpanLabel->setEnabled(state);
     HWTlineSourceBox->setEnabled(state);
-    HWTstartStopButton->setEnabled(state && serialSettings->isConnected());
+    HWTstartStopButton->setEnabled(state && serialSettings->isCOMConnected());
 
     HWTtimeSpanBox->setEnabled(state);
     HWTframerateBox->setEnabled(state);
@@ -857,6 +859,11 @@ void SingleCameraSettingsDialog::setExposureTimeValue(int value) {
     updateFrameRateValue();
 }
 
+void SingleCameraSettingsDialog::setGainValue(double value) {
+    camera->setGainValue(value);
+    updateFrameRateValue();
+}
+
 void SingleCameraSettingsDialog::setAcquisitionFPSValue(int value) {
     camera->setAcquisitionFPSValue(value);
     updateFrameRateValue();
@@ -868,10 +875,10 @@ void SingleCameraSettingsDialog::enableAcquisitionFrameRate(bool state) {
 }
 
 void SingleCameraSettingsDialog::serialConnDisconnButtonClicked() {
-    if(serialSettings->isConnected()) {
+    if(serialSettings->isCOMConnected()) {
         stopHardwareTrigger();
 
-        serialSettings->disconnectSerialPort();
+        serialSettings->disconnectCOM();
         serialConnDisconnButtonLabel->setText("Connect");
         serialConnDisconnButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red
         HWTstartStopButton->setEnabled(false);
@@ -881,4 +888,28 @@ void SingleCameraSettingsDialog::serialConnDisconnButtonClicked() {
         serialConnDisconnButtonLabel->setStyleSheet("background-color:#c3f558;"); // light green
         HWTstartStopButton->setEnabled(camera->isHardwareTriggerEnabled());
     }
+}
+
+void SingleCameraSettingsDialog::setHWTlineSource(int lineSourceNum) {
+    if(HWTrunning)
+        return;
+    HWTlineSourceBox->setCurrentIndex(lineSourceNum-1);
+}
+
+void SingleCameraSettingsDialog::setHWTruntime(double runtimeMinutes) {
+    if(HWTrunning)
+        return;
+    HWTtimeSpanBox->setValue(runtimeMinutes);
+}
+
+void SingleCameraSettingsDialog::setHWTframerate(int fps) {
+    if(HWTrunning)
+        return;
+    HWTframerateBox->setValue(fps);
+}
+
+void SingleCameraSettingsDialog::SWTframerateEnabledToggled(bool state) {
+    SWTframerateBox->setEnabled(state);
+    if(state)
+        setAcquisitionFPSValue(SWTframerateBox->value());
 }

@@ -28,7 +28,13 @@ void GrabberDummy::run() {
     if(m_camera->isOpened())
         m_camera->release();
 
-    m_camera->open(deviceID);
+    emit startedToOpenCamera();
+    if(!m_camera->open(deviceID)) {
+        emit couldNotOpenCamera();
+        emit finished();
+        return;
+    }
+    emit successfullyOpenedCamera();
 
     while(m_running) {
     //while(true) {
@@ -53,13 +59,18 @@ bool GrabberDummy::registerEventHandler(SingleWebcamImageEventHandler *handler, 
 }
  
 void GrabberDummy::stop() {
-    std::cerr << "GrabberDummy::stop()" << std::endl;
+//    std::cerr << "GrabberDummy::stop()" << std::endl;
     m_running = false;
     //emit runningChanged(running);
 }
 
 bool GrabberDummy::isOpen() {
-    return m_camera->isOpened();
+    return true;
+    // NOTE: The line below seems to return false just after we made the camera.. even though it should return true already
+    // This may be because it is opened on a different thread, and the actual open has not happened yet,
+    // though the GUI drawing windows and widgets would like to know ASAP whether ther is a webcam opened or not..
+    // So now we just always return true and hope that the webcam is indeed opened and ready
+//    return m_camera->isOpened();
 }
 
 
@@ -166,8 +177,11 @@ SingleWebcam::SingleWebcam(int deviceID, QString friendlyName, QObject* parent)
 
         grabberDummy->registerEventHandler(cameraImageEventHandler, SLOT(OnImageGrabbed(cv::Mat)));
         connect(grabbingThread, &QThread::started, grabberDummy, &GrabberDummy::run);
-        grabberDummy->moveToThread(grabbingThread);    
-        
+        grabberDummy->moveToThread(grabbingThread);
+
+        connect(grabberDummy, SIGNAL (startedToOpenCamera()), this, SIGNAL (startedToOpenCamera()));
+        connect(grabberDummy, SIGNAL (couldNotOpenCamera()), this, SIGNAL (couldNotOpenCamera()));
+        connect(grabberDummy, SIGNAL (successfullyOpenedCamera()), this, SIGNAL (successfullyOpenedCamera()));
         connect(grabbingThread, SIGNAL (finished()), grabbingThread, SLOT (deleteLater()));
         grabbingThread->start();
         grabbingThread->setPriority(QThread::HighPriority);
@@ -186,8 +200,8 @@ void SingleWebcam::startGrabbing(){
 }
 
 SingleWebcam::~SingleWebcam() {
-    //grabbingThread->terminate();
-    grabbingThread->deleteLater();
+//    grabbingThread->terminate(); // This HAS TO BE called to not get the thread deleted before it is finished
+//    grabbingThread->deleteLater(); // This is only needed if we want to delete before finished()
 
     if (cameraCalibration != nullptr)
         cameraCalibration->deleteLater();
@@ -202,7 +216,7 @@ bool SingleWebcam::isOpen() {
 }
 
 void SingleWebcam::close() {
-    std::cout << "SingleWebcam: Releasing resources.";
+    qDebug() << "SingleWebcam: Releasing resources.";
     //grabbingThread->terminate();
     grabberDummy->stop();
 }
@@ -297,27 +311,27 @@ QRectF SingleWebcam::getImageROI(){
 
 
 bool SingleWebcam::setFPSValue(int value) {
-    std::cout << "setting FPS value " << std::endl;
+    qDebug() << "setting FPS value ";
     return grabberDummy->setFPSValue(value);
 }
 
 bool SingleWebcam::setBrightnessValue(double value) {
-    std::cout << "setting brightness value " << std::endl;
+    qDebug() << "setting brightness value ";
     return grabberDummy->setBrightnessValue(value);
 }
 
 bool SingleWebcam::setContrastValue(double value) {
-    std::cout << "setting contrast value " << std::endl;
+    qDebug() << "setting contrast value ";
     return grabberDummy->setContrastValue(value);
 }
 
 bool SingleWebcam::setGainValue(double value) {
-    std::cout << "setting gain value " << std::endl;
+    qDebug() << "setting gain value ";
     return grabberDummy->setGainValue(value);
 }
 
 bool SingleWebcam::setExposureValue(double value) {
-    std::cout << "setting exposure value " << std::endl;
+    qDebug() << "setting exposure value ";
     return grabberDummy->setExposureValue(value);
 }
 

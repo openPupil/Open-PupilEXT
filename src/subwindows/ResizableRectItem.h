@@ -4,7 +4,7 @@
 
 /**
     Source https://github.com/sashoalm/ResizableRectItem
-    @author Alexander Almaleh, Moritz Lode (Updated 2020), Gábor Bényei (Updated 2023)
+    @author Alexander Almaleh, Moritz Lode (Updated 2020), Gabor Benyei (Updated 2023)
 */
 
 #include <QtWidgets/qgraphicsitem.h>
