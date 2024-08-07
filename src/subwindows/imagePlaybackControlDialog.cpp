@@ -228,8 +228,8 @@ void ImagePlaybackControlDialog::updateInfoInternal(int frameNumber) {
 
     acqFPS = 0.0;
     if(lastTimestamp != 0 && lastPlayedFrame != 0) {
-        float frameNumberDiff = frameNumber - lastPlayedFrame;
-        acqFPS = 1 / (float) ((currTimestamp - lastTimestamp) / frameNumberDiff) * 1000; //timestamps are in millisecond
+        int frameNumberDiff = abs(lastPlayedFrame - frameNumber);
+        acqFPS = 1 / (float) ((currTimestamp - lastTimestamp) / static_cast<float>(frameNumberDiff)) * 1000; //timestamps are in millisecond
     }
 
     elapsedMs = 0.0;
@@ -251,6 +251,7 @@ void ImagePlaybackControlDialog::updateInfoInternal(int frameNumber) {
         trialValLabel->setText(QString::number(recEventTracker->getTrialIncrement(currTimestamp).trialNumber)); 
 
     lastTimestamp = currTimestamp;
+    lastPlayedFrame = frameNumber;
     if(startTimestamp == 0)
         startTimestamp = currTimestamp;
 
@@ -286,8 +287,8 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
 
         acqFPS = 0.0;
         if(lastTimestamp != 0 && lastPlayedFrame != 0) {
-            float frameNumberDiff = lastPlayedFrame - frameNumber;
-            acqFPS = 1 / (float) ((timestamp - lastTimestamp) / frameNumberDiff) * 1000; // timestamps are in millisecond
+            int frameNumberDiff = abs(lastPlayedFrame - frameNumber);
+            acqFPS = 1 / ((timestamp - lastTimestamp) / static_cast<float>(frameNumberDiff)) * 1000; // timestamps are in millisecond
         }
         elapsedMs = 0.0;
         if(startTimestamp != 0)
@@ -322,6 +323,7 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
         //}
 
         lastTimestamp = timestamp; // GB: need to come before 30 fps drawTime wait
+        lastPlayedFrame = frameNumber;
         if(startTimestamp == 0)
             startTimestamp = timestamp;
 
@@ -641,6 +643,7 @@ void ImagePlaybackControlDialog::resetState() {
         //finished = false;
         endReached = false;
         paused = true;
+        lastPlayedFrame = 0;
 
         emit onPlaybackSafelyStopped();
     }
