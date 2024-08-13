@@ -1,5 +1,4 @@
-#ifndef PUPILALGOSIMPLE_DATAWRITER_H
-#define PUPILALGOSIMPLE_DATAWRITER_H
+#pragma once
 
 /**
     @authors Moritz Lode, Gabor Benyei, Attila Boncser
@@ -30,13 +29,6 @@ enum DataWriterDataStyle {
 
     File is created and opened upon construction, and closed upon destruction
 
-    NOTE: Modified by Gabor Benyei, 2023 jan
-    GB NOTE:
-        Reorganized code to let it handle an std::vector of Pupils, in order to comply with new signal-slot strategy, which
-        I introduced to manage different pupil detection processing modes (procModes).
-        WriteMode enum is not used anymore to distinguish between different headers or working mode, but procMode is used instead.
-        Also now it uses EyeDataSerializer class to process every pupil detection output.
-
     newPupilData(): called for each new pupil data, writes the pupil data to the file stream (which is flushes its content to disk occasionally)
 
     writePupilData(): given a vector of pupil data, write all its entries to file
@@ -60,7 +52,6 @@ public:
     //void writePupilData(const std::vector<Pupil>& pupilData);
     //void writeStereoPupilData(const std::vector<std::tuple<Pupil, Pupil>> &pupilData);
 
-    // GB: added begin
     void writePupilData(std::vector<quint64> timestamps, int procMode, const std::vector<std::vector<Pupil>>& pupilData);
 
     QString getDataFileName() {
@@ -69,7 +60,6 @@ public:
     bool isReady() {
         return writerReady;
     };
-    // GB end
 
 private:
 
@@ -78,19 +68,19 @@ private:
     DataWriterDataStyle dataStyle;
     RecEventTracker *recEventTracker;
 
+    uint _trialNumber = 1;
+    QString _message = "";
+    std::vector<double> _d = {-1.0,-1.0};
+
     QString header;
 
     QFile *dataFile;
     QTextStream *textStream;
 
-    // GB added begin
     bool writerReady;
-    // GB added end
 
 public slots:
 
     // GB: changed to work with vector of pupils due to different procModes
     void newPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename);
 };
-
-#endif //PUPILALGOSIMPLE_DATAWRITER_H

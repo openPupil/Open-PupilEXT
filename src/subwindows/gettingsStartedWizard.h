@@ -1,15 +1,10 @@
-
-#ifndef PUPILEXT_GETTINGSSTARTEDWIZARD_H
-#define PUPILEXT_GETTINGSSTARTEDWIZARD_H
-
+#pragma once
 
 #include <QtWidgets/qwizard.h>
 #include <QtCore/QSettings>
 
 class GettingsStartedWizard : public QWizard {
     Q_OBJECT
-
-
 
 private:
 
@@ -28,6 +23,3 @@ public:
     QWizardPage *createConclusionPage();
 
 };
-
-
-#endif //PUPILEXT_GETTINGSSTARTEDWIZARD_H

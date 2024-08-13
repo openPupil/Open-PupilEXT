@@ -10,12 +10,14 @@
 
 
 StreamingSettingsDialog::StreamingSettingsDialog(
-    ConnPoolCOM *connPoolCOM, 
+    ConnPoolCOM *connPoolCOM,
+    ConnPoolUDP *connPoolUDP,
     PupilDetection *pupilDetection,
     DataStreamer *dataStreamer,
     QWidget *parent) :
     QDialog(parent),
     connPoolCOM(connPoolCOM),
+    connPoolUDP(connPoolUDP),
     pupilDetection(pupilDetection),
     dataStreamer(dataStreamer),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
@@ -41,13 +43,13 @@ void StreamingSettingsDialog::createForm() {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
 
-    QString udpIp = "127.0.0.1";
-    int udpPort = 6900;
-
 
 
     udpGroup = new QGroupBox("UDP");
     QFormLayout *udpLayout = new QFormLayout;
+
+    QString udpIp = "127.0.0.1";
+    int udpPort = 6900;
 
     udpIpLabel = new QLabel(tr("IP address:"));
     udpIpBox = new IPCtrl();
@@ -192,26 +194,41 @@ void StreamingSettingsDialog::createForm() {
     setLayout(mainLayout);
 }
 
-void StreamingSettingsDialog::connectUDP() {
-    UDPSocket = new QUdpSocket(this);
-    
-    setLimitationsWhileConnectedUDP(true);
+void StreamingSettingsDialog::connectUDP(const ConnPoolUDPInstanceSettings &p) {
+    int index = connPoolUDP->setupAndOpenConnection(p, ConnPoolPurposeFlag::STREAMING);
+    if(index >= 0) {
+        setLimitationsWhileConnectedUDP(true);
 
-    emit onUDPConnect();
+        connPoolUDPIndex = index;
+        //connPoolUDP->subscribeListener(index, this, SLOT(readData(QString)));
+
+        emit onUDPConnect();
+        //emit onConnStateChanged();
+    } else {
+        if(connPoolUDP->getInstance(connPoolUDPIndex) != nullptr) {
+            QString errMsg = connPoolUDP->getInstance(connPoolUDPIndex)->errorString();
+            QMessageBox::critical(this, tr("Error"), connPoolUDP->getInstance(connPoolUDPIndex)->errorString());
+        }
+        qDebug() << "Error while connecting to the specified UDP port. It is possibly already in use by another application.";
+    }
 }
 
 void StreamingSettingsDialog::onConnectUDPClick() {
     updateSettings();
-    connectUDP();
+    connectUDP(m_currentSettingsUDP);
 }
 
 void StreamingSettingsDialog::disconnectUDP() {
-    // TODO GB: ok like this?
-    UDPSocket->close();
-    delete UDPSocket;
-    UDPSocket = nullptr;
+    if(connPoolUDPIndex < 0) {
+        qDebug() << "StreamingSettingsDialog::disconnectUDP(): connPoolUDPIndex value is invalid";
+        return;
+    }
 
-    qDebug() << "Closed UDP socket for streaming";
+    if(connPoolUDP->getInstance(connPoolUDPIndex)->isOpen()) {
+        //connPoolUDP->unsubscribeListener(connPoolUDPIndex, this, SLOT(readData(QString)));
+        connPoolUDP->closeConnection(connPoolUDPIndex, ConnPoolPurposeFlag::STREAMING);
+    }
+    connPoolUDPIndex = -1;
 
     setLimitationsWhileConnectedUDP(false);
 
@@ -261,7 +278,6 @@ void StreamingSettingsDialog::disconnectCOM() {
     //emit onConnStateChanged();
 }
 
-// BG NOTE: code copied from serialSettingsDialog
 void StreamingSettingsDialog::fillCOMParameters() {
     baudRateBox->addItem(QStringLiteral("9600"), QSerialPort::Baud9600);
     baudRateBox->addItem(QStringLiteral("19200"), QSerialPort::Baud19200);
@@ -298,7 +314,7 @@ bool StreamingSettingsDialog::isAnyConnected() {
 }
 
 bool StreamingSettingsDialog::isUDPConnected() {
-    if( UDPSocket == nullptr )
+    if(connPoolUDPIndex < 0 || !connPoolUDP->getInstance(connPoolUDPIndex)->isOpen())
     /*->state() == QAbstractSocket::ClosingState || 
         connPoolUDP->getInstance(connPoolUDPIndex)->state() == QAbstractSocket::UnconnectedState */
         return false;
@@ -314,12 +330,11 @@ bool StreamingSettingsDialog::isCOMConnected() {
 }
 
 // Update current settings with the configuration from the form
-// BG NOTE: code mostly copied from serialSettingsDialog
 void StreamingSettingsDialog::updateSettings()
 {
-    m_UDPip = QHostAddress(udpIpBox->getValue());
+    m_currentSettingsUDP.ipAddress = QHostAddress(udpIpBox->getValue());
 
-    m_UDPport = udpPortBox->value();
+    m_currentSettingsUDP.portNumber = udpPortBox->value();
 
     //
 
@@ -355,17 +370,16 @@ void StreamingSettingsDialog::updateSettings()
 }
 
 // Loads the serial port settings from application settings
-// BG: code mostly copied from serialSettingsDialog
 void StreamingSettingsDialog::loadSettings() {
 
     dataContainerUDPBox->setCurrentText(applicationSettings->value("StreamingSettings.UDP.dataContainer", dataContainerUDPBox->itemText(0)).toString());
     dataContainerCOMBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.dataContainer", dataContainerCOMBox->itemText(0)).toString());
 
-    udpIpBox->setValue(applicationSettings->value("StreamingSettings.UDP.ip", udpIpBox->getValue()).toString());
-    udpPortBox->setValue(applicationSettings->value("StreamingSettings.UDP.port", udpPortBox->value()).toInt());
+    udpIpBox->setValue(applicationSettings->value("StreamingSettings.UDP.ipAddress", udpIpBox->getValue()).toString());
+    udpPortBox->setValue(applicationSettings->value("StreamingSettings.UDP.portNumber", udpPortBox->value()).toInt());
 
     serialPortInfoListBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.name", serialPortInfoListBox->itemText(0)).toString());
-    baudRateBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.baudRate", baudRateBox->itemText(0)).toString());
+    baudRateBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.baudRate", baudRateBox->itemText(3)).toString());
     dataBitsBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.dataBits", dataBitsBox->itemText(0)).toString());
     parityBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.parity", parityBox->itemText(0)).toString());
     stopBitsBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.stopBits", stopBitsBox->itemText(0)).toString());
@@ -375,14 +389,13 @@ void StreamingSettingsDialog::loadSettings() {
 }
 
 // Saves serial port settings to application settings
-// BG: code mostly copied from serialSettingsDialog
 void StreamingSettingsDialog::saveSettings() {
 
     applicationSettings->setValue("StreamingSettings.UDP.dataContainer", dataContainerUDPBox->currentText());
     applicationSettings->setValue("StreamingSettings.COM.dataContainer", dataContainerCOMBox->currentText());
 
-    applicationSettings->setValue("StreamingSettings.UDP.ip", udpIpBox->getValue());
-    applicationSettings->setValue("StreamingSettings.UDP.port", udpPortBox->value());
+    applicationSettings->setValue("StreamingSettings.UDP.ipAddress", udpIpBox->getValue());
+    applicationSettings->setValue("StreamingSettings.UDP.portNumber", udpPortBox->value());
     
     applicationSettings->setValue("StreamingSettings.COM.name", serialPortInfoListBox->currentText());
     applicationSettings->setValue("StreamingSettings.COM.baudRate", baudRateBox->currentText().toInt());
@@ -390,7 +403,7 @@ void StreamingSettingsDialog::saveSettings() {
     applicationSettings->setValue("StreamingSettings.COM.parity", parityBox->currentText());
     applicationSettings->setValue("StreamingSettings.COM.stopBits", stopBitsBox->currentText().toFloat());
     applicationSettings->setValue("StreamingSettings.COM.flowControl", flowControlBox->currentText());
-    //applicationSettings->setValue("SerialSettings.localEchoEnabled", localEchoCheckBox->isChecked());
+    //applicationSettings->setValue("StreamingSettings.COM.localEchoEnabled", localEchoCheckBox->isChecked());
 }
 
 /*
@@ -406,21 +419,17 @@ void StreamingSettingsDialog::updateCOMDevices() {
         serialPortInfoListBox->addItem(info.portName());
     }
 
-    // GB added begin
     // NOTE: also add item(s) assigned from our internal COM pool (which can be reused)
     // later NOTE: no need for this, because qt also seems to show the ports that PupilEXT has already opened
 //    std::vector<QString> poolPortNames = connPoolCOM->getOpenedNames();
 //    for(int i=0; i<poolPortNames.size(); i++) {
 //        serialPortInfoListBox->addItem(poolPortNames[i]);
 //    }
-    // GB added end
 }
 
-/*
 int StreamingSettingsDialog::getConnPoolUDPIndex() {
     return connPoolUDPIndex;
 }
-*/
 
 int StreamingSettingsDialog::getConnPoolCOMIndex() {
     return connPoolCOMIndex;

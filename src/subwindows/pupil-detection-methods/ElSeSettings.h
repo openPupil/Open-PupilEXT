@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_ELSESETTINGS_H
-#define PUPILEXT_ELSESETTINGS_H
+#pragma once
 
 /**
     @authors Moritz Lode, Gabor Benyei, Attila Boncser
@@ -26,7 +24,6 @@ class ElSeSettings : public PupilMethodSetting {
 
 public:
 
-    // GB: added pupilDetection instance to get the actual ROIs for Autometric Parametrization calculations
     explicit ElSeSettings(PupilDetection * pupilDetection, ElSe *m_else, QWidget *parent=0) : 
         PupilMethodSetting("ElSeSettings.configParameters","ElSeSettings.configIndex", parent), 
         p_else(m_else), 
@@ -35,17 +32,16 @@ public:
         PupilMethodSetting::setDefaultParameters(defaultParameters);
         createForm();
         configsBox->setCurrentText(settingsMap.key(configIndex));
-        // GB added begin
+
         if(isAutoParamEnabled()) {
             minAreaBox->setEnabled(false);
             maxAreaBox->setEnabled(false);
         } else {
             minAreaBox->setEnabled(true);
             maxAreaBox->setEnabled(true);
-        } 
-        // GB added end
+        }
 
-        QGridLayout *infoLayout = new QGridLayout(infoBox);
+        QVBoxLayout *infoLayout = new QVBoxLayout(infoBox);
 
         QPushButton *iLabelFakeButton = new QPushButton();
         iLabelFakeButton = new QPushButton();
@@ -56,38 +52,35 @@ public:
         iLabelFakeButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings));
         iLabelFakeButton->setFixedSize(QSize(32,32));
         iLabelFakeButton->setIconSize(QSize(32,32));
-        infoLayout->addWidget(iLabelFakeButton, 0, 0);
+        infoLayout->addWidget(iLabelFakeButton);
 
         QLabel *pLabel = new QLabel();
         pLabel->setWordWrap(true);
         pLabel->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
         pLabel->setOpenExternalLinks(true);
         pLabel->setText("Wolfgang Fuhl, Thiago Santini, Thomas Kübler, Enkelejda Kasneci, \"ElSe: Ellipse Selection for Robust Pupil Detection in Real-World Environments.\", 2016<br/>Part of the <a href=\"https://www-ti.informatik.uni-tuebingen.de/santini/EyeRecToo\">EyeRecToo</a> software. Copyright (c) 2018, Thiago Santini / University of Tübingen");
-        infoLayout->addWidget(pLabel, 1, 0);
+        infoLayout->addWidget(pLabel);
 
-        // GB modified begin
-        // GB NOTE: removed \n to let it fit more efficiently
         QLabel *confLabel;
         if(p_else->hasConfidence())
             confLabel = new QLabel("Info: This method does provide its own confidence.");
         else
             confLabel = new QLabel("Info: This method does not provide its own confidence, use the outline confidence."); 
         confLabel->setWordWrap(true);
-        infoLayout->addWidget(confLabel, 2, 0);
+        infoLayout->addWidget(confLabel);
 
         QLabel *infoLabel = new QLabel("CAUTION: Processing using this algorithm may be very slow, reduce the camera acquiring fps accordingly."); 
         infoLabel->setWordWrap(true);
         infoLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
-        infoLayout->addWidget(infoLabel, 3, 0);
+        infoLayout->addWidget(infoLabel);
 
 #if _DEBUG
         QLabel *warnLabel = new QLabel("CAUTION: Debug build may perform very slow. Use release build or adjust processing speed to not risk memory overflow.");
         warnLabel->setWordWrap(true);
         warnLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
-        infoLayout->addWidget(warnLabel, 4, 0);
+        infoLayout->addWidget(warnLabel);
 #endif
         infoBox->setLayout(infoLayout);
-        // GB modified end
     }
 
     ~ElSeSettings() override = default;
@@ -107,7 +100,6 @@ public slots:
     void loadSettings() override {
         PupilMethodSetting::loadSettings();
 
-        // GG added begin
         if(isAutoParamEnabled()) {
             float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
             pupilDetection->setAutoParamEnabled(true);
@@ -120,8 +112,7 @@ public slots:
             pupilDetection->setAutoParamEnabled(false);
             minAreaBox->setEnabled(true);
             maxAreaBox->setEnabled(true);
-        } 
-        // GB added end
+        }
 
 //        QList<float> selectedParameter = configParameters.value(configIndex);
 //
@@ -132,8 +123,6 @@ public slots:
     }
 
     void applySpecificSettings() override {
-
-        // GB modified begin
 
         // First come the parameters roughly independent from ROI size and relative pupil size 
         // (NONE HERE)
@@ -173,7 +162,6 @@ public slots:
             }
             
         }
-        // GB modified end
 
         emit onConfigChange(configsBox->currentText());
     }
@@ -186,14 +174,11 @@ public slots:
 private:
 
     ElSe *p_else;
-    //ElSe *secondaryElse = nullptr; // GB refactored
-    // GB added begin
     ElSe *else2 = nullptr;
     ElSe *else3 = nullptr;
     ElSe *else4 = nullptr;
 
-    PupilDetection *pupilDetection; 
-    // GB added end
+    PupilDetection *pupilDetection;
 
     QDoubleSpinBox *minAreaBox;
     QDoubleSpinBox *maxAreaBox;
@@ -210,11 +195,9 @@ private:
         QHBoxLayout *configsLayout = new QHBoxLayout();
 
         configsBox = new QComboBox();
-        // GB modified begin
         QLabel *parameterConfigsLabel = new QLabel(tr("Parameter configuration:"));
         configsBox->setFixedWidth(250);
         configsLayout->addWidget(parameterConfigsLabel);
-        // GB modified end
         configsLayout->addWidget(configsBox);
 
         for (QMap<QString, Settings>::const_iterator cit = settingsMap.cbegin(); cit != settingsMap.cend(); cit++)
@@ -237,7 +220,7 @@ private:
 
         mainLayout->addSpacerItem(new QSpacerItem(40, 5, QSizePolicy::Fixed));
 
-        QGroupBox *sizeGroup = new QGroupBox("Algorithm specific: Pupil Area Proportion"); // GB: "Algorithm specific: "
+        QGroupBox *sizeGroup = new QGroupBox("Algorithm specific: Pupil Area Proportion");
 
         QFormLayout *sizeLayout = new QFormLayout();
 
@@ -247,7 +230,7 @@ private:
         minAreaBox->setSingleStep(0.001);
         minAreaBox->setMaximum(100);
         minAreaBox->setValue(minAreaRatio);
-        minAreaBox->setFixedWidth(60); // GB
+        minAreaBox->setFixedWidth(60);
         sizeLayout->addRow(minAreaLabel, minAreaBox);
 
         QLabel *maxAreaLabel = new QLabel(tr("Max. Area [%]:"));
@@ -256,7 +239,7 @@ private:
         maxAreaBox->setSingleStep(0.001);
         maxAreaBox->setMaximum(100);
         maxAreaBox->setValue(maxAreaRatio);
-        maxAreaBox->setFixedWidth(60); // GB
+        maxAreaBox->setFixedWidth(60);
         sizeLayout->addRow(maxAreaLabel, maxAreaBox);
 
         sizeGroup->setLayout(sizeLayout);
@@ -264,8 +247,8 @@ private:
 
         QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
-        resetButton = new QPushButton("Reset algorithm parameters"); // GB: clarified text
-        fileButton = new QPushButton("Load config file"); // GB: clarified text
+        resetButton = new QPushButton("Reset algorithm parameters");
+        fileButton = new QPushButton("Load config file");
 
         buttonsLayout->addWidget(resetButton);
         connect(resetButton, SIGNAL(clicked()), this, SLOT(onResetClick()));
@@ -302,7 +285,7 @@ private:
             { Settings::ROI_0_6_OPTIMIZED, {0.001f, 0.131f} },
             { Settings::FULL_IMAGE_OPTIMIZED, {0.001f, 0.038f} },
             { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, -1.0f} },
-            { Settings::CUSTOM, {-1.0f, -1.0f} } // GB added
+            { Settings::CUSTOM, {-1.0f, -1.0f} }
     };
 
 
@@ -311,8 +294,6 @@ private slots:
     void onParameterConfigSelection(QString configKey) {
         setConfigIndex(configKey);
         QList<float>& selectedParameter = getCurrentParameters();
-
-        // GB modified begin
 
         // First come the parameters roughly independent from ROI size and relative pupil size 
         // (NONE HERE)
@@ -329,12 +310,8 @@ private slots:
             minAreaBox->setValue(selectedParameter[0]);
             maxAreaBox->setValue(selectedParameter[1]);
         }
-        // GB modified end
 
         //applySpecificSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
     }
 
 };
-
-
-#endif //PUPILEXT_ELSESETTINGS_H

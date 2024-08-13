@@ -156,7 +156,7 @@ StereoCameraCalibrationView::StereoCameraCalibrationView(StereoCamera *camera, Q
     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), calibrationWorker, SLOT(onNewImage(CameraImage)));
     //connect(this, SIGNAL(onNewImage(CameraImage)), calibrationWorker, SLOT(onNewImage(CameraImage)));
     // Show the processed calibration images in the live-view
-    connect(calibrationWorker, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
+    connect(calibrationWorker, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateView(CameraImage)));
     connect(calibrationWorker, SIGNAL (finishedCalibration()), this, SLOT (onCalibrationFinished()));
 
     if(!calibrationWorker->isCalibrated()) {

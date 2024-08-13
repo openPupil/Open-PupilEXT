@@ -103,7 +103,7 @@ SingleCameraSharpnessView::SingleCameraSharpnessView(SingleCamera *camera, QWidg
     connect(camera, SIGNAL(fps(double)), this, SLOT(updateCameraFPS(double)));
 
     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), sharpnessWorker, SLOT(onNewImage(CameraImage)));
-    connect(sharpnessWorker, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
+    connect(sharpnessWorker, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateView(CameraImage)));
 }
 
 SingleCameraSharpnessView::~SingleCameraSharpnessView() {

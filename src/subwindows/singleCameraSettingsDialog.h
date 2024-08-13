@@ -1,10 +1,8 @@
-#ifndef PUPILEXT_SINGLECAMERASETTINGSDIALOG_H
-#define PUPILEXT_SINGLECAMERASETTINGSDIALOG_H
+#pragma once
 
 /**
-    @author Moritz Lode, Gabor Benyei, Attila Boncser
+    @authors Moritz Lode, Gabor Benyei, Attila Boncser
 */
-
 
 #include <QtCore/QObject>
 #include <QDialog>
@@ -16,10 +14,8 @@
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QtWidgets>
 #include "../devices/singleCamera.h"
-#include "serialSettingsDialog.h"
+#include "MCUSettingsDialog.h"
 #include "../SVGIconColorAdjuster.h"
-
-// BG added
 #include "../devices/singleWebcam.h"
 #include "../camImageRegionsWidget.h"
 
@@ -33,7 +29,7 @@ class SingleCameraSettingsDialog : public QDialog {
 
 public:
 
-    explicit SingleCameraSettingsDialog(SingleCamera *cameraPtr, SerialSettingsDialog *serialSetting, QWidget *parent = nullptr);
+    explicit SingleCameraSettingsDialog(SingleCamera *cameraPtr, MCUSettingsDialog *MCUSettings, QWidget *parent = nullptr);
 
     ~SingleCameraSettingsDialog() override;
 
@@ -50,7 +46,7 @@ private:
     QDir settingsDirectory;
     QSettings *applicationSettings;
 
-    SerialSettingsDialog *serialSettings;
+    MCUSettingsDialog *MCUSettings;
 
     QPushButton *saveButton;
     QPushButton *loadButton;
@@ -66,13 +62,13 @@ private:
     QCheckBox *SWTframerateEnabled;
     QSpinBox *SWTframerateBox;
 
-    QPushButton *serialConfigButton;
+    QPushButton *MCUConfigButton;
     QFormLayout *HWTgroupLayout;
     QLabel *HWTframerateLabel;
     QLabel *HWTlineSourceLabel;
     QLabel *HWTtimeSpanLabel;
     QComboBox *HWTlineSourceBox;
-    QLabel *serialConnDisconnButtonLabel;
+    QLabel *MCUConnDisconnButtonLabel;
     QLabel *HWTstartStopButtonLabel;
     bool HWTrunning = false;
     QRadioButton *HWTradioButton;
@@ -80,8 +76,8 @@ private:
     QSpinBox *HWTframerateBox;
     QDoubleSpinBox *HWTtimeSpanBox;
 
-    QGroupBox *serialConnGroup;
-    QPushButton *serialConnDisconnButton;
+    QGroupBox *MCUConnGroup;
+    QPushButton *MCUConnDisconnButton;
 
     QGroupBox *triggerGroup;
     QGroupBox *analogGroup;
@@ -158,14 +154,14 @@ private slots:
     void onBinningModeChange(int index);
 
     void HWTstartStopButtonClicked();
-    void serialConnDisconnButtonClicked();
+    void MCUConnDisconnButtonClicked();
 
     void updateImageROISettingsMax();
 
     void SWTframerateEnabledToggled(bool state);
 
 signals:
-    void onSerialConfig();
+    void onMCUConfig();
     void onHardwareTriggerStart(QString cmd);
     void onHardwareTriggerStop(QString cmd);
 
@@ -176,5 +172,3 @@ signals:
     void onSensorSizeChanged(QSize size);
 
 };
-
-#endif //PUPILEXT_SINGLECAMERASETTINGSDIALOG_H

@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_STEREOCAMERAVIEW_H
-#define PUPILEXT_STEREOCAMERAVIEW_H
+#pragma once
 
 /**
     @authors Moritz Lode, Gabor Benyei, Attila Boncser
@@ -23,8 +21,6 @@
 /**
     Main view showing the two camera images side-by-side for a stereo camera, at the same time displays results of the pupil detection rendered
 
-    setUpdateFPS(): define the rate with which the camera view is updated, not changing the camera framerate or the pupil detection framerate
-
  signals:
     onShowROI: Signals when the display of the ROI is selected by the user
     onShowPupilCenter: Signals when the display of the pupil center is selected by the user
@@ -38,11 +34,6 @@ public:
 
     ~StereoCameraView() override;
 
-    void setUpdateFPS(int fps) {
-        updateDelay = 1000 / fps;
-        if (pupilDetection)
-            pupilDetection->setUpdateFPS(fps);
-    }
 
 private:
 
@@ -50,9 +41,6 @@ private:
     PupilDetection *pupilDetection;
 
     QSettings *applicationSettings;
-
-    QElapsedTimer timer;
-    int updateDelay;
 
     QToolBar *toolBar;
     QAction *freezeAct;
@@ -83,9 +71,7 @@ private:
     QLabel *processingFPSValue;
     QWidget *statusProcessingFPSWidget;
     QLabel *processingConfigLabel;
-    QElapsedTimer pupilViewTimer;
 
-    
 
     bool displayPupilView;
     bool plotPupilCenter;
@@ -96,7 +82,6 @@ private:
     
     double currentCameraFPS;
 
-    // GB added begin
     QAction *pupilDetectionMenuAct;
     QLabel *processingModeLabel;
 
@@ -116,12 +101,15 @@ private:
     QRectF tempROIs[4]; // 0 -> mainVideoView.ROI1Selection, 1 -> secondaryVideoView->ROI1Selection
                         // 2 -> mainVideoView.ROI2Selection, 3 -> secondaryVideoView->ROI2Selection
     
-    void updateProcModeLabel(); // GB added
-    // GB added end
+    void updateProcModeLabel();
 
     void loadSettings();
     bool isAutoParamModificationEnabled();
-    
+
+    void paintEvent(QPaintEvent *event) override {
+        mainVideoView->drawOverlay();
+        secondaryVideoView->drawOverlay();
+    };
 
 public slots:
 
@@ -155,12 +143,11 @@ public slots:
     void onSettingsChange();
     void onPupilDetectionConfigChanged(QString config);
 
-    // GB modified/added begin
     void onPupilDetectionMenuClick();
 
-    void saveMainROI1Selection(QRectF roi); // GB modified and renamed
+    void saveMainROI1Selection(QRectF roi);
     void saveMainROI2Selection(QRectF roi);
-    void saveSecondaryROI1Selection(QRectF roi); // GB modified and renamed
+    void saveSecondaryROI1Selection(QRectF roi);
     void saveSecondaryROI2Selection(QRectF roi);
 
     void displayFileCameraFrame(int frameNumber);
@@ -179,11 +166,8 @@ public slots:
 
     void onFreezeClicked();
     void onCameraPlaybackChanged();
-    // GB modified/added end
 
 signals:
-
-    // GÁBOR modified: not handled in pupilDetection anymore
     void onShowROI(bool value);
     void onShowPupilCenter(bool value);
     void onChangePupilColorFill(int colorFill);
@@ -191,10 +175,6 @@ signals:
     void onChangeShowAutoParamOverlay(bool state);
     void onChangeShowPositioningGuide(bool state);
     void cameraPlaybackChanged();
-    // GÁBOR end
+    void doingPupilDetectionROIediting(bool state);
 
 };
-
-
-
-#endif //PUPILEXT_STEREOCAMERAVIEW_H

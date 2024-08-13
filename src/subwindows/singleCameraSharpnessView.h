@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_SINGLECAMERASHARPNESSVIEW_H
-#define PUPILEXT_SINGLECAMERASHARPNESSVIEW_H
+#pragma once
 
 /**
     @authors Moritz Lode, Attila Boncser
@@ -70,5 +68,3 @@ private slots:
     void onShowHelpDialog();
 
 };
-
-#endif //PUPILEXT_SINGLECAMERASHARPNESSVIEW_H

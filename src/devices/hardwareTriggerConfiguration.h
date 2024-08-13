@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_HARDWARETRIGGERCONFIGURATION_H
-#define PUPILEXT_HARDWARETRIGGERCONFIGURATION_H
+#pragma once
 
 //-----------------------------------------------------------------------------
 //  Basler pylon SDK
@@ -139,5 +137,3 @@ public:
         }
     }
 };
-
-#endif // PUPILEXT_HARDWARETRIGGERCONFIGURATION_H

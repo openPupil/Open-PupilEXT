@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 
         Pylon::PylonAutoInitTerm autoInitTerm;  // PylonInitialize() will be called here
 
-        // GB NOTE: to be able to interpret start arguments (supplied through command line startup, via e.g. .lnk icons in windows OS with arguments, or batch file exe call)
+        // To be able to interpret start arguments (supplied through command line startup, via e.g. .lnk icons in windows OS with arguments, or batch file exe call)
         // useful e.g. in case of automatic exec on scheduled PC startup for warming up camera device before experimental session
         ExecArgParser* execArgParser = new ExecArgParser(argc, argv);
 

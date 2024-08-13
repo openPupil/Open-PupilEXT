@@ -13,9 +13,10 @@ classdef PupilEXT
       Method = 0
       UDP_IP = '192.168.40.1'
       UDP_Port = 6900
+      UDP_LocalPort = 6900
       UDP_Conn
       COM_Port = 'COM1'
-      COM_BaudRate = 9600
+      COM_BaudRate = 115200
       COM_ByteOrder = 'little-endian'
       COM_FlowControl = 'none'
       COM_StopBits = 1
@@ -42,6 +43,9 @@ classdef PupilEXT
           try
               if obj.Method == 0
                   obj.UDP_Conn = pnet('udpsocket', obj.UDP_Port);
+                  if obj.UDP_Conn == -1
+                      error('Could not open UDP port. Possibly in use already.');
+                  end
               else 
                   obj.COM_Conn = serialport(obj.COM_Port, obj.COM_BaudRate, ...
                       'ByteOrder',obj.COM_ByteOrder, ...
@@ -232,6 +236,138 @@ classdef PupilEXT
           else
             obj.sendRaw('PO false');
           end
+      end
+      
+      function connectRemoteControlUDP(obj, ipAddress, portNumber)
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['CRC udp;' ipAddress ';' num2str(portNumber)]);
+      end
+
+      function connectRemoteControlCOM(obj, portName, baudRate)
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['CRC com;' portName ';' num2str(baudRate)]);
+      end
+
+      function disconnectRemoteControlUDP(obj)
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['CRD udp']);
+      end
+
+      function disconnectRemoteControlCOM(obj)
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['CRD com']);
+      end
+
+      function connectStreamingUDP(obj, ipAddress, portNumber)
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['CSC udp;' ipAddress ';' num2str(portNumber)]);
+      end
+
+      function connectStreamingCOM(obj, portName, baudRate)
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['CSC com;' portName ';' num2str(baudRate)]);
+      end
+
+      function disconnectStreamingUDP(obj)
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['CSD udp']);
+      end
+
+      function disconnectStreamingCOM(obj)
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['CSD com']);
+      end
+
+      function connectMicrocontrollerUDP(obj, ipAddress, portNumber)
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['CMC udp;' ipAddress ';' num2str(portNumber)]);
+      end
+
+      function connectMicrocontrollerCOM(obj, portName, baudRate)
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['CMC com;' portName ';' num2str(baudRate)]);
+      end
+
+      function disconnectMicrocontroller(obj)
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['CMD']);
+      end
+
+      function switchToHardwareTriggeringMode(obj)
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['IT H']);
+      end
+
+      function switchToSoftwareTriggeringMode(obj)
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['IT S']);
+      end
+
+      function startHardwareTriggering(obj)
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['IHQ']);
+      end
+
+      function stopHardwareTriggering(obj)
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['IHY']);
+      end
+
+      function setHardwareTriggeringLineSource(obj, lineSourceNumber)
+          if (lineSourceNumber > 4) || (lineSourceNumber < 1)
+            error('Could not set hardware triggering line source, invalid numeric input supplied');
+          end
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['IHL ' num2str(lineSourceNumber)]);
+      end
+
+      function setHardwareTriggeringRuntimeLength(obj, runtimeLengthMinutes)
+          if (runtimeLengthMinutes < 0)
+            error('Could not set hardware triggering runtime length, invalid numeric input supplied');
+          end
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['IHR ' num2str(runtimeLengthMinutes)]);
+      end
+
+      function setHardwareTriggeringFramerate(obj, fps)
+          if (fps < 1)
+            error('Could not set hardware triggering framerate, invalid numeric input supplied');
+          end
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['IHT ' num2str(fps)]);
+      end
+
+      function setSoftwareTriggeringFramerateLimitingEnabled(obj, state)
+          if ~obj.Enabled, return, end
+          if state
+            obj.sendRaw('ISC true');
+          else
+            obj.sendRaw('ISC false');
+          end
+      end
+
+      function setSoftwareTriggeringFramerateLimit(obj, fps)
+          if (fps < 1)
+            error('Could not set software triggering framerate limiting, invalid numeric input supplied');
+          end
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['IST ' num2str(fps)]);
+      end
+
+      function setExposureTimeMicrosec(obj, expo)
+          if (expo < 0)
+            error('Could not set exposure time in microseconds, invalid numeric input supplied');
+          end
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['IE ' num2str(expo)]);
+      end
+
+      function setGain(obj, gain)
+          if (gain < 0)
+            error('Could not set gain value, invalid numeric input supplied');
+          end
+          if ~obj.Enabled, return, end
+          obj.sendRaw(['IG ' num2str(gain)]);
       end
       
    end

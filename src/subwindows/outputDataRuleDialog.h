@@ -1,9 +1,4 @@
-//
-// Created by epresleves on 2024. 04. 17..
-//
-
-#ifndef PUPILEXT_OUTPUTDATARULEDIALOG_H
-#define PUPILEXT_OUTPUTDATARULEDIALOG_H
+#pragma once
 
 #include <QtWidgets>
 #include <QDialog>
@@ -36,5 +31,3 @@ private:
     QPushButton *buttonAppend;
     QPushButton *buttonKeepAndSaveNew;
 };
-
-#endif //PUPILEXT_OUTPUTDATARULEDIALOG_H

@@ -1,5 +1,4 @@
-#ifndef PUPILEXT_GRAPHPLOT_H
-#define PUPILEXT_GRAPHPLOT_H
+#pragma once
 
 /**
     @author Moritz Lode, Gabor Benyei, Attila Boncser
@@ -14,11 +13,6 @@
 
 /**
     Custom lineplot graph widget employing the QCustomPlot library for plotting
-
-    NOTE: Modified by Gabor Benyei, 2023 jan
-    GB NOTE:
-        Reorganized code to let it handle an std::vector of Pupils, in order to comply with new signal-slot strategy, which
-        I introduced to manage different pupil detection processing modes (procModes)
 
     GraphPlot(): create graph window and define window title
 
@@ -64,6 +58,9 @@ public slots:
     void appendData(const int &framecount);
 
     void onPlaybackSafelyStopped();
+    void onPlaybackSafelyStarted();
+
+    void setKnownTimeZero(uint64_t timestamp);
 
 private:
 
@@ -72,7 +69,6 @@ private:
     double yAxisLimitHighT;
     double yAxisLimitLow;
     double yAxisLimitHigh;
-    double spinBoxStep;
 
     InteractionMode currentInteractionMode = InteractionMode::AUTO_SCROLL_X_AUTO_SCALE_Y;
 
@@ -83,13 +79,10 @@ private:
     QCustomPlot *customPlot;
     QCPGraph *graph;
 
-    QElapsedTimer timer;
     uint64 incrementedTimestamp;
 
 //    bool interaction;
 //    bool yinteraction;
-
-    int updateDelay;
 
     void loadYaxisSettings();
     void saveYaxisSettings();
@@ -98,5 +91,3 @@ private slots:
     void setInteractionMode(InteractionMode m);
     void updateYaxisRange();
 };
-
-#endif //PUPILEXT_GRAPHPLOT_H

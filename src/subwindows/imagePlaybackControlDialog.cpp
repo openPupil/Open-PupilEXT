@@ -25,13 +25,12 @@ ImagePlaybackControlDialog::ImagePlaybackControlDialog(FileCamera *fileCamera, P
     this->setMinimumSize(650, 240);
     this->setWindowTitle("Image Playback Control");
 
-    drawDelay = 33; // ~30 fps
-
     readSettings();
 
     createForm();
 
     numImagesTotal = fileCamera->getNumImagesTotal();
+    numImagesTotalLabel->setText(" / " + QString::number(numImagesTotal));
     timeTotal = QTime::fromMSecsSinceStartOfDay(fileCamera->getRecordingDuration());
     lastTimestamp = 0;
     startTimestamp = 0;
@@ -56,30 +55,32 @@ void ImagePlaybackControlDialog::createForm() {
     //timestampVal = new QLineEdit();
     timestampVal = new TimestampSpinBox(fileCamera);
     timestampVal->setReadOnly(false);
-    timestampVal->setMaximumWidth(110);
+    timestampVal->setFixedWidth(140);
     timestampVal->setMinimum(0);
     uint64_t timestampMax = fileCamera->getTimestampForFrameNumber(fileCamera->getNumImagesTotal()-1);
     timestampVal->setMaximum(timestampMax);
     timestampVal->setWrapping(true);
     infoLayout->addRow(timestampLabel, timestampVal);
 
+    QHBoxLayout *selectedFrameRowLayout = new QHBoxLayout();
     QLabel *frameLabel = new QLabel(tr("Frame:"));
     selectedFrameBox = new QSpinBox();
     selectedFrameBox->setReadOnly(false);
-    selectedFrameBox->setMaximumWidth(110);
+    selectedFrameBox->setMaximumWidth(70);
     selectedFrameBox->setMinimum(1);
     selectedFrameBox->setMaximum(fileCamera->getNumImagesTotal());
     selectedFrameBox->setValue(selectedFrameVal);
     selectedFrameBox->setWrapping(true);
-    infoLayout->addRow(frameLabel, selectedFrameBox);
+    selectedFrameRowLayout->addWidget(selectedFrameBox);
+
+    numImagesTotalLabel = new QLabel("-");
+    selectedFrameRowLayout->addWidget(numImagesTotalLabel);
+    infoLayout->addRow(frameLabel, selectedFrameRowLayout);
 
     QLabel *timestampHumanLabel = new QLabel(tr("Date and time:"));
     timestampHumanValLabel = new QLabel("-");
     infoLayout->addRow(timestampHumanLabel, timestampHumanValLabel);
 
-    QLabel *imgNumberLabel = new QLabel(tr("Image number:"));
-    imgNumberValLabel = new QLabel("-");
-    infoLayout->addRow(imgNumberLabel, imgNumberValLabel);
 
     // GB: number of (so far) skipped images:
     // Sounds cool, but it is complicated to implement correctly.
@@ -108,6 +109,10 @@ void ImagePlaybackControlDialog::createForm() {
     QLabel *trialLabel = new QLabel(tr("Trial:"));
     trialValLabel = new QLabel("-");
     infoLayout->addRow(trialLabel, trialValLabel);
+
+    QLabel *messageLabel = new QLabel(tr("Message:"));
+    messageValLabel = new QLabel("-");
+    infoLayout->addRow(messageLabel, messageValLabel);
 
     infoGroup->setLayout(infoLayout);
     layout->addWidget(infoGroup, 0, 0, 1, 1);
@@ -182,11 +187,11 @@ void ImagePlaybackControlDialog::createForm() {
     connect(startPauseButton, SIGNAL(clicked()), this, SLOT(onStartPauseButtonClick()));
     connect(stopButton, SIGNAL(clicked()), this, SLOT(onStopButtonClick()));
 
-    //bool succeeded = connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateInfo(CameraImage)));
+    //bool succeeded = connect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateInfo(CameraImage)));
     //connect(fileCamera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateInfo(CameraImage)));
     //connect(fileCamera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateSliderColorTick(CameraImage)));
-    connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateInfo(CameraImage)));
-    //connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateSliderColorTick(CameraImage)));
+    connect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateInfo(CameraImage)));
+    //connect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateSliderColorTick(CameraImage)));
     // BREAKPOINT
     //connect(pupilDetection, SIGNAL(processingStarted()), this, SLOT(onPupilDetectionStart()));
     //connect(pupilDetection, SIGNAL(processingFinished()), this, SLOT(onPupilDetectionStop()));
@@ -209,15 +214,15 @@ void ImagePlaybackControlDialog::updateSliderColorTick(const CameraImage &cimg) 
 }
 
 
-void ImagePlaybackControlDialog::onPupilDetectionStart() {
-    disconnect(fileCamera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateInfo(CameraImage)));
-    connect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateInfo(CameraImage)));
-}
-
-void ImagePlaybackControlDialog::onPupilDetectionStop() {
-    disconnect(pupilDetection, SIGNAL(processedImage(CameraImage)), this, SLOT(updateInfo(CameraImage)));
-    connect(fileCamera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateInfo(CameraImage)));
-}
+//void ImagePlaybackControlDialog::onPupilDetectionStart() {
+//    disconnect(fileCamera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateInfo(CameraImage)));
+//    connect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateInfo(CameraImage)));
+//}
+//
+//void ImagePlaybackControlDialog::onPupilDetectionStop() {
+//    disconnect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateInfo(CameraImage)));
+//    connect(fileCamera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateInfo(CameraImage)));
+//}
 
 // when someone seeks, but there is no playback going on
 void ImagePlaybackControlDialog::updateInfoInternal(int frameNumber) {
@@ -242,13 +247,14 @@ void ImagePlaybackControlDialog::updateInfoInternal(int frameNumber) {
     timestampVal->setValue(frameNumber+1);
     timestampHumanValLabel->setText(date.toString("yyyy. MMM dd. hh:mm:ss"));
     //timestampHumanValLabel->setText(QLocale::system().toString(date));
-    imgNumberValLabel->setText(QString::number(frameNumber+1) + "\t/ " + QString::number(numImagesTotal));
     acqFPSValLabel->setText("-");
     //elapsedTimeValLabel->setText(QString::number(elapsedMs));
     elapsedTimeValLabel->setText(timeElapsed.toString("hh:mm:ss") + "\t/ " + timeTotal.toString("hh:mm:ss"));
     percentValLabel->setText(QString::number((float)(frameNumber+1)/(float)numImagesTotal*(float)100,'f',1)); 
-    if(recEventTracker)
-        trialValLabel->setText(QString::number(recEventTracker->getTrialIncrement(currTimestamp).trialNumber)); 
+    if(recEventTracker) {
+        trialValLabel->setText(QString::number(recEventTracker->getTrialIncrement(currTimestamp).trialNumber));
+        messageValLabel->setText(SupportFunctions::shortenStringForDisplay(recEventTracker->getMessage(currTimestamp).messageString,20));
+    }
 
     lastTimestamp = currTimestamp;
     lastPlayedFrame = frameNumber;
@@ -275,13 +281,8 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
     // qDebug() << "arrived frameNumber: " << frameNumber;
     // qDebug() << "arrived timestamp: " << timestamp;
 
-    // NOTES:
-    // 1, if it is the last frame in the whole playback, we need to draw it anyhow
-    // 2, if we are waiting for the last emitted frame to come with stalledTimestamp we still need to draw it, no matter is drawDelay was not reached yet (fixes disabled-stuck buttons bug)
-    //if(drawTimer.elapsed() > drawDelay || frameNumber == numImagesTotal || (playbackStalled && stalledTimestamp<=timestamp)) {
-    //if(drawTimer.elapsed() > drawDelay || frameNumber == numImagesTotal) {
-    if ((finished && endReached && selectedFrameVal < fileCamera->getNumImagesTotal()) || (!finished && !paused)){
-        drawTimer.start();
+    // NOTE: if it is the last frame in the whole playback, we need to draw it anyhow
+//    if ((finished && endReached && selectedFrameVal < fileCamera->getNumImagesTotal()) || (!finished && !paused)){
 
         QDateTime date = QDateTime::fromMSecsSinceEpoch(timestamp);
 
@@ -300,7 +301,6 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
         timestampVal->setValue(frameNumber+1);
         timestampHumanValLabel->setText(date.toString("yyyy. MMM dd. hh:mm:ss"));
         //timestampHumanValLabel->setText(QLocale::system().toString(date));
-        imgNumberValLabel->setText(QString::number(frameNumber+1) + "\t/ " + QString::number(numImagesTotal));
         selectedFrameBox->setValue(frameNumber + 1);
         if(acqFPS == 0)
             acqFPSValLabel->setText("-");
@@ -311,8 +311,10 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
         //elapsedTimeValLabel->setText(QString::number(elapsedMs));
         elapsedTimeValLabel->setText(timeElapsed.toString("hh:mm:ss") + "\t/ " + timeTotal.toString("hh:mm:ss"));
         percentValLabel->setText(QString::number((float)(frameNumber+1)/(float)numImagesTotal*(float)100,'f',1));
-        if(recEventTracker)
+        if(recEventTracker) {
             trialValLabel->setText(QString::number(recEventTracker->getTrialIncrement(timestamp).trialNumber));
+            messageValLabel->setText(SupportFunctions::shortenStringForDisplay(recEventTracker->getMessage(timestamp).messageString,20));
+        }
 
         // NOTE: workaround to not emit valuechanged signals, so it gets emitted only if the user interacts with it
         slider->blockSignals(true);
@@ -322,12 +324,12 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
         slider->blockSignals(false);
         //}
 
-        lastTimestamp = timestamp; // GB: need to come before 30 fps drawTime wait
+        lastTimestamp = timestamp;
         lastPlayedFrame = frameNumber;
         if(startTimestamp == 0)
             startTimestamp = timestamp;
 
-    }
+//    }
 
     if (finished || paused){
         resetState();
@@ -341,42 +343,7 @@ void ImagePlaybackControlDialog::onStartPauseButtonClick() {
 void ImagePlaybackControlDialog::onStopButtonClick() {
 //    qDebug()<<"Stopping FileCamera Click";
     fileCamera->stop();
-    /*
-    //playImagesOn = false;
 
-    //qDebug()<<"Stopping, lastTimestamp: "<< lastTimestamp ;
-    //qDebug()<<"Stopping, stalledTimestamp: "<< stalledTimestamp ;
-    if(!playImagesOn) {
-        // e.g. when playback automatically finished
-        // we can supposedly "safely" reset right now, no need to wait for imageReader to finish
-        lastTimestamp = 0;
-        startTimestamp = 0;
-
-        // need this here, before slider->setValue(0) because that relies on this bool
-        playImagesOn = false;
-
-        slider->blockSignals(false);
-        slider->setValue(0);
-        
-        playbackStalled = false;
-        waitingForReset = false;
-
-        emit onPlaybackSafelyStopped();
-        enableWidgets();
-
-    } else {
-
-        playImagesOn = false;
-    }
-
-    //stalledFrameNumber = fileCamera->getLastCommissionedFrameNumber();
-    //playbackStalled = true;
-
-    const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
-    startPauseButton->setIcon(icon);
-
-    this->update(); // invalidate
-     */
     if (paused)
         finished = true;
     resetState();
@@ -426,23 +393,9 @@ void ImagePlaybackControlDialog::readSettings() {
     else
         setPlaybackSpeed(30);
 
-    const QByteArray m_syncRecordCsv = applicationSettings->value("syncRecordCsv", QByteArray()).toByteArray();
-    syncRecordCsv = true;
-    if (!m_syncRecordCsv.isEmpty() && (m_syncRecordCsv == "0" || m_syncRecordCsv == "false"))
-        syncRecordCsv = false;
-
-    const QByteArray m_syncStream = applicationSettings->value("syncStream", QByteArray()).toByteArray();
-    syncStream = true;
-    if (!m_syncStream.isEmpty() && (m_syncStream == "0" || m_syncStream == "false"))
-        syncStream = false;
-
-    const QByteArray m_playbackLoop = applicationSettings->value("playbackLoop", QByteArray()).toByteArray();
-    playbackLoop = true;
-    // GB: I tried but this does not work, always reads "true" or "false", but not "1" or "0", and Int conversion fails accordingly. I modified the code accordingly
-    //playbackLoop = (bool) m_playbackLoop.toInt(); 
-    if (!m_playbackLoop.isEmpty() && (m_playbackLoop == "0" || m_playbackLoop == "false"))
-        playbackLoop = false;
-
+    syncRecordCsv = SupportFunctions::readBoolFromQSettings("syncRecordCsv", false, applicationSettings);
+    syncStream = SupportFunctions::readBoolFromQSettings("syncStream", false, applicationSettings);
+    playbackLoop = SupportFunctions::readBoolFromQSettings("playbackLoop", true, applicationSettings);
 
 }
 
@@ -559,8 +512,6 @@ void ImagePlaybackControlDialog::onCameraPlaybackChanged()
 
 //        qDebug() << "Playback paused";
     } else {
-        
-        //stalledTimestamp = 0;
 
         // GB: dial can be buggy when touched during playing is on, so disabled it if play is on. 
         // Can be operated separately, when paused
@@ -627,7 +578,6 @@ void ImagePlaybackControlDialog::onTimestampSelected(double frameNumber){
 
 void ImagePlaybackControlDialog::resetState() {
 
-
     if (finished && endReached && fileCamera->getNumImagesTotal() == selectedFrameVal){
         const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
         startPauseButton->setIcon(icon);
@@ -638,7 +588,6 @@ void ImagePlaybackControlDialog::resetState() {
 
         lastTimestamp = 0;
         startTimestamp = 0;
-        waitingForReset = false;
         playImagesOn = false;
         //finished = false;
         endReached = false;
@@ -657,7 +606,6 @@ void ImagePlaybackControlDialog::resetState() {
 
         lastTimestamp = 0;
         startTimestamp = 0;
-        waitingForReset = false;
         playImagesOn = false;
         paused = true;
 
@@ -668,7 +616,6 @@ void ImagePlaybackControlDialog::resetState() {
         selectedFrameBox->setValue(selectedFrameVal);
         emit onPlaybackSafelyStopped();
     }
-
 
     this->update(); // invalidate
 }

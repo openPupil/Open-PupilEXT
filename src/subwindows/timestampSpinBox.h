@@ -1,5 +1,4 @@
-#ifndef PUPILEXT_TIMESTAMPSPINBOX_H
-#define PUPILEXT_TIMESTAMPSPINBOX_H
+#pragma once
 
 /**
     @author Attila Boncser
@@ -26,4 +25,3 @@ private:
     uint64_t getNextTimestamp(int frameNumber);
     uint64_t getPreviousTimestamp(int frameNumber);
 };
-#endif //PUPILEXT_TIMESTAMPSPINBOX_H

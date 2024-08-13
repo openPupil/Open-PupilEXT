@@ -16,7 +16,6 @@ DataWriter::DataWriter(
     writerReady(false),
     applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    // GB modified begin
     delim = applicationSettings->value("dataWriterDelimiter", ",").toString()[0];
     //delim = applicationSettings->value("delimiterToUse", ',').toChar(); // somehow this just doesnt work
 
@@ -35,7 +34,7 @@ DataWriter::DataWriter(
     qDebug() << fileName;
 
     /*
-    bool pathWriteable = SupportFunctions::preparePath(fileName); // GB added
+    bool pathWriteable = SupportFunctions::preparePath(fileName);
     if(!pathWriteable) {
         QMessageBox MsgBox;
         MsgBox.setText("Recording failure. Could not create path.");
@@ -61,9 +60,8 @@ DataWriter::DataWriter(
 
     textStream = new QTextStream(dataFile);
 
-    if(dataFile && textStream) // GB: extra safety
+    if(dataFile && textStream)
         writerReady=true;
-    // GB modified end
 
     // To not write again a header line to the file when it already existed (appending), check it
     if(!exists)
@@ -101,17 +99,17 @@ void DataWriter::newPupilData(quint64 timestamp, int procMode, const std::vector
 
     // GB: serialization is moved to EyeDataSerializer as yet the method is used by dataStreamer too
     if (textStream->status() == QTextStream::Ok) {
-        uint trialNumber = 1;
-        std::vector<double> d = {0,0};
+//        uint _trialNumber = 1;
+//        QString _message = "";
+//        std::vector<double> _d = {-1.0,-1.0};
         if(recEventTracker) {
-            trialNumber = recEventTracker->getTrialIncrement(timestamp).trialNumber;
-            d = recEventTracker->getTemperatureCheck(timestamp).temperatures;
+            _trialNumber = recEventTracker->getTrialIncrement(timestamp).trialNumber;
+            _message = recEventTracker->getMessage(timestamp).messageString;
+            _d = recEventTracker->getTemperatureCheck(timestamp).temperatures;
         }
-        *textStream << EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, trialNumber, delim, dataStyle, d) << Qt::endl;
+        *textStream << EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, _trialNumber, delim, dataStyle, _d, _message) << Qt::endl;
     }
 }
-
-
 
 // GB NOTE: I found two unreferenced functions here, called writePupilData() and writeStereoPupilData().
 // I tried to actualize their functionality, now manifested in a single function. This however needs different arguments now
@@ -126,12 +124,14 @@ void DataWriter::writePupilData(std::vector<quint64> timestamps, int procMode, c
     for(int i=0; i<pupilData.size(); i++) {
         if (textStream->status() == QTextStream::Ok) {
             uint trialNumber = 1;
+            QString message = "";
             std::vector<double> d = {0,0};
             if(recEventTracker) {
                 recEventTracker->getTrialIncrement(timestamps[i]).trialNumber;
+                message = recEventTracker->getMessage(timestamps[i]).messageString;
                 d = recEventTracker->getTemperatureCheck(timestamps[i]).temperatures;
             }
-            *textStream << EyeDataSerializer::pupilToRowCSV(static_cast<quint64>(framePos), procMode, pupilData[i], "", trialNumber, delim, dataStyle, d) << Qt::endl;
+            *textStream << EyeDataSerializer::pupilToRowCSV(static_cast<quint64>(framePos), procMode, pupilData[i], "", trialNumber, delim, dataStyle, d, message) << Qt::endl;
         }
         ++framePos;
     }

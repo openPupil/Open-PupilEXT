@@ -6,30 +6,34 @@
 #include <QtWidgets/QSpinBox>
 #include <iostream>
 #include "generalSettingsDialog.h"
+#include "../supportFunctions.h"
 
 // Create a settings dialog for the general software settings
 // Settings are read upon creation from the QT application settings if existing
 GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
         QDialog(parent),
         //playbackSpeed(30),
-        imageWriterFormat("tiff"),
+        imageWriterFormat("png"),
         imageWriterDataRule("ask"),
         dataWriterDelimiter(","),
         dataWriterDataRule("ask"),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     //this->setMinimumSize(200, 330); 
-    this->setMinimumSize(295, 410);
+    this->setMinimumSize(310, 510);
     this->setWindowTitle("Settings");
 
     readSettings();
     createForm();
 
-    // GB added/modified begin
     updateForm();
 
     connect(imageWriterFormatBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterFormatChange(int)));
     connect(imageWriterDataRuleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterDataRuleChange(int)));
+
+    connect(formatPngCompressionBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onImageWriterFormatPngCompressionChange(int)));
+    connect(formatJpegQualityBox, SIGNAL(valueChanged(int)), this, SLOT(onImageWriterFormatJpegQualityChange(int)));
+    connect(formatWebpQualityBox, SIGNAL(valueChanged(int)), this, SLOT(onImageWriterFormatWebpQualityChange(int)));
 
     connect(dataWriterDelimiterBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDataWriterDelimiterChange(int)));
     connect(dataWriterDataStyleBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onDataWriterDataStyleChange(int)));
@@ -39,7 +43,6 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
     connect(metaSnapshotBox, SIGNAL(stateChanged(int)), this, SLOT(setMetaSnapshotEnabled(int)));
     connect(saveOfflineEventLogBox, SIGNAL(stateChanged(int)), this, SLOT(setSaveOfflineEventLog(int)));
     connect(alwaysOnTopBox, SIGNAL(stateChanged(int)), this, SLOT(setAlwaysOnTop(int)));
-    // GB added/modified end
 
     connect(applyButton, &QPushButton::clicked, this, &GeneralSettingsDialog::apply);
     connect(cancelButton, &QPushButton::clicked, this, &GeneralSettingsDialog::cancel);
@@ -47,12 +50,15 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
 
 // Reads the settings from the QT application setting, if the entries were found
 void GeneralSettingsDialog::readSettings() {
-    const QString m_imageWriterFormat = applicationSettings->value("imageWriterFormat", QByteArray()).toString();
+    const QString m_imageWriterFormat = applicationSettings->value("imageWriterFormat.chosenFormat", "png").toString();
     if (!m_imageWriterFormat.isEmpty()) {
         imageWriterFormat = m_imageWriterFormat;
     }
 
-    // GB begin
+    imageWriterFormatPngCompression = applicationSettings->value("imageWriterFormat.png.compression", "0").toInt();
+    imageWriterFormatJpegQuality = applicationSettings->value("imageWriterFormat.jpeg.quality", "100").toInt();
+    imageWriterFormatWebpQuality = applicationSettings->value("imageWriterFormat.webp.quality", "100").toInt();
+
     const QString m_imageWriterDataRule = applicationSettings->value("imageWriterDataRule", QByteArray()).toString();
     if (!m_imageWriterDataRule.isEmpty()) {
         imageWriterDataRule = m_imageWriterDataRule;
@@ -73,53 +79,26 @@ void GeneralSettingsDialog::readSettings() {
         dataWriterDataRule = m_dataWriterDataRule;
     }
 
-    const QByteArray m_metaSnapshotsEnabled = applicationSettings->value("metaSnapshotsEnabled", "1").toByteArray();
-    //std::cout << m_metaSnapshotsEnabled.toStdString() << std::endl; //
-    if (!m_metaSnapshotsEnabled.isEmpty()) {
-        if(m_metaSnapshotsEnabled == "1" || m_metaSnapshotsEnabled == "true")
-            metaSnapshotsEnabled = true;
-        else
-            metaSnapshotsEnabled = false;
-    }
-    const QByteArray m_saveOfflineEventLog = applicationSettings->value("saveOfflineEventLog", "1").toByteArray();
-    //std::cout << m_saveOfflineEventLog.toStdString() << std::endl; //
-    if (!m_saveOfflineEventLog.isEmpty()) {
-        if(m_saveOfflineEventLog == "1" || m_saveOfflineEventLog == "true")
-            saveOfflineEventLog = true;
-        else
-            saveOfflineEventLog = false;
-    }
+    metaSnapshotsEnabled = SupportFunctions::readBoolFromQSettings("metaSnapshotsEnabled", true, applicationSettings);
+    saveOfflineEventLog = SupportFunctions::readBoolFromQSettings("saveOfflineEventLog", true, applicationSettings);
+    alwaysOnTop = SupportFunctions::readBoolFromQSettings("alwaysOnTop", false, applicationSettings);
 
-    const int m_darkAdaptMode = applicationSettings->value("GUIDarkAdaptMode", "2").toInt();
-    darkAdaptMode = m_darkAdaptMode;
+    darkAdaptMode = applicationSettings->value("GUIDarkAdaptMode", "2").toInt();
     // GUIDarkAdaptMode: 0 = no, 1 = yes, 2 = let PupilEXT guess
 
-    const QByteArray m_alwaysOnTop = applicationSettings->value("alwaysOnTop", "0").toByteArray();
-    //std::cout << m_alwaysOnTop.toStdString() << std::endl; //
-    if (!m_alwaysOnTop.isEmpty()) {
-        if(m_alwaysOnTop == "1" || m_alwaysOnTop == "true")
-            alwaysOnTop = true;
-        else
-            alwaysOnTop = false;
-    }
-
-    // GB end
 }
 
 void GeneralSettingsDialog::updateForm() {
 
-    // GB modified begin
-    // NOTE: thiw line below somehow does not work (always sets the index 0 element of the combobox)
-    // imageWriterFormatBox->setCurrentText(imageWriterFormat);
-    if(imageWriterFormat == "jpg")
-        imageWriterFormatBox->setCurrentIndex(1);
-    else if(imageWriterFormat == "png")
-        imageWriterFormatBox->setCurrentIndex(2);
-    else if(imageWriterFormat == "bmp")
-        imageWriterFormatBox->setCurrentIndex(3);
-    else // if(imageWriterFormat == "tiff")
-        imageWriterFormatBox->setCurrentIndex(0);
-    //qDebug() << imageWriterFormat << "\n";
+    imageWriterFormatBox->setCurrentIndex(imageWriterFormatBox->findData(imageWriterFormat));
+
+    formatPngCompressionBox->setCurrentIndex(imageWriterFormatPngCompression);
+    formatJpegQualityBox->setValue(imageWriterFormatJpegQuality);
+    formatWebpQualityBox->setValue(imageWriterFormatWebpQuality);
+
+    formatPngCompressionWidget->setVisible(imageWriterFormat == "png");
+    formatJpegQualityWidget->setVisible(imageWriterFormat == "jpeg");
+    formatWebpQualityWidget->setVisible(imageWriterFormat == "webp");
 
     if(imageWriterDataRule == "ask")
         imageWriterDataRuleBox->setCurrentIndex(0);
@@ -154,12 +133,14 @@ void GeneralSettingsDialog::updateForm() {
     metaSnapshotBox->setChecked(metaSnapshotsEnabled);
     saveOfflineEventLogBox->setChecked(saveOfflineEventLog);
     alwaysOnTopBox->setChecked(alwaysOnTop);
-    // GB modified end
 }
 
 // Saved the settings selected in the dialog to the QT application settings
 void GeneralSettingsDialog::saveSettings() {
-    applicationSettings->setValue("imageWriterFormat", imageWriterFormat);
+    applicationSettings->setValue("imageWriterFormat.chosenFormat", imageWriterFormat);
+    applicationSettings->setValue("imageWriterFormat.png.compression", imageWriterFormatPngCompression);
+    applicationSettings->setValue("imageWriterFormat.jpeg.quality", imageWriterFormatJpegQuality);
+    applicationSettings->setValue("imageWriterFormat.webp.quality", imageWriterFormatWebpQuality);
     applicationSettings->setValue("imageWriterDataRule", imageWriterDataRule);
     applicationSettings->setValue("dataWriterDelimiter", dataWriterDelimiter );
     applicationSettings->setValue("dataWriterDataStyle", dataWriterDataStyle );
@@ -219,16 +200,69 @@ void GeneralSettingsDialog::createForm() {
     imageWriterGroup = new QGroupBox("Image Writer", this);
     QFormLayout *writerLayout = new QFormLayout(this);
 
-    QLabel *formatLabel = new QLabel(tr("Image Format"));
-
+    QLabel *formatLabel = new QLabel(tr("Image Format**"));
     imageWriterFormatBox = new QComboBox(this);
-    imageWriterFormatBox->addItem(QString("tiff [very CPU heavy]"), QString("tiff"));
-    imageWriterFormatBox->addItem(QString("jpg [CPU heavy]"), QString("jpg"));
-    imageWriterFormatBox->addItem(QString("png [CPU heavy]"), QString("png"));
-    imageWriterFormatBox->addItem(QString("bmp [fastest]"), QString("bmp"));
-    imageWriterFormatBox->setCurrentText(imageWriterFormat);
+    imageWriterFormatBox->addItem(QString("tiff [large files]"), QString("tiff"));
+    imageWriterFormatBox->addItem(QString("png [configurable]"), QString("png"));
+    imageWriterFormatBox->addItem(QString("bmp [large files]"), QString("bmp"));
+    imageWriterFormatBox->addItem(QString("jpeg [configurable]"), QString("jpeg"));
+    imageWriterFormatBox->addItem(QString("webp [configurable]"), QString("webp"));
+    imageWriterFormatBox->addItem(QString("pgm"), QString("pgm"));
+    int hahaha = imageWriterFormatBox->findData(imageWriterFormat);
+    imageWriterFormatBox->setCurrentIndex(imageWriterFormatBox->findData(imageWriterFormat));
     writerLayout->addRow(formatLabel, imageWriterFormatBox);
 
+    QLabel *formatNoteLabel = new QLabel(tr("**Please consider the file size vs. CPU load tradeoff!"));
+    writerLayout->addRow(formatNoteLabel);
+
+    formatPngCompressionWidget = new QWidget();
+    QHBoxLayout *formatPngCompressionLayout = new QHBoxLayout();
+    formatPngCompressionLayout->setContentsMargins(0,0,0,0);
+    QLabel *formatPngCompressionLabel = new QLabel(tr("PNG compression level:"));
+    formatPngCompressionBox = new QComboBox(this);
+    formatPngCompressionBox->addItem(QString("0 (large files, fast)"), 0);
+    formatPngCompressionBox->addItem(QString("1"), 1);
+    formatPngCompressionBox->addItem(QString("2"), 2);
+    formatPngCompressionBox->addItem(QString("3"), 3);
+    formatPngCompressionBox->addItem(QString("4"), 4);
+    formatPngCompressionBox->addItem(QString("5"), 5);
+    formatPngCompressionBox->addItem(QString("6"), 6);
+    formatPngCompressionBox->addItem(QString("7"), 7);
+    formatPngCompressionBox->addItem(QString("8"), 8);
+    formatPngCompressionBox->addItem(QString("9 (small files, slow)"), 9);
+    formatPngCompressionBox->setCurrentIndex(formatPngCompressionBox->findData(imageWriterFormatPngCompression));
+    formatPngCompressionLayout->addWidget(formatPngCompressionLabel);
+    formatPngCompressionLayout->addWidget(formatPngCompressionBox);
+    formatPngCompressionWidget->setLayout(formatPngCompressionLayout);
+    writerLayout->addRow(formatPngCompressionWidget);
+
+    formatJpegQualityWidget = new QWidget();
+    QHBoxLayout *formatJpegQualityLayout = new QHBoxLayout();
+    formatJpegQualityLayout->setContentsMargins(0,0,0,0);
+    QLabel *formatJpegQualityLabel = new QLabel(tr("JPEG quality:"));
+    formatJpegQualityBox = new QSpinBox(this);
+    formatJpegQualityBox->setMinimum(50);
+    formatJpegQualityBox->setMaximum(100);
+    formatJpegQualityBox->setSingleStep(1);
+    formatJpegQualityBox->setValue(imageWriterFormatJpegQuality);
+    formatJpegQualityLayout->addWidget(formatJpegQualityLabel);
+    formatJpegQualityLayout->addWidget(formatJpegQualityBox);
+    formatJpegQualityWidget->setLayout(formatJpegQualityLayout);
+    writerLayout->addRow(formatJpegQualityWidget);
+
+    formatWebpQualityWidget = new QWidget();
+    QHBoxLayout *formatWebpQualityLayout = new QHBoxLayout();
+    formatWebpQualityLayout->setContentsMargins(0,0,0,0);
+    QLabel *formatWebpQualityLabel = new QLabel(tr("WEBP quality:"));
+    formatWebpQualityBox = new QSpinBox(this);
+    formatWebpQualityBox->setMinimum(50);
+    formatWebpQualityBox->setMaximum(100);
+    formatWebpQualityBox->setSingleStep(1);
+    formatWebpQualityBox->setValue(imageWriterFormatWebpQuality);
+    formatWebpQualityLayout->addWidget(formatWebpQualityLabel);
+    formatWebpQualityLayout->addWidget(formatWebpQualityBox);
+    formatWebpQualityWidget->setLayout(formatWebpQualityLayout);
+    writerLayout->addRow(formatWebpQualityWidget);
 
     QLabel *imageWriterDataRuleLabel = new QLabel(tr("Action when output recording already exists:"), this);
     writerLayout->addRow(imageWriterDataRuleLabel);
@@ -338,22 +372,19 @@ bool GeneralSettingsDialog::getAlwaysOnTop() const {
 }
 
 
-// Returns the current writer format setting i.e. tiff, jpg, bmp
-QString GeneralSettingsDialog::getImageWriterFormat() const {
-    return imageWriterFormat;
-}
-
-QString GeneralSettingsDialog::getImageWriterDataRule() const {
-    return imageWriterDataRule;
-}
-
-QString GeneralSettingsDialog::getDataWriterDataRule() const {
-    return dataWriterDataRule;
-}
-
-QString GeneralSettingsDialog::getDataWriterDataStyle() const {
-    return dataWriterDataStyle;
-}
+//// Returns the current writer format setting i.e. tiff, jpeg, bmp
+//QString GeneralSettingsDialog::getImageWriterFormat() const {
+//    return imageWriterFormat;
+//}
+//QString GeneralSettingsDialog::getImageWriterDataRule() const {
+//    return imageWriterDataRule;
+//}
+//QString GeneralSettingsDialog::getDataWriterDataRule() const {
+//    return dataWriterDataRule;
+//}
+//QString GeneralSettingsDialog::getDataWriterDataStyle() const {
+//    return dataWriterDataStyle;
+//}
 
 void GeneralSettingsDialog::setMetaSnapshotEnabled(int m_state) {
     metaSnapshotsEnabled = (bool) m_state;
@@ -365,31 +396,44 @@ void GeneralSettingsDialog::setAlwaysOnTop(int m_state) {
     alwaysOnTop = (bool) m_state;
 }
 
-// Set the image writer format, all formats supported by OpenCV's imwrite can be specified
-// Choices in the settings window are tiff, jpg, and bmp
-void GeneralSettingsDialog::setImageWriterFormat(const QString &m_imageWriterFormat) {
-    imageWriterFormat = m_imageWriterFormat;
-}
-
-void GeneralSettingsDialog::setImageWriterDataRule(const QString &m_imageWriterDataRule) {
-    imageWriterDataRule = m_imageWriterDataRule;
-}
-
-void GeneralSettingsDialog::setDataWriterDataRule(const QString &m_dataWriterDataRule) {
-    dataWriterDataRule = m_dataWriterDataRule;
-}
-
-void GeneralSettingsDialog::setDataWriterDataStyle(const QString &m_dataWriterDataStyle) {
-    dataWriterDataStyle = m_dataWriterDataStyle;
-}
+//// Set the image writer format, all formats supported by OpenCV's imwrite can be specified
+//// Choices in the settings window are tiff, jpeg, and bmp
+//void GeneralSettingsDialog::setImageWriterFormat(const QString &m_imageWriterFormat) {
+//    imageWriterFormat = m_imageWriterFormat;
+//}
+//void GeneralSettingsDialog::setImageWriterDataRule(const QString &m_imageWriterDataRule) {
+//    imageWriterDataRule = m_imageWriterDataRule;
+//}
+//void GeneralSettingsDialog::setDataWriterDataRule(const QString &m_dataWriterDataRule) {
+//    dataWriterDataRule = m_dataWriterDataRule;
+//}
+//void GeneralSettingsDialog::setDataWriterDataStyle(const QString &m_dataWriterDataStyle) {
+//    dataWriterDataStyle = m_dataWriterDataStyle;
+//}
 
 // Event handler on the change of the combobox selection in the dialog
 void GeneralSettingsDialog::onImageWriterFormatChange(int index) {
     imageWriterFormat = imageWriterFormatBox->itemData(index).toString();
+
+    formatPngCompressionWidget->setVisible(imageWriterFormat == "png");
+    formatJpegQualityWidget->setVisible(imageWriterFormat == "jpeg");
+    formatWebpQualityWidget->setVisible(imageWriterFormat == "webp");
 }
 
 void GeneralSettingsDialog::onImageWriterDataRuleChange(int index) {
     imageWriterDataRule = imageWriterDataRuleBox->itemData(index).toString();
+}
+
+void GeneralSettingsDialog::onImageWriterFormatPngCompressionChange(int index) {
+    imageWriterFormatPngCompression = formatPngCompressionBox->itemData(index).toInt();
+}
+
+void GeneralSettingsDialog::onImageWriterFormatJpegQualityChange(int value) {
+    imageWriterFormatJpegQuality = value;
+}
+
+void GeneralSettingsDialog::onImageWriterFormatWebpQualityChange(int value) {
+    imageWriterFormatWebpQuality = value;
 }
 
 // Event handler on the change of the combobox selection in the dialog

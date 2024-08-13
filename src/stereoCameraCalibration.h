@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_STEREOCAMERACALIBRATION_H
-#define PUPILEXT_STEREOCAMERACALIBRATION_H
+#pragma once
 
 /**
     @author Moritz Lode
@@ -28,7 +26,7 @@ slots:
     stop(): stops any current running calibration process, or verification
 
 signals:
-    processedImage(): outputs the processed image, with calibration information rendered on it
+    processedImageLowFPS(): outputs the processed image, with calibration information rendered on it
     finishedCalibration(): whenever the calibration is finished
     unavailableCalibration(): only used for reset of the calibration, tells whenever calibration is not available anymore
 
@@ -103,14 +101,6 @@ public:
 
     void setCaptureFPS(int fps) {
         captureDelay = 1000/fps;
-    }
-
-    int getUpdateFPS() {
-        return updateDelay*1000;
-    }
-
-    void setUpdateFPS(int fps) {
-        updateDelay = 1000/fps;
     }
 
     bool isCalibrated() {
@@ -262,11 +252,8 @@ public slots:
 
 signals:
 
-    void processedImage(CameraImage image);
+    void processedImageLowFPS(CameraImage image);
     void finishedCalibration();
     void unavailableCalibration();
 
 };
-
-
-#endif //PUPILEXT_STEREOCAMERACALIBRATION_H

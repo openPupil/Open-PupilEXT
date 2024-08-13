@@ -6,15 +6,15 @@
 #include <iostream>
 #include "dataTable.h"
 #include "./../SVGIconColorAdjuster.h"
+#include "RestorableQMdiSubWindow.h"
 
 
 // Create a new DataTable, stereoMode decides wherever two or one column is displayed.
 // The different columns of the Datatable are defined in the header file using the constants.
 DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), procMode(procMode), applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
+    // IMPORTANT NOTE: This name should never be altered, it is used for checking if the window exists in the MDI window space
     setWindowTitle("Data Table");
-
-    updateDelay = 33; // 30fps
 
     QVBoxLayout* layout = new QVBoxLayout(this);
 
@@ -41,8 +41,6 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
     // TODO: make this menu for header items too (bit complicated), and for each row (cell) make a contextmenu too
     connect(tableView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(onTableRowDoubleClick(QModelIndex)));
 
-
-    // GB added/modified begin
 //    tableModel = new QStandardItemModel(17, stereoMode ? 2 : 1, this);
     //int numCols=1;
     switch(procMode) {
@@ -58,8 +56,7 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
             numCols=4;
             break;
     }
-    tableModel = new QStandardItemModel(17, numCols, this);
-
+    tableModel = new QStandardItemModel(18, numCols, this);
 
     switch(procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
@@ -94,28 +91,36 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
 
     // Items are now made here, not on each pupil detection arrival
     for(int r = 0; r < tableModel->rowCount(); r++) {
-        for (int c = 0; c < tableModel->columnCount(); c++)
+        for (int c = 0; c < tableModel->columnCount(); c++) {
             tableModel->setItem(r, c, new QStandardItem(""));
+        }
     }
 
     // Marking every second row with different background for better readibility, also adapting to dark mode
-    QBrush cellColor1;
-    QBrush cellColor2;
+    QString cellColor1;
+    QString cellColor2;
+    QString gridColor;
     bool darkMode = applicationSettings->value("GUIDarkAdaptMode", "0") == "1" || (applicationSettings->value("GUIDarkMode", "0") == "2");
     if(darkMode) {
-        cellColor1 = QBrush("#3d3d3d");
-        cellColor2 = QBrush("#696969");
+        cellColor1 = "#3d3d3d";
+        cellColor2 = "#696969";
+        gridColor = "#757575";
     } else {
-        cellColor1 = QBrush("#f5f4f2");
-        cellColor2 = QBrush("#e6e6e6");
+        cellColor1 = "#f5f4f2";
+        cellColor2 = "#e6e6e6";
+        gridColor = "#262626";
     }
-    QBrush cellColor;
+    QString cellColor;
     for(int r = 0; r < tableModel->rowCount(); r++) {
+        cellColor = (r % 2 != 0) ? cellColor1 : cellColor2;
         for (int c = 0; c < tableModel->columnCount(); c++) {
-            cellColor = (r % 2 != 0) ? cellColor1 : cellColor2;
-            tableModel->item(r, c)->setBackground(cellColor);
+            tableModel->item(r, c)->setBackground(QBrush(QColor(cellColor)));
         }
+//        tableModel->verticalHeaderItem(r)->setBackground(QBrush(QColor(cellColor))); // It should, but somehow does not work
     }
+    tableView->setStyleSheet("QTableView::section { background-color: " + cellColor2 + "; gridline-color: " + gridColor + "; }");
+    tableView->setStyleSheet("QHeaderView::section { background-color: " + cellColor2 + "; gridline-color: " + gridColor + "; }");
+    tableView->setStyleSheet("QTableCornerButton::section { background-color: " + cellColor2 + "; gridline-color: " + gridColor + "; }");
 
     switch(procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
@@ -139,15 +144,6 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
 
     //resize(tableView->width(), tableView->height());
 //    resize(160 + numCols*80, 500);
-
-//    // TODO: Make this work. Somehow there is no effect of this
-//    int tableHeight = tableView->height(); // Seems to return correct value
-////    int oneItemHeight = tableModel->item(0)->sizeHint().height(); // returns -1 for some reason
-//    int minimumHeight = tableHeight + 60;
-//    int minimumWidth = 120 * (tableModel->columnCount() + 1) + 20;
-//    parent->setMinimumSize(minimumWidth, minimumHeight);
-
-    timer.start();
 }
 
 DataTable::~DataTable() {
@@ -160,6 +156,18 @@ QSize DataTable::sizeHint() const {
 //    return QSize(160 + numCols*80, 500);
 }
 
+void DataTable::fitForTableSize() {
+    // TODO: Make this work. Somehow there is no effect of any of these
+//    int tableHeight = tableView->height(); // Seems to return correct value, however it gives a smaller value when the widget is squeezed
+////    int oneItemHeight2 = tableModel->item(0)->sizeHint().height(); // returns -1 for some reason
+//    int minimumHeight = tableHeight; // + 60;
+
+    int minimumWidth = 120 * (tableModel->columnCount() + 1) + 80;
+    int minimumHeight = 26 * (tableModel->rowCount() + 1) + 20;
+//    parent->setMinimumSize(minimumWidth, minimumHeight);
+    dynamic_cast<RestorableQMdiSubWindow*>(parent())->resize(minimumWidth, minimumHeight);
+}
+
 // On right-click in the table header
 // Shows a context menu at the click position
 void DataTable::customMenuRequested(QPoint pos){
@@ -170,60 +178,58 @@ void DataTable::customMenuRequested(QPoint pos){
 }
 
 // Slot handler that receives new pupil data from the pupil detection process
-// New data is only updated in the table at a lower interval defined by updateDelay, to not overload/block the GUI process
+// New data is only updated in the table at low FPS
 void DataTable::onPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename) {
     // std::cout << "timestamp = " << QString::number(timestamp).toStdString() << "; filename = " << filename.toStdString() << std::endl;
 
-    if(timer.elapsed() > updateDelay) {
-        timer.restart();
+    tableModel->item((int)DataTypes::DataType::TIME_RAW_TIMESTAMP,0)->setText(QString::number(timestamp));
 
-        // QDateTime::fromMSecsSinceEpoch converts the UTC timestamp into localtime
-        QDateTime date = QDateTime::fromMSecsSinceEpoch(timestamp);
-        // Display the date/time in the system specific locale format
-        tableModel->item(0,0)->setText(QLocale::system().toString(date));
+    // QDateTime::fromMSecsSinceEpoch converts the UTC timestamp into localtime
+    QDateTime date = QDateTime::fromMSecsSinceEpoch(timestamp);
+//    // Display the date/time in the system specific locale format
+//    tableModel->item(0,0)->setText(QLocale::system().toString(date));
+    tableModel->item((int)DataTypes::DataType::TIME,0)->setText(date.toString("hh:mm:ss"));
 
-        // GB: modified to work with new Pupil vector signals
-        for(int i=0; i<Pupils.size(); i++)
-            if(Pupils[i].valid(-2))
-                setPupilData(Pupils[i], i);
-        // GB NOTE: this only works, because we defined the columns in the exact same order 
-        // as in what pupil vector elements are, when they arrive
-    }
+    for(int i=0; i<Pupils.size(); i++)
+        if(Pupils[i].valid(-2))
+            setPupilData(Pupils[i], i);
+    // NOTE: this only works, because we defined the columns in the exact same order
+    // as in what pupil vector elements are, when they arrive
 }
 
 // Updates the table column entries given pupil data and a column index (0, 1)
 // TODO: Figure out something cleaner using the key-value map we yet have
 void DataTable::setPupilData(const Pupil &pupil, int column) {
 
-    tableModel->item(4, column)->setText(QString::number(pupil.center.x));
-    tableModel->item(5, column)->setText(QString::number(pupil.center.y));
-    tableModel->item(6, column)->setText(QString::number(pupil.majorAxis()));
-    tableModel->item(7, column)->setText(QString::number(pupil.minorAxis()));
-    tableModel->item(8, column)->setText(QString::number(pupil.width()));
-    tableModel->item(9, column)->setText(QString::number(pupil.height()));
-    tableModel->item(10, column)->setText(QString::number(pupil.diameter()));
-    tableModel->item(11, column)->setText(QString::number(pupil.undistortedDiameter));
-    tableModel->item(12, column)->setText(QString::number(pupil.physicalDiameter));
-    tableModel->item(13, column)->setText(QString::number(pupil.confidence));
-    tableModel->item(14, column)->setText(QString::number(pupil.outline_confidence));
-    tableModel->item(15, column)->setText(QString::number(pupil.circumference()));
-    tableModel->item(16, column)->setText(QString::number((double)pupil.majorAxis() / pupil.minorAxis()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_CENTER_X, column)->setText(QString::number(pupil.center.x));
+    tableModel->item((int)DataTypes::DataType::PUPIL_CENTER_Y, column)->setText(QString::number(pupil.center.y));
+    tableModel->item((int)DataTypes::DataType::PUPIL_MAJOR, column)->setText(QString::number(pupil.majorAxis()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_MINOR, column)->setText(QString::number(pupil.minorAxis()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_WIDTH, column)->setText(QString::number(pupil.width()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_HEIGHT, column)->setText(QString::number(pupil.height()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_DIAMETER, column)->setText(QString::number(pupil.diameter()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_UNDIST_DIAMETER, column)->setText(QString::number(pupil.undistortedDiameter));
+    tableModel->item((int)DataTypes::DataType::PUPIL_PHYSICAL_DIAMETER, column)->setText(QString::number(pupil.physicalDiameter));
+    tableModel->item((int)DataTypes::DataType::PUPIL_CONFIDENCE, column)->setText(QString::number(pupil.confidence));
+    tableModel->item((int)DataTypes::DataType::PUPIL_OUTLINE_CONFIDENCE, column)->setText(QString::number(pupil.outline_confidence));
+    tableModel->item((int)DataTypes::DataType::PUPIL_CIRCUMFERENCE, column)->setText(QString::number(pupil.circumference()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_RATIO, column)->setText(QString::number((double)pupil.majorAxis() / pupil.minorAxis()));
 
 }
 
 // Slot handler receiving FPS data from a camera framecounter
 void DataTable::onCameraFPS(double fps) {
-    tableModel->item(2)->setText(QString::number(fps));
+    tableModel->item((int)DataTypes::DataType::CAMERA_FPS)->setText(QString::number(fps));
 }
 
 // Slot handler receiving FPS data from a camera framecounter
 void DataTable::onCameraFramecount(int framecount) {
-    tableModel->item(1)->setText(QString::number(framecount));
+    tableModel->item((int)DataTypes::DataType::FRAME_NUMBER)->setText(QString::number(framecount));
 }
 
 // Slot handler receiving processing FPS data from the pupil detection process
 void DataTable::onProcessingFPS(double fps) {
-    tableModel->item(3)->setText(QString::number(fps));
+    tableModel->item((int)DataTypes::DataType::PUPIL_FPS)->setText(QString::number(fps));
 }
 
 // Event handler that is called on click of an action in the context menu of the table
@@ -233,7 +239,7 @@ void DataTable::onContextMenuClick(QAction *action) {
 
     DataTypes::DataType value = (DataTypes::DataType)action->data().toInt();
 
-    if(value == DataTypes::DataType::TIME || value == DataTypes::DataType::FRAME_NUMBER)
+    if(value == DataTypes::DataType::TIME_RAW_TIMESTAMP || value == DataTypes::DataType::TIME)
         return;
 
     emit createGraphPlot(value);
@@ -246,7 +252,7 @@ void DataTable::onTableRowDoubleClick(const QModelIndex &modelIndex) {
 //    QString value = modelIndex.data().toString();
 //    // nemtudom jó-e
 
-    if(value == DataTypes::DataType::TIME || value == DataTypes::DataType::FRAME_NUMBER)
+    if(value == DataTypes::DataType::TIME_RAW_TIMESTAMP || value == DataTypes::DataType::TIME)
         return;
 
     emit createGraphPlot(value);

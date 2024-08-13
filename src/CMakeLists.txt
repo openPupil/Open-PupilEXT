@@ -10,7 +10,8 @@ qt5_add_resources(RESOURCE_ADDED ${RESOURCE})
 set(APP_ICON_RESOURCE_WINDOWS "${PROJECT_SOURCE_DIR}/PupilExt.rc")
 
 set(MACOSX_BUNDLE_ICON_FILE icon.icns)
-set(APP_ICON_MACOSX ${PROJECT_SOURCE_DIR}/icon.icns)
+set(APP_ICON_MACOSX ${PROJECT_SOURCE_DIR}/icon.icns
+        subwindows/sceneImageView.h)
 set_source_files_properties(${APP_ICON_MACOSX} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 
 
@@ -18,7 +19,7 @@ set_source_files_properties(${APP_ICON_MACOSX} PROPERTIES MACOSX_PACKAGE_LOCATIO
 add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} ${APP_ICON_MACOSX}
         mainwindow.cpp
         supportFunctions.h
-        subwindows/serialSettingsDialog.cpp subwindows/serialSettingsDialog.h
+        subwindows/MCUSettingsDialog.cpp subwindows/MCUSettingsDialog.h
         dataWriter.cpp dataWriter.h
         signalPubSubHandler.h
         subwindows/gettingsStartedWizard.cpp subwindows/gettingsStartedWizard.h
@@ -61,7 +62,7 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         execArgParser.h execArgParser.cpp eyeDataSerializer.h eyeDataSerializer.cpp camTempMonitor.h camTempMonitor.cpp dataStreamer.h dataStreamer.cpp metaSnapshotOrganizer.h metaSnapshotOrganizer.cpp
         devices/singleWebcam.h devices/singleWebcam.cpp devices/singleWebcamImageEventHandler.h devices/singleWebcamImageEventHandler.cpp
         subwindows/singleWebcamSettingsDialog.h subwindows/singleWebcamSettingsDialog.cpp
-        connPoolCOM.h PRGmainwindow.cpp
+        connPoolCOM.h connPoolUDP.h PRGmainwindow.cpp
         recEventTracker.h recEventTracker.cpp
         subwindows/streamingSettingsDialog.h subwindows/streamingSettingsDialog.cpp
         subwindows/singleWebcamCalibrationView.h subwindows/singleWebcamCalibrationView.cpp
@@ -81,6 +82,9 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         devices/cameraConfigurationEventHandler.h
         dataTypes.cpp
         dataTypes.h
+        subwindows/sceneImageView.cpp
+        subwindows/sceneImageWidget.cpp
+        subwindows/sceneImageWidget.h
 )
 
 # On linux with GCC and QT 5.15.2 setting standard here is recognized and is not overwritten by QT

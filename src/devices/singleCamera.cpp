@@ -874,7 +874,7 @@ bool SingleCamera::setImageROIwidth(int width) {
     if(modVal != 0)
         width -= modVal;
 
-    int bestWidth = (offsetX+width > maxWidth) ? maxWidth-width-((maxWidth-width)%16) : width;
+    int bestWidth = (offsetX+width > maxWidth) ? maxWidth-offsetX-((maxWidth-offsetX)%16) : width;
 //    if (offsetX >= maxWidth-16)
 //        width = maxWidth-offsetX;
 
@@ -907,7 +907,7 @@ bool SingleCamera::setImageROIheight(int height) {
     if(modVal != 0)
         height -= modVal;
 
-    int bestHeight = (offsetY+height > maxHeight) ? maxHeight-height-((maxHeight-height)%16) : height;
+    int bestHeight = (offsetY+height > maxHeight) ? maxHeight-offsetY-((maxHeight-offsetY)%16) : height;
 //    if (offsetY >= maxHeight-16)
 //        height = maxHeight-offsetY;
 

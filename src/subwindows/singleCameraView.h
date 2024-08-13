@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_SINGLECAMERAVIEW_H
-#define PUPILEXT_SINGLECAMERAVIEW_H
+#pragma once
 
 /**
     @author Moritz Lode, Gabor Benyei, Attila Boncser
@@ -18,8 +16,6 @@
 /**
     Main view showing the camera images for a single camera, at the same time displays results of the pupil detection rendered on top of the image
 
-    setUpdateFPS(): define the rate with which the camera view is updated, not changing the camera framerate or the pupil detection framerate
-
     NOTE: Modified by Gabor Benyei, 2023 jan
     GB NOTE: onShowROI() onShowPupilCenter() and not handled in pupilDetection anymore
 */
@@ -31,22 +27,12 @@ public:
     explicit SingleCameraView(Camera *camera, PupilDetection *pupilDetection, bool playbackFrozen,  QWidget *parent=0);
     ~SingleCameraView() override;
 
-    void setUpdateFPS(int fps) {
-        updateDelay = 1000/fps;
-        if(pupilDetection)
-            pupilDetection->setUpdateFPS(fps);
-    }
-
 private:
 
     Camera *camera;
     PupilDetection *pupilDetection;
 
     QSettings *applicationSettings;
-
-    QElapsedTimer timer;
-    QElapsedTimer pupilViewTimer;
-    int updateDelay;
 
     QToolBar *toolBar;
     QAction *freezeAct;
@@ -87,9 +73,6 @@ private:
 
     double currentCameraFPS;
 
-
-
-    // GB added begin
     QAction *pupilDetectionMenuAct;
     QLabel *processingModeLabel;
 
@@ -112,7 +95,10 @@ private:
     void updateProcModeLabel();
     void loadSettings();
     bool isAutoParamModificationEnabled();
-    // GB added end
+
+    void paintEvent(QPaintEvent *event) override {
+        videoView->drawOverlay();
+    };
 
 public slots:
 
@@ -147,10 +133,9 @@ public slots:
     void onSettingsChange();
     void onPupilDetectionConfigChanged(QString config);
 
-    // GB modified/added begin
     void onPupilDetectionMenuClick();
 
-    void saveROI1Selection(QRectF roiR); // GB modified and renamed
+    void saveROI1Selection(QRectF roiR);
     void saveROI2Selection(QRectF roiR);
 
     void displayFileCameraFrame(int frameNumber);
@@ -168,10 +153,8 @@ public slots:
 
     void onFreezeClicked();
     void onCameraPlaybackChanged();
-    // GB modified/added end
 
 signals:
-    // GB modified: not handled in pupilDetection anymore
     void onShowROI(bool value);
     void onShowPupilCenter(bool value);
     void onChangePupilColorFill(int colorFill);
@@ -179,8 +162,6 @@ signals:
     void onChangeShowAutoParamOverlay(bool state);
     void onChangeShowPositioningGuide(bool state);
     void cameraPlaybackChanged();
-    // GB end
+    void doingPupilDetectionROIediting(bool state);
 
 };
-
-#endif //PUPILEXT_SINGLECAMERAVIEW_H

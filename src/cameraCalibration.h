@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_CAMERACALIBRATION_H
-#define PUPILEXT_CAMERACALIBRATION_H
+#pragma once
 
 /**
     @author Moritz Lode
@@ -34,7 +32,7 @@ slots:
     stop(): stops any current running calibration process, or verification
 
 signals:
-    processedImage(): outputs the processed image, with calibration information rendered on it
+    processedImageLowFPS(): outputs the processed image, with calibration information rendered on it
     finishedCalibration(): whenever the calibration is finished
     unavailableCalibration(): only used for reset of the calibration, tells whenever calibration is not available anymore
 
@@ -109,14 +107,6 @@ public:
 
     void setSharpnessThreshold(int threshold) {
         sharpnessThreshold = threshold;
-    }
-
-    int getUpdateFPS() {
-        return updateDelay*1000;
-    }
-
-    void setUpdateFPS(int fps) {
-        updateDelay = 1000/fps;
     }
 
     int isCalibrated() {
@@ -201,7 +191,7 @@ private:
 
     QElapsedTimer timer;
     int captureDelay;
-    int updateDelay;
+    int drawDelay;
 
     cv::Size boardSize;
     int squareSize;
@@ -233,11 +223,8 @@ public slots:
 
 signals:
 
-    void processedImage(CameraImage image);
+    void processedImageLowFPS(CameraImage image);
     void finishedCalibration();
     void unavailableCalibration();
 
 };
-
-
-#endif //PUPILEXT_CAMERACALIBRATION_H

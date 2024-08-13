@@ -1,7 +1,4 @@
-
-#ifndef PUPILEXT_CAMERAVIEW_H
-#define PUPILEXT_CAMERAVIEW_H
-
+#pragma once
 
 #include <QtWidgets/QWidget>
 
@@ -14,12 +11,6 @@ public:
     explicit inline CameraView(QWidget *parent = 0) : QWidget(parent){}
 
     virtual ~CameraView(){}
-
-    void setUpdateFPS(int fps) {
-        updateDelay = 1000/fps;
-        if(pupilDetection)
-            pupilDetection->setUpdateFPS(fps);
-    }
 
     Camera *camera;
     PupilDetection *pupilDetection;
@@ -70,7 +61,6 @@ public:
     
     double currentCameraFPS;
 
-    // GB added begin
     QAction *pupilDetectionMenuAct;
     QLabel *processingModeLabel;
 
@@ -122,10 +112,9 @@ public slots:
     void onSettingsChange();
     void onPupilDetectionConfigChanged(QString config);
 
-    // GB modified/added begin
     void onPupilDetectionMenuClick();
 
-    void saveROI1Selection(QRectF roiR); // GB modified and renamed
+    void saveROI1Selection(QRectF roiR);
     void saveROI2Selection(QRectF roiR);
 
     virtual void displayFileCameraFrame(int frameNumber) = 0;
@@ -143,21 +132,16 @@ public slots:
 
     void onFreezeClicked();
     void onCameraPlaybackChanged();
-    // GB modified/added end
 
 signals:
-    // GB modified: not handled in pupilDetection anymore
     void onShowROI(bool value);
     void onShowPupilCenter(bool value);
     void onChangePupilColorFill(int colorFill);
     void onChangePupilColorFillThreshold(float value);
     void onChangeShowAutoParamOverlay(bool state);
     void cameraPlaybackChanged();
-    // GB end
 
 protected:
 // TODO: implement in child
     virtual void onPupilDetectionStopInternal() = 0;
 }
-
-#endif //PUPILEXT_CAMERAVIEW_H

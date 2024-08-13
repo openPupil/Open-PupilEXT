@@ -34,26 +34,23 @@ void CameraView::onPupilDetectionStart()
     statusProcessingFPSWidget->show();
     processingConfigLabel->setText(pupilDetection->getCurrentConfigLabel());
     processingAlgorithmLabel->setText(QString::fromStdString(pupilDetection->getCurrentMethod1()->title())); // GB NOTE: But when do we hide it??
-    
-    // GB added/modified begin
+
     updateProcModeLabel();
 
-    disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateView(CameraImage)));
+    disconnect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateView(CameraImage)));
     
-    connect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updateView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
-    connect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updatePupilView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
-    // GB modified end
+    connect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updateView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
+    connect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updatePupilView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
 }
 
 void CameraView::onPupilDetectionStop()
 {
     statusBar->removeWidget(statusProcessingFPSWidget);
 
-    // GB added/modified begin
-    disconnect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updateView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
-    disconnect(pupilDetection, SIGNAL(processedImage(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updatePupilView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
+    disconnect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updateView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
+    disconnect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)), this, SLOT(updatePupilView(CameraImage, int, std::vector<cv::Rect>, std::vector<Pupil>)));
 
-    connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(updateView(CameraImage)));
+    connect(pupilDetection, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateView(CameraImage)));
     onPupilDetectionStopInternal();
 }
 
@@ -78,7 +75,6 @@ void CameraView::updateCameraFPS(double fps)
     currentCameraFPS = fps;
     //cameraFPSValue->setText(QString::number(fps));
 
-    // GB begin
     if(fps == 0)
         cameraFPSValue->setText("-");
     else if(fps > 0 && fps < 1)
@@ -97,14 +93,12 @@ void CameraView::updateProcessingFPS(double fps)
     }
     //processingFPSValue->setText(QString::number(fps));
 
-    // GB begin
     if(fps == 0)
         processingFPSValue->setText("-");
     else if(fps > 0 && fps < 1)
         processingFPSValue->setText(QString::number(fps,'f',4));
     else
         processingFPSValue->setText(QString::number(round(fps)));
-    // GB end
 }
 
 void CameraView::updateAlgorithmLabel()

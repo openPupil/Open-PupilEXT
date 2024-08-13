@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_PUPILMETHODSETTING_H
-#define PUPILEXT_PUPILMETHODSETTING_H
+#pragma once
 
 /**
     @authors Moritz Lode, Gabor Benyei, Attila Boncser
@@ -35,8 +33,6 @@ public:
     Settings settings() const;
 
 
-
-    // GB: a
     explicit PupilMethodSetting(QString settingsConfigParametersName, QString settingsConfigParametersIndexName, QWidget *parent=0) : 
              settingsConfigParametersName(settingsConfigParametersName), settingsConfigParametersIndexName(settingsConfigParametersIndexName), QWidget(parent),
              applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
@@ -89,11 +85,9 @@ public:
         configParameters = defaultParameters;
     }
 
-    // GB modified begin
     virtual bool isAutoParamEnabled() {
         return (configsBox->currentText() == "Automatic Parametrization");
     }
-    // GB modified end
 
 protected:
     QMap<Settings, QList<float>> defaultParameters;
@@ -197,14 +191,8 @@ virtual void onParameterConfigSelection(QString configKey){}
         }
     }
 
-    
-
 signals:
 
     void onConfigChange(QString configText);
 
 };
-
-
-
-#endif //PUPILEXT_PUPILMETHODSETTING_H

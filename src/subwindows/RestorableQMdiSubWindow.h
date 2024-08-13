@@ -1,5 +1,4 @@
-#ifndef PUPILEXT_RESTORABLEQMDISUBWINDOW_H
-#define PUPILEXT_RESTORABLEQMDISUBWINDOW_H
+#pragma once
 
 #include <QtWidgets>
 #include <QtWidgets/QMdiSubWindow>
@@ -68,6 +67,3 @@ signals:
     void onCloseSubWindow();
 
 };
-
-
-#endif //PUPILEXT_RESTORABLEQMDISUBWINDOW_H

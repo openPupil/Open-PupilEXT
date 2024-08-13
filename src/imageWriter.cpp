@@ -11,10 +11,29 @@
 ImageWriter::ImageWriter(const QString& directory, bool stereo, QObject *parent) :
     QObject(parent),
     stereoMode(stereo),
-    applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent))
-    {
+    applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
-    imageWriterFormat = applicationSettings->value("imageWriterFormat", "bmp").toString();
+    imageWriterFormatString = applicationSettings->value("imageWriterFormat.chosenFormat", "tiff").toString();
+
+    qDebug() << "-------------------------------------";
+    if(imageWriterFormatString == "png") {
+        int pngCompression = applicationSettings->value("imageWriterFormat.png.compression", "0").toInt();
+        writeParams = {cv::IMWRITE_PNG_COMPRESSION , pngCompression};
+        qDebug() << "-------------------------------------";
+        qDebug() << pngCompression;
+    } else if(imageWriterFormatString == "jpeg") {
+        int jpegQuality = applicationSettings->value("imageWriterFormat.jpeg.quality", "100").toInt();
+        writeParams = {cv::IMWRITE_JPEG_QUALITY, jpegQuality};
+        qDebug() << "-------------------------------------";
+        qDebug() << jpegQuality;
+    } else if(imageWriterFormatString == "webp") {
+        int webpQuality = applicationSettings->value("imageWriterFormat.webp.quality", "100").toInt();
+        writeParams = {cv::IMWRITE_WEBP_QUALITY, webpQuality};
+        qDebug() << "-------------------------------------";
+        qDebug() << webpQuality;
+    } else {
+        writeParams = std::vector<int>();
+    }
 
     outputDirectory = QDir(directory);
 
@@ -39,16 +58,16 @@ ImageWriter::~ImageWriter() = default;
 // File writing is executed using Qts concurrent to not block the GUI thread for writing
 void ImageWriter::onNewImage(const CameraImage &img) {
 
-    QString filepath = outputDirectory.filePath(QString::number(img.timestamp) + "." + imageWriterFormat);
-
     // std::cout<<"Saving image: " << filepath.toStdString() << std::endl;
 
     // Write every image over a thread pool managed by QT, this way nothing blocks and we can write images very fast (cpu heavy)
-    QtConcurrent::run(cv::imwrite, filepath.toStdString(), img.img,std::vector<int>());
+    QString filepath = outputDirectory.filePath(QString::number(img.timestamp) + "." + imageWriterFormatString);
+    QtConcurrent::run(cv::imwrite, filepath.toStdString(), img.img, writeParams);
 
-    if(stereoMode && (img.type == CameraImageType::STEREO_IMAGE_FILE || img.type == CameraImageType::LIVE_STEREO_CAMERA)) {
-        QString filepathSecondary = outputDirectorySecondary.filePath(QString::number(img.timestamp) + "." + imageWriterFormat);
-        QtConcurrent::run(cv::imwrite, filepathSecondary.toStdString(), img.imgSecondary,std::vector<int>());
+//    if(stereoMode && (img.type == CameraImageType::STEREO_IMAGE_FILE || img.type == CameraImageType::LIVE_STEREO_CAMERA)) {
+    if(stereoMode) {
+        QString filepathSecondary = outputDirectorySecondary.filePath(QString::number(img.timestamp) + "." + imageWriterFormatString);
+        QtConcurrent::run(cv::imwrite, filepathSecondary.toStdString(), img.imgSecondary, writeParams);
     }
 }
 

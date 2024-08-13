@@ -16,6 +16,7 @@
 
 #include "IPCtrl.h"
 #include "../connPoolCOM.h"
+#include "../connPoolUDP.h"
 
 #include "../pupilDetection.h"
 #include "../dataWriter.h"
@@ -27,12 +28,12 @@
 
 
 /**
-    
     In this dialog the user can specify the means of connecting to another computer for listening
     for remote commands. This way, PupilEXT machine (like a "host PC") can be controlled from 
     the machine running e.g. Matlab or PsychoPy experiment code.
-    Some of the code regarding serial connection was copied from SerialSettingsDialog.
+    Some of the code regarding serial connection was copied from MCUSettingsDialogInst.
 
+    NOTE: used several parts of the code from former serialSettingsDialog made by ML
 */
 class RemoteCCDialog : public QDialog {
     Q_OBJECT
@@ -42,6 +43,7 @@ public:
     //explicit RemoteCCDialog(ConnPoolUDP *connPoolUdp, ConnPoolCOM *connPoolCOM, QWidget *parent = nullptr);
     explicit RemoteCCDialog( 
         ConnPoolCOM *connPoolCOM,
+        ConnPoolUDP *connPoolUDP,
         QWidget *parent = nullptr);
 
     ~RemoteCCDialog() override;
@@ -51,9 +53,11 @@ private:
 
     QWidget *mainWindow;
 
+    ConnPoolUDP *connPoolUDP;
+    int connPoolUDPIndex = -1;
+
     ConnPoolCOM *connPoolCOM;
     int connPoolCOMIndex = -1;
-
 
     void createForm();
 
@@ -62,10 +66,7 @@ private:
     IPCtrl *udpIpBox;
     QSpinBox *udpPortBox;
 
-    QUdpSocket *UDPsocket = nullptr;
-    QHostAddress m_UDPip;
-    quint16 m_UDPport;
-
+    ConnPoolUDPInstanceSettings m_currentSettingsUDP;
     ConnPoolCOMInstanceSettings m_currentSettingsCOM;
 
     QPushButton *refreshButton;
@@ -92,7 +93,6 @@ private:
 private slots:
     void updateCOMDevices();
 
-    void processPendingUDPDatagrams();
     //void readData(const QString &msg);
     void interpretCommand(const QString &msg, const quint64 &timestamp);
 
@@ -109,7 +109,7 @@ public slots:
     void onConnectCOMClick();
     void onDisconnectCOMClick();
 
-    void connectUDP(QHostAddress ip, quint16 port);
+    void connectUDP(const ConnPoolUDPInstanceSettings &p);
     void connectCOM(const ConnPoolCOMInstanceSettings &p);
     void disconnectUDP();
     void disconnectCOM();

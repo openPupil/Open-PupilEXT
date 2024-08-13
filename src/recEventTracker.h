@@ -70,17 +70,18 @@ public:
     void close();
     void saveOfflineEventLog(uint64 timestampFrom, uint64 timestampTo, const QString& fileName);
 
-    // BUFFER mode only
+    // BUFFER (= ongoing recording) mode only
     uint getLastCommissionedTrialNumber();
+    QString getLastMessage();
 
-    // STORAGE mode only
+    // STORAGE (= playback from disk) mode only
     bool isReady();
     uint getTrialAtTimestamp(quint64 timestamp);
 
     // for both modes
     TrialIncrement getTrialIncrement(quint64 timestamp);
     TemperatureCheck getTemperatureCheck(quint64 timestamp);
-    //Message getMessage(quint64 timestamp);
+    Message getMessage(quint64 timestamp);
 
 public slots:
     // For adding elements to vectors in BUFFER mode (timestamp is updated via image grab handler emitted CameraImages automatically)
@@ -88,12 +89,13 @@ public slots:
     void addTemperatureCheck(std::vector<double> d);
     //void updateGrabTimestamp(CameraImage cimg);
 
-    // For filling up vectors in STORAGE mode
+    // For filling up vectors in STORAGE (= playback from disk) mode
     void addTrialIncrement(quint64 timestamp, uint trialNumber);
     void addTemperatureCheck(quint64 timestamp, std::vector<double> d);
 
-    // BUFFER mode only
+    // BUFFER (= ongoing recording) mode only
     void resetBufferTrialCounter(const quint64 &timestamp);
+    void resetBufferMessageRegister(const quint64 &timestamp);
 
     // for both modes
     void addMessage(const quint64 &timestamp, const QString &str);

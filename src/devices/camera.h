@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_CAMERA_H
-#define PUPILEXT_CAMERA_H
+#pragma once
 
 /**
     @authors Moritz Lode, Gabor Benyei, Attila Boncser
@@ -30,7 +28,7 @@ struct CameraImage {
     mutable cv::Mat img;
     mutable cv::Mat imgSecondary;
     uint64_t timestamp;
-    uint64_t frameNumber; // GB NOTE: it was originally already there in beta 0.1.1, and it holds the INDEX of image (not starting from 1)
+    uint64_t frameNumber; // holds the INDEX of image (not starting from 1)
     std::string filename;
 };
 
@@ -75,6 +73,3 @@ signals:
     void onNewGrabResult(CameraImage grabResult);
 
 };
-
-
-#endif //PUPILEXT_CAMERA_H

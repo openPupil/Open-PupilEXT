@@ -9,12 +9,11 @@
 
 
 // Create a new camera settings dialog window
-// Takes the camera which is configured, and the serial settings dialog for the hardware trigger handling
+// Takes the camera which is configured, and the MCU settings dialog for the hardware trigger handling
 // Loads camera settings if available from the application settings
-// GB TODO: no need for single
-SingleCameraSettingsDialog::SingleCameraSettingsDialog(SingleCamera *cameraPtr, SerialSettingsDialog *serialSettings, QWidget *parent) :
-        QDialog(parent), 
-        serialSettings(serialSettings), 
+SingleCameraSettingsDialog::SingleCameraSettingsDialog(SingleCamera *cameraPtr, MCUSettingsDialog *MCUSettings, QWidget *parent) :
+        QDialog(parent),
+        MCUSettings(MCUSettings),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     camera = cameraPtr;
@@ -31,8 +30,6 @@ SingleCameraSettingsDialog::SingleCameraSettingsDialog(SingleCamera *cameraPtr, 
 
     createForm();
 
-    // BG: moved all connect() calls to the end of createForm() for clarity
-
     loadSettings();
     updateForms();
 }
@@ -43,46 +40,46 @@ void SingleCameraSettingsDialog::createForm() {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    serialConnGroup = new QGroupBox("1. Microcontroller Connection (needed only for Hardware-triggered image acquisition)");
-    QFormLayout *serialConnGroupLayout = new QFormLayout();
+    MCUConnGroup = new QGroupBox("1. Microcontroller Connection (needed only for Hardware-triggered image acquisition)");
+    QFormLayout *MCUConnGroupLayout = new QFormLayout();
 
     QSpacerItem *sp10 = new QSpacerItem(70, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
-    serialConfigButton = new QPushButton();
-//    serialConfigButton->setText("Microcontroller Connection Settings");
-    serialConfigButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/show-gpu-effects.svg"), applicationSettings));
-//    serialConfigButton->setStyleSheet("text-align:left; padding-left : 10px; padding-top : 3px; padding-bottom : 3px;"); //
-    serialConfigButton->setStyleSheet("text-align:left;");
-    serialConfigButton->setLayout(new QGridLayout);
-    QLabel* serialConfigButtonLabel = new QLabel("Microcontroller Connection Settings");
-    serialConfigButtonLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    serialConfigButtonLabel->setAttribute(Qt::WA_TransparentForMouseEvents, true);
-    serialConfigButton->layout()->addWidget(serialConfigButtonLabel);
-    serialConfigButton->layout()->setContentsMargins(5,0,10,0);
-    serialConfigButton->setFixedWidth(230);
-//    serialConfigButton->setFixedHeight(25); //
+    MCUConfigButton = new QPushButton();
+//    MCUConfigButton->setText("Microcontroller Connection Settings");
+    MCUConfigButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/show-gpu-effects.svg"), applicationSettings));
+//    MCUConfigButton->setStyleSheet("text-align:left; padding-left : 10px; padding-top : 3px; padding-bottom : 3px;"); //
+    MCUConfigButton->setStyleSheet("text-align:left;");
+    MCUConfigButton->setLayout(new QGridLayout);
+    QLabel* MCUConfigButtonLabel = new QLabel("Microcontroller Connection Settings");
+    MCUConfigButtonLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    MCUConfigButtonLabel->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+    MCUConfigButton->layout()->addWidget(MCUConfigButtonLabel);
+    MCUConfigButton->layout()->setContentsMargins(5, 0, 10, 0);
+    MCUConfigButton->setFixedWidth(250);
+    MCUConfigButton->setMinimumHeight(26); //
     QSpacerItem *sp9 = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Minimum);
-    serialConnDisconnButton = new QPushButton(); // Will change to disconnect when connected
-    serialConnDisconnButton->setLayout(new QGridLayout);
-    serialConnDisconnButtonLabel = new QLabel("Connect");
-    serialConnDisconnButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red (alternative: orange: #ebbd3f)
-    serialConnDisconnButtonLabel->setAlignment(Qt::AlignCenter);
-    serialConnDisconnButton->layout()->addWidget(serialConnDisconnButtonLabel);
-    serialConnDisconnButton->layout()->setContentsMargins(5,5,5,5);
-    serialConnDisconnButton->setFixedWidth(150);
-//    serialConnDisconnButton->setFixedHeight(25); //
+    MCUConnDisconnButton = new QPushButton(); // Will change to disconnect when connected
+    MCUConnDisconnButton->setLayout(new QGridLayout);
+    MCUConnDisconnButtonLabel = new QLabel("Connect");
+    MCUConnDisconnButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red (alternative: orange: #ebbd3f)
+    MCUConnDisconnButtonLabel->setAlignment(Qt::AlignCenter);
+    MCUConnDisconnButton->layout()->addWidget(MCUConnDisconnButtonLabel);
+    MCUConnDisconnButton->layout()->setContentsMargins(5, 5, 5, 5);
+    MCUConnDisconnButton->setFixedWidth(150);
+    MCUConnDisconnButton->setMinimumHeight(26); //
 
-    QHBoxLayout *serialConnRow1 = new QHBoxLayout;
-    serialConnRow1->addSpacerItem(sp10);
-    serialConnRow1->addWidget(serialConfigButton);
-    serialConnRow1->addSpacerItem(sp9);
-    serialConnRow1->addWidget(serialConnDisconnButton);
-//    serialConnRow1->addStretch();
-    serialConnGroupLayout->addItem(serialConnRow1);
+    QHBoxLayout *MCUConnRow1 = new QHBoxLayout;
+    MCUConnRow1->addSpacerItem(sp10);
+    MCUConnRow1->addWidget(MCUConfigButton);
+    MCUConnRow1->addSpacerItem(sp9);
+    MCUConnRow1->addWidget(MCUConnDisconnButton);
+//    MCUConnRow1->addStretch();
+    MCUConnGroupLayout->addItem(MCUConnRow1);
 
-    serialConnGroup->setLayout(serialConnGroupLayout);
-    mainLayout->addWidget(serialConnGroup);
+    MCUConnGroup->setLayout(MCUConnGroupLayout);
+    mainLayout->addWidget(MCUConnGroup);
 
-    connect(serialConnDisconnButton, SIGNAL(clicked()), this, SLOT(serialConnDisconnButtonClicked()));
+    connect(MCUConnDisconnButton, SIGNAL(clicked()), this, SLOT(MCUConnDisconnButtonClicked()));
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -90,7 +87,6 @@ void SingleCameraSettingsDialog::createForm() {
     QVBoxLayout *acquisitionLayout = new QVBoxLayout;
 
     QHBoxLayout *exposureInputLayout = new QHBoxLayout;
-    // BG: we are in unicode, so can use greek mu sign. Previously it was written as "Exposure [us]"
     exposureLabel = new QLabel(tr("Exposure [µs]:"));
     exposureLabel->setFixedWidth(80);
     exposureInputBox = new QSpinBox();
@@ -197,7 +193,7 @@ void SingleCameraSettingsDialog::createForm() {
     binningBox->addItem(QString("1 (no binning)"));
     binningBox->addItem(QString("2"));
     binningBox->addItem(QString("4"));
-    binningBox->setFixedWidth(100);
+    binningBox->setMinimumWidth(120);
     imageROIlayoutRow5->addWidget(binningLabel);
     imageROIlayoutRow5->addWidget(binningBox);
     imageROIlayoutRow5->addStretch();
@@ -287,7 +283,7 @@ void SingleCameraSettingsDialog::createForm() {
     HWTstartStopButton->layout()->addWidget(HWTstartStopButtonLabel);
     HWTstartStopButton->layout()->setContentsMargins(5,5,5,5);
     HWTstartStopButton->setFixedWidth(150);
-    HWTstartStopButton->setEnabled(camera->isHardwareTriggerEnabled() && serialSettings->isCOMConnected());
+    HWTstartStopButton->setEnabled(camera->isHardwareTriggerEnabled() && MCUSettings->isConnected());
 
     HWTframerateLayout->addSpacerItem(sp5);
     HWTframerateLayout->addWidget(HWTframerateLabel);
@@ -345,8 +341,6 @@ void SingleCameraSettingsDialog::createForm() {
     QLabel *gainLabel = new QLabel(tr("Gain [dB]:"));
     gainLabel->setMinimumWidth(80);
 
-    // BG modified begin
-    // BG NOTE: Modified to fit on smaller screens too
     // We do not set its value yet, because the camera may not have a valid value yet (not opened)
     gainBox = new QDoubleSpinBox();
     gainBox->setFixedWidth(60);
@@ -360,10 +354,9 @@ void SingleCameraSettingsDialog::createForm() {
     gainLayout->addWidget(gainBox);
     gainLayout->addWidget(autoGainOnceButton);
     analogLayout->addRow(gainLabel, gainLayout);
-    // BG modified end
 
     analogGroup->setLayout(analogLayout);
-    //analogGroup->setDisabled(true); // BG
+    //analogGroup->setDisabled(true);
     mainLayout->addWidget(analogGroup);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -381,7 +374,6 @@ void SingleCameraSettingsDialog::createForm() {
     buttonsLayout->addWidget(loadButton);
     buttonsLayout->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding));
 
-    // GB: added this label to warn user that a new image acq ROI or binning setting needs new calibration
     QLabel *imageROIWarningLabel = new QLabel(tr("Warning: If you are using Hardware-triggered image acquisition, please restart Image Acquisition\n    Triggering whenever Image Acquisition ROI is modified.\nWarning: if Image Acquisition ROI or Binning is altered, a new camera calibration is necessary\n    for proper undistortion."));
     mainLayout->addWidget(imageROIWarningLabel);
 
@@ -389,8 +381,6 @@ void SingleCameraSettingsDialog::createForm() {
 
     setLayout(mainLayout);
 
-    // GB modified/added begin
-    // GB: these are needed for binning-dependent limits for image acq ROI spinboxes
     updateImageROISettingsMax();
     updateImageROISettingsValues();
 
@@ -416,7 +406,7 @@ void SingleCameraSettingsDialog::createForm() {
     connect(loadButton, &QPushButton::clicked, this, &SingleCameraSettingsDialog::loadButtonClick);
     connect(autoGainOnceButton, &QPushButton::clicked, this, &SingleCameraSettingsDialog::autoGainOnce);
     connect(autoExposureOnceButton, &QPushButton::clicked, this, &SingleCameraSettingsDialog::autoExposureOnce);
-    connect(serialConfigButton, &QPushButton::clicked, this, &SingleCameraSettingsDialog::onSerialConfig);
+    connect(MCUConfigButton, &QPushButton::clicked, this, &SingleCameraSettingsDialog::onMCUConfig);
     connect(HWTstartStopButton, SIGNAL(clicked()), this, SLOT(HWTstartStopButtonClicked()));
 
     onHWTenabledChange(camera->isHardwareTriggerEnabled());
@@ -533,7 +523,7 @@ void SingleCameraSettingsDialog::onLineSourceChange(int index) {
         camera->setLineSource(HWTlineSourceBox->itemText(index).toStdString().c_str());
         HWTframerateBox->setEnabled(camera->isHardwareTriggerEnabled());
         HWTtimeSpanBox->setEnabled(camera->isHardwareTriggerEnabled());
-        HWTstartStopButton->setEnabled(serialSettings->isCOMConnected());
+        HWTstartStopButton->setEnabled(MCUSettings->isConnected());
     } else {
         HWTframerateBox->setEnabled(false);
         HWTtimeSpanBox->setEnabled(false);
@@ -614,7 +604,7 @@ void SingleCameraSettingsDialog::onHWTenabledChange(bool state) {
     HWTlineSourceLabel->setEnabled(state);
     HWTtimeSpanLabel->setEnabled(state);
     HWTlineSourceBox->setEnabled(state);
-    HWTstartStopButton->setEnabled(state && serialSettings->isCOMConnected());
+    HWTstartStopButton->setEnabled(state && MCUSettings->isConnected());
 
     HWTtimeSpanBox->setEnabled(state);
     HWTframerateBox->setEnabled(state);
@@ -645,7 +635,6 @@ void SingleCameraSettingsDialog::loadSettings() {
     exposureInputBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.analogExposure", camera->getExposureTimeValue()).toInt());
     camera->setExposureTimeValue(exposureInputBox->value());
 
-    // BG added begin
     int lastUsedBinningVal = applicationSettings->value("SingleCameraSettingsDialog.binningVal", camera->getBinningVal()).toInt();
     camera->setBinningVal(lastUsedBinningVal);
     int tempidx = 0;
@@ -657,14 +646,15 @@ void SingleCameraSettingsDialog::loadSettings() {
 
     imageROIwidthInputBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.imageROIwidth", camera->getImageROIwidthMax() ).toInt());
     imageROIheightInputBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.imageROIheight", camera->getImageROIheightMax()).toInt());
-    imageROIoffsetXInputBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.imageROIoffsetX", 0).toInt()); // DEV
-    imageROIoffsetYInputBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.imageROIoffsetY", 0).toInt()); // DEV
-    // BG added end
+    imageROIoffsetXInputBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.imageROIoffsetX", 0).toInt());
+    imageROIoffsetYInputBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.imageROIoffsetY", 0).toInt());
 
-    SWTframerateEnabled->setChecked(applicationSettings->value("SingleCameraSettingsDialog.SWTframerateEnabled", camera->isEnabledAcquisitionFrameRate()).toBool());
+    // The safest is to enable limiting by default, as first opening a high speed hi-res camera can just freeze the computer
+    SWTframerateEnabled->setChecked(applicationSettings->value("SingleCameraSettingsDialog.SWTframerateEnabled", "1").toBool());
     camera->enableAcquisitionFrameRate(SWTframerateEnabled->isChecked());
 
-    SWTframerateBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.acquisitionFramerate", camera->getAcquisitionFPSValue()).toInt());
+    // 50 FPS is good for a first start, for the same reasons
+    SWTframerateBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.acquisitionFramerate", "50").toInt());
     camera->setAcquisitionFPSValue(SWTframerateBox->value());
 
     // TODO load the pfs file as an backup if no appication settings are available?
@@ -683,13 +673,11 @@ void SingleCameraSettingsDialog::saveSettings() {
     applicationSettings->setValue("SingleCameraSettingsDialog.SWTframerateEnabled", SWTframerateEnabled->isChecked());
     applicationSettings->setValue("SingleCameraSettingsDialog.acquisitionFramerate", SWTframerateBox->value());
 
-    // BG added begin
     applicationSettings->setValue("SingleCameraSettingsDialog.binningVal", lastUsedBinningVal);
     applicationSettings->setValue("SingleCameraSettingsDialog.imageROIwidth", imageROIwidthInputBox->value());
     applicationSettings->setValue("SingleCameraSettingsDialog.imageROIheight", imageROIheightInputBox->value());
     applicationSettings->setValue("SingleCameraSettingsDialog.imageROIoffsetX", imageROIoffsetXInputBox->value());
     applicationSettings->setValue("SingleCameraSettingsDialog.imageROIoffsetY", imageROIoffsetYInputBox->value());
-    // BG added end
 
     applicationSettings->setValue("SingleCameraSettingsDialog.settingsDirectory", settingsDirectory.path());
 
@@ -874,18 +862,18 @@ void SingleCameraSettingsDialog::enableAcquisitionFrameRate(bool state) {
     updateFrameRateValue();
 }
 
-void SingleCameraSettingsDialog::serialConnDisconnButtonClicked() {
-    if(serialSettings->isCOMConnected()) {
+void SingleCameraSettingsDialog::MCUConnDisconnButtonClicked() {
+    if(MCUSettings->isConnected()) {
         stopHardwareTrigger();
 
-        serialSettings->disconnectCOM();
-        serialConnDisconnButtonLabel->setText("Connect");
-        serialConnDisconnButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red
+        MCUSettings->doDisconnect();
+        MCUConnDisconnButtonLabel->setText("Connect");
+        MCUConnDisconnButtonLabel->setStyleSheet("background-color:#f5ab87;"); // light red
         HWTstartStopButton->setEnabled(false);
     } else {
-        serialSettings->connectSerialPort();
-        serialConnDisconnButtonLabel->setText("Disconnect");
-        serialConnDisconnButtonLabel->setStyleSheet("background-color:#c3f558;"); // light green
+        MCUSettings->doConnect();
+        MCUConnDisconnButtonLabel->setText("Disconnect");
+        MCUConnDisconnButtonLabel->setStyleSheet("background-color:#c3f558;"); // light green
         HWTstartStopButton->setEnabled(camera->isHardwareTriggerEnabled());
     }
 }

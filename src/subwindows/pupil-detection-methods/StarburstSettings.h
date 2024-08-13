@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_STARBURSTSETTINGS_H
-#define PUPILEXT_STARBURSTSETTINGS_H
+#pragma once
 
 /**
     @authors Moritz Lode, Gabor Benyei, Attila Boncser
@@ -35,7 +33,7 @@ public:
         PupilMethodSetting::setDefaultParameters(defaultParameters);
         createForm();
         configsBox->setCurrentText(settingsMap.key(configIndex));
-        // GB added begin
+
         if(isAutoParamEnabled()) {
             edgeThresholdBox->setEnabled(false);
             //
@@ -46,10 +44,9 @@ public:
             //
             crRatioBox->setEnabled(true);
             crWindowSizeBox->setEnabled(true);
-        } 
-        // GB added end
+        }
 
-        QGridLayout *infoLayout = new QGridLayout(infoBox);
+        QVBoxLayout *infoLayout = new QVBoxLayout(infoBox);
 
         QPushButton *iLabelFakeButton = new QPushButton();
         iLabelFakeButton = new QPushButton();
@@ -60,38 +57,35 @@ public:
         iLabelFakeButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings));
         iLabelFakeButton->setFixedSize(QSize(32,32));
         iLabelFakeButton->setIconSize(QSize(32,32));
-        infoLayout->addWidget(iLabelFakeButton, 0, 0);
+        infoLayout->addWidget(iLabelFakeButton);
 
         QLabel *pLabel = new QLabel();
         pLabel->setWordWrap(true);
         pLabel->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
         pLabel->setOpenExternalLinks(true);
         pLabel->setText("Li, Dongheng & Winfield, D. & Parkhurst, D.J., \"Starburst: A hybrid algorithm for video-based eye tracking combining feature-based and model-based approaches.\", 2005<br/>Part of the <a href=\"http://thirtysixthspan.com/openEyes/software.html\">cvEyeTracker</a> software License: <a href=\"https://www.gnu.org/licenses/gpl-3.0.txt\">GPL</a>");
-        infoLayout->addWidget(pLabel, 1, 0);
+        infoLayout->addWidget(pLabel);
 
-        // GB modified begin
-        // GB NOTE: removed \n to let it fit more efficiently
         QLabel *confLabel;
         if(p_starburst->hasConfidence())
             confLabel = new QLabel("Info: This method does provide its own confidence.");
         else
             confLabel = new QLabel("Info: This method does not provide its own confidence, use the outline confidence.");
         confLabel->setWordWrap(true);
-        infoLayout->addWidget(confLabel, 2, 0);
+        infoLayout->addWidget(confLabel);
 
         QLabel *infoLabel = new QLabel("CAUTION: Processing using this algorithm may be very slow, reduce the camera acquiring fps accordingly.");
         infoLabel->setWordWrap(true);
         infoLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
-        infoLayout->addWidget(infoLabel, 3, 0);
+        infoLayout->addWidget(infoLabel);
 #if _DEBUG
         QLabel *warnLabel = new QLabel("CAUTION: Debug build may perform very slow. Use release build or adjust processing speed to not risk memory overflow.");
         warnLabel->setWordWrap(true);
         warnLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
-        infoLayout->addWidget(warnLabel, 4, 0);
+        infoLayout->addWidget(warnLabel);
 #endif
 
         infoBox->setLayout(infoLayout);
-        // GB modified end
     }
 
     ~StarburstSettings() override = default;
@@ -111,7 +105,6 @@ public slots:
     void loadSettings() override {
         PupilMethodSetting::loadSettings();
 
-        // GB added begin
         if(isAutoParamEnabled()) {
             float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
             pupilDetection->setAutoParamEnabled(true);
@@ -128,15 +121,12 @@ public slots:
             //
             crRatioBox->setEnabled(true);
             crWindowSizeBox->setEnabled(true);
-        } 
-        // GB added end
+        }
 
         applySpecificSettings();
     }
 
     void applySpecificSettings() override {
-
-        // GB modified begin
         
         // First come the parameters roughly independent from ROI size and relative pupil size 
         int rays = p_starburst->rays;				            //number of rays to use to detect feature points
@@ -207,7 +197,6 @@ public slots:
             }
             
         }
-        // GB modified end
 
         emit onConfigChange(configsBox->currentText());
     }
@@ -220,14 +209,11 @@ public slots:
 private:
 
     Starburst *p_starburst;
-    //Starburst *secondaryStarburst = nullptr; // GB: refactored
-    // GB added begin
     Starburst *starburst2 = nullptr;
     Starburst *starburst3 = nullptr;
     Starburst *starburst4 = nullptr;
 
-    PupilDetection *pupilDetection; 
-    // GB added end
+    PupilDetection *pupilDetection;
 
     QSpinBox *edgeThresholdBox;
     QSpinBox *numRaysBox;
@@ -251,11 +237,9 @@ private:
         QHBoxLayout *configsLayout = new QHBoxLayout();
 
         configsBox = new QComboBox();
-        // GB modified begin
         QLabel *parameterConfigsLabel = new QLabel(tr("Parameter configuration:"));
         configsBox->setFixedWidth(250);
         configsLayout->addWidget(parameterConfigsLabel);
-        // GB modified end
         configsLayout->addWidget(configsBox);
 
         for (QMap<QString, Settings>::const_iterator cit = settingsMap.cbegin(); cit != settingsMap.cend(); cit++)
@@ -277,7 +261,7 @@ private:
 
         mainLayout->addSpacerItem(new QSpacerItem(40, 5, QSizePolicy::Fixed));
 
-        QGroupBox *edgeGroup = new QGroupBox("Algorithm specific: Edge Detection"); // GB: "Algorithm specific: "
+        QGroupBox *edgeGroup = new QGroupBox("Algorithm specific: Edge Detection");
         QGroupBox *crGroup = new QGroupBox("Algorithm specific: Corneal Reflection (CR)");
 
         QFormLayout *edgeLayout = new QFormLayout();
@@ -287,19 +271,19 @@ private:
         edgeThresholdBox = new QSpinBox();
         edgeThresholdBox->setMaximum(1000);
         edgeThresholdBox->setValue(edge_threshold);
-        edgeThresholdBox->setFixedWidth(50); // GB
+        edgeThresholdBox->setFixedWidth(50);
         edgeLayout->addRow(edgeThresholdLabel, edgeThresholdBox);
 
         QLabel *numRaysLabel = new QLabel(tr("Number of Rays:"));
         numRaysBox = new QSpinBox();
         numRaysBox->setValue(rays);
-        numRaysBox->setFixedWidth(50); // GB
+        numRaysBox->setFixedWidth(50);
         edgeLayout->addRow(numRaysLabel, numRaysBox);
 
         QLabel *minFeatureCandidatesLabel = new QLabel(tr("Min. Feature Candidates:"));
         minFeatureCandidatesBox = new QSpinBox();
         minFeatureCandidatesBox->setValue(min_feature_candidates);
-        minFeatureCandidatesBox->setFixedWidth(50); // GB
+        minFeatureCandidatesBox->setFixedWidth(50);
         edgeLayout->addRow(minFeatureCandidatesLabel, minFeatureCandidatesBox);
 
         edgeGroup->setLayout(edgeLayout);
@@ -308,14 +292,14 @@ private:
         QLabel *crRatioLabel = new QLabel(tr("CR Ratio (to Image Height):"));
         crRatioBox = new QSpinBox();
         crRatioBox->setValue(corneal_reflection_ratio_to_image_size);
-        crRatioBox->setFixedWidth(50); // GB
+        crRatioBox->setFixedWidth(50);
         crLayout->addRow(crRatioLabel, crRatioBox);
 
         QLabel *crWindowSizeLabel = new QLabel(tr("CR Window Size [px]:"));
         crWindowSizeBox = new QSpinBox();
         crWindowSizeBox->setMaximum(5000);
         crWindowSizeBox->setValue(crWindowSize);
-        crWindowSizeBox->setFixedWidth(50); // GB
+        crWindowSizeBox->setFixedWidth(50);
         crLayout->addRow(crWindowSizeLabel, crWindowSizeBox);
 
         crGroup->setLayout(crLayout);
@@ -323,8 +307,8 @@ private:
 
         QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
-        resetButton = new QPushButton("Reset algorithm parameters"); // GB: clarified text
-        fileButton = new QPushButton("Load config file"); // GB: clarified text
+        resetButton = new QPushButton("Reset algorithm parameters");
+        fileButton = new QPushButton("Load config file");
 
         buttonsLayout->addWidget(resetButton);
         connect(resetButton, SIGNAL(clicked()), this, SLOT(onResetClick()));
@@ -365,7 +349,7 @@ private:
             { Settings::ROI_0_6_OPTIMIZED, {27.0f, 8.0f, 1.0f, 10.0f, 197.0f} },
             { Settings::FULL_IMAGE_OPTIMIZED, {21.0f, 32.0f, 7.0f, 10.0f, 433.0f} },
             { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, 12.0f, 8.0f, -1.0f, -1.0f} },
-            { Settings::CUSTOM, {-1.0f, 8.0f, 7.0f, -1.0f, -1.0f} } // GB added
+            { Settings::CUSTOM, {-1.0f, 8.0f, 7.0f, -1.0f, -1.0f} }
     };
 
 
@@ -374,8 +358,6 @@ private slots:
     void onParameterConfigSelection(QString configKey) {
         setConfigIndex(configKey);
         QList<float>& selectedParameter = getCurrentParameters();
-
-        // GB modified begin
 
         // First come the parameters roughly independent from ROI size and relative pupil size 
         numRaysBox->setValue(selectedParameter[1]);
@@ -399,12 +381,8 @@ private slots:
             crRatioBox->setValue(selectedParameter[3]);
             crWindowSizeBox->setValue(selectedParameter[4]);
         }
-        // GB modified end
 
         //applySpecificSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
     }
 
 };
-
-
-#endif //PUPILEXT_STARBURSTSETTINGS_H

@@ -57,9 +57,9 @@ If there are no quotation marks around a needed value for an argument, e.g. the 
 
 `-openSingleWebcam "<camera>"` - Open a single OpenCV camera device ("webcam"). Device ID should be provided, which is an integer, enumerating devices starting from 0.
 
-`-setPDAlgorithm "<algorithm>"` - Set pupil detection algorithm. Accepted algorithms: "else" or "excuse" or "pure" or "purest" or "starburst" or "swirski2d".
+`-setPDAlgorithm "<algorithm>"` - Set pupil detection algorithm. Accepted algorithms: `else` or `excuse` or `pure` or `purest` or `starburst` or `swirski2d`.
 
-`-setPDUsingROI "<state>"` - Use ROI Area Selection. Either "true" or "false".
+`-setPDUsingROI "<state>"` - Use ROI Area Selection. Either `true` or `false`.
 
 `-setPDComputeOutlineConf "<value>"` - Compute Additional Outline Confidence. Either "true" or "false".
 
@@ -69,7 +69,7 @@ If there are no quotation marks around a needed value for an argument, e.g. the 
 
 `-setImageOutputPath "<path>"` - Set image recording output path. Make sure you do not use special characters as they may be restricted for use by the operating system in folder names.
 
-`-setImageOutputFormat "<format>"` - Set image recording output format. Format name should be provided: "tiff" or "bmp" or "jpg".
+`-setImageOutputFormat "<format>"` - Set image recording output format. Format name should be provided: `tiff` or `png` or `bmp` or `jpeg` or `webp` or `pgm`. Cannot be altered while an image recording is going on.
 
 `-startImageRecording` - Start image recording. Image recording path and name should be set beforehand.
 

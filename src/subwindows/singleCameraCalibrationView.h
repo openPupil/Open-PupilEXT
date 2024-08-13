@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_SINGLECAMERACALIBRATIONVIEW_H
-#define PUPILEXT_SINGLECAMERACALIBRATIONVIEW_H
+#pragma once
 
 /**
     See https://docs.opencv.org/2.4/doc/tutorials/calib3d/camera_calibration/camera_calibration.html
@@ -89,5 +87,3 @@ signals:
     void onNewImage(CameraImage img);
 
 };
-
-#endif //PUPILEXT_SINGLECAMERACALIBRATIONVIEW_H

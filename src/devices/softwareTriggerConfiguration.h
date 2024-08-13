@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_SOFTWARETRIGGERCONFIGURATION_H
-#define PUPILEXT_SOFTWARETRIGGERCONFIGURATION_H
+#pragma once
 
 #include <pylon/Platform.h>
 
@@ -88,5 +86,3 @@ public:
         }
     }
 };
-
-#endif // PUPILEXT_SOFTWARETRIGGERCONFIGURATION_H

@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_FILECAMERA_H
-#define PUPILEXT_FILECAMERA_H
+#pragma once
 
 /**
     @authors Moritz Lode, Gabor Benyei, Attila Boncser
@@ -15,10 +13,6 @@
 
 /**
     FileCamera represents virtual camera which replays images from disk given a directory of images
-
-    NOTE: Modified by Gabor Benyei, 2023 jan
-    BG NOTE: 
-        Added methods for FileCamera to work nicely with the new PlaybackControlDialog
 
     start(): start file playback
     stop(): stop file playback
@@ -74,7 +68,6 @@ public:
         return imageReader->isPlaying();
     }
 
-    // GB added begin
     bool isPlaying() {
         return imageReader->isPlaying();
     }
@@ -115,7 +108,6 @@ public:
     int getLastCommissionedFrameNumber() {
         return imageReader->getLastCommissionedFrameNumber();
     }
-    // GB added end
 
     int getImageROIwidth() override;
     int getImageROIheight() override;
@@ -140,9 +132,7 @@ private:
     StereoCameraCalibration *stereoCameraCalibration;
     QThread *calibrationThread;
 
-    // GB added begin
     //OfflineEventLogReader *offlineEventLogReader;
-    // GB added end
 
 signals:
 
@@ -152,16 +142,10 @@ signals:
     void finished();
     void paused();
 
-    // GB added begin
     void endReached();
-    // GB added end
 
 public slots:
-    // GB added begin
     void step1frameNext();
     void step1framePrev();
-    // GB added end
 
 };
-
-#endif //PUPILEXT_FILECAMERA_H

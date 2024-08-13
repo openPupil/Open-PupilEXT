@@ -145,7 +145,7 @@ SingleCameraCalibrationView::SingleCameraCalibrationView(SingleCamera *camera, Q
 
     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), calibrationWorker, SLOT(onNewImage(CameraImage)));
     //connect(this, SIGNAL(onNewImage(CameraImage)), calibrationWorker, SLOT(onNewImage(CameraImage)));
-    connect(calibrationWorker, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
+    connect(calibrationWorker, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateView(CameraImage)));
     connect(calibrationWorker, SIGNAL (finishedCalibration()), this, SLOT (onCalibrationFinished()));
 
     if(!calibrationWorker->isCalibrated()) {
@@ -159,7 +159,7 @@ SingleCameraCalibrationView::~SingleCameraCalibrationView() {
 }
 
 // Update the cameraview widget in the window
-// This slot is connected to the processedImage signal which is send at a slowed down rate than the camera rate ie. 30fps
+// This slot is connected to the processedImageLowFPS signal which is send at a slowed down rate than the camera rate ie. 30fps
 void SingleCameraCalibrationView::updateView(const CameraImage &cimg) {
 
     if(!cimg.img.empty()) {

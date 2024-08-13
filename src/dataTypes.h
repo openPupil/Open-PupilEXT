@@ -1,5 +1,4 @@
-#ifndef PUPILEXT_DATATYPES_H
-#define PUPILEXT_DATATYPES_H
+#pragma once
 
 /**
     @author Gabor Benyei
@@ -13,6 +12,7 @@ class DataTypes : public QObject {
 
 public:
     static enum class DataType {
+        TIME_RAW_TIMESTAMP,
         TIME,
         FRAME_NUMBER,
         CAMERA_FPS,
@@ -34,6 +34,3 @@ public:
 
     static QMap<DataType, QString> map;
 };
-
-
-#endif //PUPILEXT_DATATYPES_H

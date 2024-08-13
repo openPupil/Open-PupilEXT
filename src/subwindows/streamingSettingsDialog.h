@@ -1,4 +1,3 @@
-
 #pragma once
 
 /**
@@ -17,15 +16,16 @@
 
 #include "IPCtrl.h"
 #include "../connPoolCOM.h"
+#include "../connPoolUDP.h"
 
 #include "../pupilDetection.h"
 #include "../dataStreamer.h"
 
 /**
-    
     In this dialog the user can specify the means of streaming pupil detection output to another machine.
-    Some of the code regarding serial connection was copied from SerialSettingsDialog.
+    Some of the code regarding serial connection was copied from MCUSettingsDialogInst.
 
+    NOTE: used several parts of the code from former serialSettingsDialog made by ML
 */
 class StreamingSettingsDialog : public QDialog {
     Q_OBJECT
@@ -34,32 +34,23 @@ public:
 
     //explicit StreamingSettingsDialog(ConnPoolUDP *connPoolUdp, ConnPoolCOM *connPoolCOM, QWidget *parent = nullptr);
     explicit StreamingSettingsDialog(
-        ConnPoolCOM *connPoolCOM, 
+        ConnPoolCOM *connPoolCOM,
+        ConnPoolUDP *connPoolUDP,
         PupilDetection *pupilDetection,
         DataStreamer *dataStreamer,
         QWidget *parent = nullptr);
 
     ~StreamingSettingsDialog() override;
 
-    //
-    //int getConnPoolUDPIndex();
-    QUdpSocket* getUDPsocket() {
-        return UDPSocket;
-    };
-    QHostAddress getUDPip() {
-        return m_UDPip;
-    };
-    quint16 getUDPport() {
-        return m_UDPport;
-    };
+    int getConnPoolUDPIndex();
     int getConnPoolCOMIndex();
     DataStreamer::DataContainer getDataContainerUDP();
     DataStreamer::DataContainer getDataContainerCOM();
-    //
 
 private:
 
-    QUdpSocket* UDPSocket = nullptr;
+    ConnPoolUDP *connPoolUDP;
+    int connPoolUDPIndex = -1;
 
     ConnPoolCOM *connPoolCOM;
     int connPoolCOMIndex = -1;
@@ -77,13 +68,11 @@ private:
 
     IPCtrl *udpIpBox;
     QSpinBox *udpPortBox;
-    
-    QComboBox *dataContainerUDPBox;
+
     QLabel *dataContainerUDPLabel;
+    QComboBox *dataContainerUDPBox;
 
-
-    QHostAddress m_UDPip;
-    quint16 m_UDPport;
+    ConnPoolUDPInstanceSettings m_currentSettingsUDP;
     ConnPoolCOMInstanceSettings m_currentSettingsCOM;
 
     QGroupBox *udpGroup;
@@ -138,7 +127,7 @@ public slots:
     void onConnectCOMClick();
     void disconnectCOM();
 
-    void connectUDP();
+    void connectUDP(const ConnPoolUDPInstanceSettings &p);
     void connectCOM(const ConnPoolCOMInstanceSettings &p);
 
     void setLimitationsWhileConnectedUDP(bool state);  

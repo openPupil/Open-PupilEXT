@@ -66,10 +66,6 @@ PupilDetection::PupilDetection(QMutex *imageMutex, QWaitCondition *imagePublishe
 
     drawDelay = 33; // ~30fps
 
-    // GB begin: 
-    // GB NOTE: refactored and added two new to best work with also with "stereo camera for two pupil" proc mode,
-    // also added "populateWithMethods" function to shorten code
-
     // we initialize the algorithms here one time and save them in a list, the created objects are then changed through index change of the list
     populateWithMethods(pupilDetectionMethods1);
     populateWithMethods(pupilDetectionMethods2);
@@ -81,11 +77,8 @@ PupilDetection::PupilDetection(QMutex *imageMutex, QWaitCondition *imagePublishe
 
     // Processing speed frame counter
     connect(frameCounter, SIGNAL(fps(double)), this, SIGNAL(fps(double)));
-    
-    // BG: NOTE: signals-slots moved from here to keep up with procMode changes by user
 
     assert( connect(this, SIGNAL(processedPupilData(quint64, int, std::vector<Pupil>, QString)), frameCounter, SLOT(count())) );
-    // GB end
 
     drawTimer.start();
     processingTimer.start();
@@ -123,14 +116,12 @@ void PupilDetection::setCamera(Camera *m_camera) {
             singleCalibration = dynamic_cast<FileCamera *>(camera)->getCameraCalibration();
             calibrated = static_cast<bool>(singleCalibration->isCalibrated());
         }
-            // GB added begin
         else if (camera->getType() == CameraImageType::LIVE_SINGLE_WEBCAM) {
             singleCalibration = dynamic_cast<SingleWebcam *>(camera)->getCameraCalibration();
             calibrated = static_cast<bool>(singleCalibration->isCalibrated());
         }
         configureCameraConnection(true);
     }
-    // GB added end
 }
 
 // Starts the algorithm by connecting the camera image signals to the processing callbacks
@@ -178,16 +169,15 @@ void PupilDetection::setAlgorithm(QString method) {
     int i = 0;
     for(auto pm: pupilDetectionMethods1) {
         //if(pm->title() == method.toStdString())
-        if(QString::fromStdString(pm->title()).toLower() == method.toLower()) // GB: modified for tolower to care for when someone is setting this through an UDP command and had a case-typo
+        //modified for tolower to care for when someone is setting this through an UDP command and had a case-typo
+        if(QString::fromStdString(pm->title()).toLower() == method.toLower())
             pupilDetectionIndex = i;
         i++;
     }
 
-    // GB begin
     // NOTE: maybe not here? But one algorithm is changed, we certainly need to re-parameter
     if(autoParamEnabled)
         autoParamScheduled = true;
-    // GB end
 
     emit algorithmChanged();
 
@@ -198,9 +188,6 @@ void PupilDetection::setAlgorithm(QString method) {
 // Performs the processing/pupil detection
 // Emits the pupil detection result as a signal, as well as processed images with plotted pupil contours
 // Depending on the configuration, performs undistortion on the images or pupil detections
-// GB: renamed and modified
-
-
 void PupilDetection::onNewSingleImageForOnePupil(const CameraImage &cimg) {
     if (synchronised) {
         const QMutexLocker locker(imageMutex);
@@ -225,7 +212,14 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
     if (!trackingOn) {
         //qDebug()<<"Single: onNewSingleImageForOnePupil: Tracking is stopped but receiving signals."; // GB: changed text
         //qDebug() << image->frameNumber;
-        emit processedImage(image);
+        // TODO: also emit one in case the file camera was PAUSED !
+        if ((drawTimer.elapsed() > drawDelay) ||
+            (camera->getType() == SINGLE_IMAGE_FILE && (
+                    (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == image.frameNumber) ||
+                    (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == image.frameNumber)
+            ) ) ) {
+            emit processedImageLowFPS(image);
+        }
         return;
     }
 
@@ -240,8 +234,6 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
 
     cv::Rect roi = cv::Rect(0, 0, bwFrame.cols, bwFrame.rows);
 
-    // GB modified begin
-    // GB: like this the global ROI variables can inform performAutoParam() about ROI sizes
     if(useROIPreProcessing && !ROIsingleImageOnePupil.empty() && roi != ROIsingleImageOnePupil && ROIsingleImageOnePupil.width<=bwFrame.cols && ROIsingleImageOnePupil.height<=bwFrame.rows) {
         roi = ROIsingleImageOnePupil;
         bwFrame = bwFrame(ROIsingleImageOnePupil);
@@ -252,7 +244,6 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
         performAutoParam();
         autoParamScheduled = false;
     }
-    // GB modified end
 
     if (bwFrame.channels() > 1) {
         cv::cvtColor(bwFrame, bwFrame, cv::COLOR_BGR2GRAY);
@@ -292,15 +283,18 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
 
     pupil.algorithmName = pupilDetectionMethods1[pupilDetectionIndex]->title();
 
-
-    // GB modified begin
     std::vector<Pupil> Pupils;
     Pupils.push_back(pupil);
 
     // Drawing of pupil detections on the image is only performed at ~30fps
-    if ((trackingOn && drawTimer.elapsed() > drawDelay) ||
-        (camera->getType() == SINGLE_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == image.frameNumber)) {
-        // GB NOTE: need to emit the processed image and data also when the user hits pause or stop, and we are waiting there for the last read image to arrive processed
+    // NOTE: It is important to not only check for drawDelay, but care for the special case,
+    // when the last signals from an image playback arrive before another drawDelay is happened,
+    // to not make the playback stuck just near the end. That is why we check for frame number too
+    if ((drawTimer.elapsed() > drawDelay) ||
+        (camera->getType() == SINGLE_IMAGE_FILE && (
+            (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == image.frameNumber) ||
+            (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == image.frameNumber)
+            ) ) ) {
 
         drawTimer.start();
 
@@ -310,14 +304,13 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
         if(!usePupilUndistort && useImageUndistort) {
             mimg.img = singleCalibration->undistortImage(image.img);
         }
-        // GB modified: not necessary to copy twice
+        // not necessary to copy twice
         //else {
         //    mimg->img = cimg->img.clone();
-        //}
-        // GB end
+        //}ú
         /*
 
-        // GB: moved code to singleCameraView code
+        // moved code to singleCameraView code
         if (mimg->img.channels() == 1) {
             cv::cvtColor(mimg->img, mimg->img, cv::COLOR_GRAY2BGR);
         }
@@ -333,7 +326,7 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
             cv::putText(mimg->img, "NO PUPIL FOUND", cv::Point(static_cast<int>(0.25 * mimg->img.cols),
                                                               static_cast<int>(0.25 * mimg->img.rows)), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(255, 0, 255), 4);
         }
-        emit processedImage(mimg);
+        emit processedImageLowFPS(mimg);
         */
 
         std::vector<cv::Rect> ROIs;
@@ -343,23 +336,18 @@ void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
             ROIs.push_back(roi);
             //ROIs.push_back(cv::Rect(0,0, bwFrame.size().width, bwFrame.size().height));
         }
-        emit processedImage(mimg, currentProcMode, ROIs, Pupils);
+        emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
 
         // to inform imagePlaybackControlDialog about the just processed image
         if(camera->getType() == SINGLE_IMAGE_FILE) {
-            emit processedImage(mimg);
+            emit processedImageLowFPS(mimg);
 //            qDebug() << image.frameNumber;
         }
         //qDebug() << "frameNumber left pupilDetection: " << cimg->frameNumber;
+        emit processedPupilDataLowFPS(image.timestamp, currentProcMode, Pupils, QString::fromStdString(image.filename));
     }
 
-    //emit processedSingleImageForOnePupilData(cimg->timestamp, pupil, QString::fromStdString(cimg->filename)); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
-
     emit processedPupilData(image.timestamp, currentProcMode, Pupils, QString::fromStdString(image.filename));
-    // GB modified end
-
-
-
 }
 
 // Slot callback for receiving new single camera images that contain two pupils/eyes
@@ -388,7 +376,14 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
 
     if (!trackingOn) {
         qDebug() << cimg.frameNumber;
-        emit processedImage(cimg);
+        // TODO: also emit one in case the file camera was PAUSED !
+        if ((drawTimer.elapsed() > drawDelay) ||
+            (camera->getType() == SINGLE_IMAGE_FILE && (
+                    (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == cimg.frameNumber) ||
+                    (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == cimg.frameNumber)
+            ) ) ) {
+            emit processedImageLowFPS(cimg);
+        }
         return;
     }
 
@@ -398,7 +393,6 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
     cv::Mat bwFrameA = cimg.img;
     cv::Mat bwFrameB = cimg.img;
 
-    // GB: like this the global ROI variables can inform performAutoParam() about ROI sizes
     if(useROIPreProcessing && !ROIsingleImageTwoPupilA.empty() && roiA != ROIsingleImageTwoPupilA && ROIsingleImageTwoPupilA.width<=bwFrameA.cols && ROIsingleImageTwoPupilA.height<=bwFrameA.rows) {
         roiA = ROIsingleImageTwoPupilA;
         bwFrameA = bwFrameA(ROIsingleImageTwoPupilA);
@@ -461,15 +455,21 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
     pupilA.algorithmName = pupilDetectionMethods1[pupilDetectionIndex]->title();
     pupilB.algorithmName = pupilA.algorithmName;
 
-    // GB TODO: ? Implement pythagorean px-mm mapping via calibration?
+    // TODO: ? Implement basic pythagorean px-mm mapping
 
     std::vector<Pupil> Pupils;
     Pupils.push_back(pupilA);
     Pupils.push_back(pupilB);
 
-    if ((trackingOn && drawTimer.elapsed() > drawDelay) ||
-        (camera->getType() == SINGLE_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber()==cimg.frameNumber)) {
-        // GB NOTE: need to emit the processed image and data also when the user hits pause or stop, and we are waiting there for the last read image to arrive processed
+    // NOTE: It is important to not only check for drawDelay, but care for the special case,
+    // when the last signals from an image playback arrive before another drawDelay is happened,
+    // to not make the playback stuck just near the end. That is why we check for frame number too
+    if ((drawTimer.elapsed() > drawDelay) ||
+        (camera->getType() == SINGLE_IMAGE_FILE && (
+                (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == cimg.frameNumber) ||
+                (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == cimg.frameNumber)
+        ) ) ) {
+        // NOTE: need to emit the processed image and data also when the user hits pause or stop, and we are waiting there for the last read image to arrive processed
 
         drawTimer.start();
 
@@ -493,11 +493,13 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
             // ROIs.push_back(cv::Rect(0, 0, bwFrameA.size().width, bwFrameA.size().height));
             // ROIs.push_back(cv::Rect((int)std::ceil(cimg->img.cols/2)+1, 0, bwFrameB.size().width, bwFrameB.size().height));
         }
-        emit processedImage(mimg, currentProcMode, ROIs, Pupils);
+        emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
 
         // to inform imagePlaybackControlDialog about the just processed image
         if(camera->getType() == SINGLE_IMAGE_FILE)
-                emit processedImage(mimg);
+                emit processedImageLowFPS(mimg);
+
+        emit processedPupilDataLowFPS(cimg.timestamp, currentProcMode, Pupils, QString::fromStdString(cimg.filename));
     }
     emit processedPupilData(cimg.timestamp, currentProcMode, Pupils, QString::fromStdString(cimg.filename));
 
@@ -507,7 +509,6 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
 // Performs the processing/pupil detection
 // Emits the pupil detection result as a signal, as well as processed images with plotted pupil contours
 // Depending on the configuration, performs undistortion on the pupil detections
-// GB: renamed and modified
 void PupilDetection::onNewStereoImageForOnePupil(const CameraImage &simg) {
 
     if (synchronised) {
@@ -532,9 +533,17 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
 
     // at the moment, the images are not undistorted completely but only the major axis points are undistorted after detection for absolute unit conversion
     // This creates a discrepancy between the undistorted pixel size and the physical measure, as a fix, undistortedDiamter can be calculated using useUndistort
+
     if (!trackingOn) {
         qDebug() << simg.frameNumber;
-        emit processedImage(simg);
+        // TODO: also emit one in case the file camera was PAUSED !
+        if ((drawTimer.elapsed() > drawDelay) ||
+            (camera->getType() == STEREO_IMAGE_FILE && (
+                    (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == simg.frameNumber) ||
+                    (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == simg.frameNumber)
+            ) ) ) {
+            emit processedImageLowFPS(simg);
+        }
         return;
     }
 
@@ -543,7 +552,6 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
     cv::Mat bwFrame = simg.img;
     cv::Mat bwFrameSecondary = simg.imgSecondary;
 
-    // GB modified begin
     // GB: like this the global ROI variables can inform performAutoParam() about ROI sizes
     if(useROIPreProcessing && !ROIstereoImageOnePupil1.empty() && roi != ROIstereoImageOnePupil1 && ROIstereoImageOnePupil1.width<=bwFrame.cols && ROIstereoImageOnePupil1.height<=bwFrame.rows) {
         roi = ROIstereoImageOnePupil1;
@@ -561,7 +569,6 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
         performAutoParam();
         autoParamScheduled = false;
     }
-    // GB modified end
 
     if (simg.img.channels() > 1) {
         cv::cvtColor(bwFrame, bwFrame, cv::COLOR_BGR2GRAY);
@@ -640,20 +647,23 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
         //runtimeHistory.push_back(std::make_pair(simg->timestamp, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count()));
     }
 
-    // GB modified begin:
     std::vector<Pupil> Pupils;
     Pupils.push_back(pupil);
     Pupils.push_back(pupilSecondary);
 
-    if ((trackingOn && drawTimer.elapsed() > drawDelay) ||
-        (camera->getType() == STEREO_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber()==simg.frameNumber)) {
-        // GB NOTE: need to emit the processed image and data also when the user hits pause or stop, and we are waiting there for the last read image to arrive processed
+    // NOTE: It is important to not only check for drawDelay, but care for the special case,
+    // when the last signals from an image playback arrive before another drawDelay is happened,
+    // to not make the playback stuck just near the end. That is why we check for frame number too
+    if ((drawTimer.elapsed() > drawDelay) ||
+        (camera->getType() == STEREO_IMAGE_FILE && (
+                (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == simg.frameNumber) ||
+                (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == simg.frameNumber)
+        ) ) ) {
 
         drawTimer.start();
         const CameraImage &mimg = simg;
         mimg.img = simg.img.clone();
         mimg.imgSecondary = simg.imgSecondary.clone();
-
 
         std::vector<cv::Rect> ROIs;
         if(useROIPreProcessing) {
@@ -665,16 +675,16 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
             //ROIs.push_back(cv::Rect(0,0, bwFrame.size().width, bwFrame.size().height));
             //ROIs.push_back(cv::Rect(0,0, bwFrameSecondary.size().width, bwFrameSecondary.size().height));
         }
-        emit processedImage(mimg, currentProcMode, ROIs, Pupils);
+        emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
 
         // to inform imagePlaybackControlDialog about the just processed image->
         if(camera->getType() == STEREO_IMAGE_FILE)
-                emit processedImage(mimg);
+                emit processedImageLowFPS(mimg);
+
+        emit processedPupilDataLowFPS(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
     }
 
-    //emit processedStereoImageForOnePupilData(simg->timestamp, pupil, pupilSecondary, QString::fromStdString(simg->filename)); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
     emit processedPupilData(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
-    // GB modified end
 }
 // Slot callback for receiving new stereo camera images, associated with two viewpoints, both looking at both eyes
 // Performs the processing/pupil detection
@@ -705,7 +715,14 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
 
     if (!trackingOn) {
         qDebug() << simg.frameNumber;
-        emit processedImage(simg);
+        // TODO: also emit one in case the file camera was PAUSED !
+        if ((drawTimer.elapsed() > drawDelay) ||
+            (camera->getType() == STEREO_IMAGE_FILE && (
+                    (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == simg.frameNumber) ||
+                    (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == simg.frameNumber)
+            ) ) ) {
+            emit processedImageLowFPS(simg);
+        }
         return;
     }
 
@@ -718,7 +735,6 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
     cv::Mat bwFrameB1 = simg.img;
     cv::Mat bwFrameB2 = simg.imgSecondary;
 
-    // GB: like this the global ROI variables can inform performAutoParam() about ROI sizes
     if(useROIPreProcessing && !ROIstereoImageTwoPupilA1.empty() && roiA1 != ROIstereoImageTwoPupilA1 && ROIstereoImageTwoPupilA1.width<=bwFrameA1.cols && ROIstereoImageTwoPupilA1.height<=bwFrameA1.rows) {
         roiA1 = ROIstereoImageTwoPupilA1;
         bwFrameA1 = bwFrameA1(ROIstereoImageTwoPupilA1);
@@ -761,7 +777,6 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
     Pupil pupilA2;
     Pupil pupilB1;
     Pupil pupilB2;
-
 
     try {
         //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
@@ -883,9 +898,14 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
     Pupils.push_back(pupilB1);
     Pupils.push_back(pupilB2);
 
-    if ((trackingOn && drawTimer.elapsed() > drawDelay) ||
-        (camera->getType() == STEREO_IMAGE_FILE && !static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber()==simg.frameNumber)) {
-        // GB NOTE: need to emit the processed image and data also when the user hits pause or stop, and we are waiting there for the last read image to arrive processed
+    // NOTE: It is important to not only check for drawDelay, but care for the special case,
+    // when the last signals from an image playback arrive before another drawDelay is happened,
+    // to not make the playback stuck just near the end. That is why we check for frame number too
+    if ((drawTimer.elapsed() > drawDelay) ||
+        (camera->getType() == STEREO_IMAGE_FILE && (
+                (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == simg.frameNumber) ||
+                (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == simg.frameNumber)
+        ) ) ) {
 
         drawTimer.start();
         const CameraImage &mimg = simg;
@@ -905,11 +925,13 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
             ROIs.push_back(roiB2);
 
         }
-        emit processedImage(mimg, currentProcMode, ROIs, Pupils);
+        emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
 
         // to inform imagePlaybackControlDialog about the just processed image
         if(camera->getType() == STEREO_IMAGE_FILE)
-                emit processedImage(mimg);
+                emit processedImageLowFPS(mimg);
+
+        emit processedPupilDataLowFPS(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
     }
 
     emit processedPupilData(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
@@ -945,8 +967,6 @@ void PupilDetection::setConfigLabel(QString config) {
     emit configChanged(config);
 }
 
-
-// GB: added for allowing pupilDetectionSettingsDialog to check if there is detection going on
 // TODO: use only this everywhere, and remove mainwondow's trackingOn bool
 bool PupilDetection::isTrackingOn() {
     return trackingOn;
@@ -1118,13 +1138,7 @@ void PupilDetection::performAutoParam() {
 
     // min 2 and max 8 mm means that the minimum is 1/4th of 8,
     // or in other words: 2 = 0.25 *8;
-    // This rule of thumb however, affects e.g. ElSe's capabilities negatively sometimes,
-    // so I used 0.2 here
     float minToMaxDia = 0.25f;
-
-//    // min 1 and max 8 mm means that the minimum is 1/8th of 8,
-//    // or in other words: 1 = 0.125 *8;
-//    float minToMaxDia = 0.125f;
 
     // NOTE: These are only DIAMETER values!
     float pupSizeFactorMin = (autoParamPupSizePercent/100.0f *minToMaxDia);
@@ -1141,6 +1155,7 @@ void PupilDetection::performAutoParam() {
 
         float minDim = (roiWidth<=roiHeight) ? roiWidth : roiHeight;
         // bool isWidthTheMinDim = (roiWidth<=roiHeight) ? true : false;
+        // bool isWidthTheMinDim = (roiWidth<=roiHeight) ? true : false;
 
         // now we get the RADIUS values
         float minRadius = pupSizeFactorMin*minDim /2.0f;
@@ -1156,7 +1171,7 @@ void PupilDetection::performAutoParam() {
             // ELSE
             ElSe *alg = dynamic_cast<ElSe*>(algInstances[c]);
 
-            // GB Note: Empirical correction
+            // Note: Empirical correction
             maxRadius *= 1.1;
 
             alg->minAreaRatio = static_cast<float>( minRadius*minRadius*M_PI / (roiWidth*roiHeight) );

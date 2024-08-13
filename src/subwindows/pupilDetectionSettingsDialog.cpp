@@ -22,7 +22,7 @@ PupilDetectionSettingsDialog::PupilDetectionSettingsDialog(PupilDetection *pupil
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     //this->setMinimumSize(800, 500);
-    this->setMinimumSize(860, 560); // GB
+    this->setMinimumSize(860, 560);
     this->setWindowTitle("Pupil Detection Settings");
 
     createForm();
@@ -31,7 +31,7 @@ PupilDetectionSettingsDialog::PupilDetectionSettingsDialog(PupilDetection *pupil
     connect(applyCloseButton, SIGNAL(clicked()), this, SLOT(applyCloseButtonClick()));
     connect(cancelButton, SIGNAL(clicked()), this, SLOT(cancelButtonClick()));
 
-    connect(procModeBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onProcModeSelection(int))); // GB added
+    connect(procModeBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onProcModeSelection(int)));
     connect(algorithmBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onAlgorithmSelection(int)));
 
     onProcModeSelection(procModeBox->currentIndex());
@@ -49,15 +49,14 @@ void PupilDetectionSettingsDialog::createForm() {
 
     QGridLayout *mainLayout = new QGridLayout(this);
 
-    procModeGroup = new QGroupBox("Pupil detection via image processing"); // GB
+    procModeGroup = new QGroupBox("Pupil detection via image processing");
     QGroupBox *algorithmGroup = new QGroupBox("Algorithm");
-    QGroupBox *optionsGroup = new QGroupBox("General Options"); // GB: added "General" prefix 
+    QGroupBox *optionsGroup = new QGroupBox("General Options");
 
-    QFormLayout *procModeBoxLayout = new QFormLayout(); // GB
-    QGridLayout *algorithmLayout = new QGridLayout();
+    QFormLayout *procModeBoxLayout = new QFormLayout();
+    QVBoxLayout *algorithmLayout = new QVBoxLayout();
     QHBoxLayout *algoBoxLayout = new QHBoxLayout();
 
-    // GB begin
     QLabel *procModeLabel = new QLabel(tr("Image processing mode:"));
     procModeBox = new QComboBox();
 
@@ -114,7 +113,6 @@ void PupilDetectionSettingsDialog::createForm() {
 
     procModeGroup->setLayout(procModeBoxLayout);
     mainLayout->addWidget(procModeGroup);
-    // GB END
 
     QLabel *algorithmLabel = new QLabel(tr("Algorithm:"));
     algorithmBox = new QComboBox();
@@ -127,16 +125,14 @@ void PupilDetectionSettingsDialog::createForm() {
     algoBoxLayout->addWidget(algorithmLabel, 0);
     algoBoxLayout->addWidget(algorithmBox, 1);
 
-    algorithmLayout->addLayout(algoBoxLayout, 0, 0, 1, 1);
+    algorithmLayout->addLayout(algoBoxLayout);
 
     algorithmGroup->setLayout(algorithmLayout);
     mainLayout->addWidget(algorithmGroup);
 
-    // GB modified begin
     mainLayout->setRowStretch(0, 4);
     mainLayout->setRowStretch(1, 12);
     mainLayout->setRowStretch(2, 5);
-    // GB modified end
 
     QFormLayout *optionsLayout = new QFormLayout();
 
@@ -165,7 +161,7 @@ void PupilDetectionSettingsDialog::createForm() {
 
 
     QLabel *imageUndistortionLabel = new QLabel(tr("Undistort complete image (slow) [<a href=\"http://mock.link\">?</a>]:"));
-    connect(imageUndistortionLabel, SIGNAL(linkActivated(QString)), this, SLOT(onShowHelpDialog())); // GB: corrected that both links opened the same text
+    connect(imageUndistortionLabel, SIGNAL(linkActivated(QString)), this, SLOT(onShowHelpDialog()));
 
     imageUndistortionBox = new QCheckBox();
     imageUndistortionBox->setChecked(pupilDetection->isImageUndistortionEnabled());
@@ -192,7 +188,7 @@ void PupilDetectionSettingsDialog::createForm() {
             pupilMethodSettings.push_back(settings);
 
             settings->infoBox->hide();
-            algorithmLayout->addWidget(settings->infoBox, 1, 0);
+            algorithmLayout->addWidget(settings->infoBox);
         } else if(pm->title() == "PuReST") {
             PuReSTSettings *settings = new PuReSTSettings(pupilDetection, dynamic_cast<PuReST*>(pm));
             settings->add2(dynamic_cast<PuReST*>(pupilDetection->getMethod2("PuReST")));
@@ -205,7 +201,7 @@ void PupilDetectionSettingsDialog::createForm() {
             pupilMethodSettings.push_back(settings);
 
             settings->infoBox->hide();
-            algorithmLayout->addWidget(settings->infoBox, 1, 0);
+            algorithmLayout->addWidget(settings->infoBox);
         } else if(pm->title() == "ElSe") {
             ElSeSettings *settings = new ElSeSettings(pupilDetection, dynamic_cast<ElSe*>(pm));
             settings->add2(dynamic_cast<ElSe*>(pupilDetection->getMethod2("ElSe")));
@@ -218,7 +214,7 @@ void PupilDetectionSettingsDialog::createForm() {
             pupilMethodSettings.push_back(settings);
 
             settings->infoBox->hide();
-            algorithmLayout->addWidget(settings->infoBox, 1, 0);
+            algorithmLayout->addWidget(settings->infoBox);
         } else if(pm->title() == "ExCuSe") {
             ExCuSeSettings *settings = new ExCuSeSettings(pupilDetection, dynamic_cast<ExCuSe*>(pm));
             settings->add2(dynamic_cast<ExCuSe*>(pupilDetection->getMethod2("ExCuSe")));
@@ -231,7 +227,7 @@ void PupilDetectionSettingsDialog::createForm() {
             pupilMethodSettings.push_back(settings);
 
             settings->infoBox->hide();
-            algorithmLayout->addWidget(settings->infoBox, 1, 0);
+            algorithmLayout->addWidget(settings->infoBox);
         } else if(pm->title() == "Starburst") {
             StarburstSettings *settings = new StarburstSettings(pupilDetection, dynamic_cast<Starburst*>(pm));
             settings->add2(dynamic_cast<Starburst*>(pupilDetection->getMethod2("Starburst")));
@@ -244,7 +240,7 @@ void PupilDetectionSettingsDialog::createForm() {
             pupilMethodSettings.push_back(settings);
 
             settings->infoBox->hide();
-            algorithmLayout->addWidget(settings->infoBox, 1, 0);
+            algorithmLayout->addWidget(settings->infoBox);
         } else if(pm->title() == "Swirski2D") {
             Swirski2DSettings *settings = new Swirski2DSettings(pupilDetection, dynamic_cast<Swirski2D*>(pm));
             settings->add2(dynamic_cast<Swirski2D*>(pupilDetection->getMethod2("Swirski2D")));
@@ -257,7 +253,7 @@ void PupilDetectionSettingsDialog::createForm() {
             pupilMethodSettings.push_back(settings);
 
             settings->infoBox->hide();
-            algorithmLayout->addWidget(settings->infoBox, 1, 0);
+            algorithmLayout->addWidget(settings->infoBox);
         } else {
             PupilMethodSetting *tmp = new PupilMethodSetting();
             mainLayout->addWidget(tmp, 0, 1, 2, 1);
@@ -265,7 +261,7 @@ void PupilDetectionSettingsDialog::createForm() {
             pupilMethodSettings.push_back(tmp);
 
             tmp->infoBox->hide();
-            algorithmLayout->addWidget(tmp->infoBox, 1, 0);
+            algorithmLayout->addWidget(tmp->infoBox);
         }
 //        else if(pm->title() == "APPD") {
 //            APPDSettings *settings = new APPDSettings(dynamic_cast<APPD*>(pm));
@@ -280,7 +276,6 @@ void PupilDetectionSettingsDialog::createForm() {
         
     }
 
-
     QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
     applyButton = new QPushButton(tr("Apply"));
@@ -292,15 +287,10 @@ void PupilDetectionSettingsDialog::createForm() {
     buttonsLayout->addWidget(applyCloseButton);
     buttonsLayout->addWidget(cancelButton);
 
-    mainLayout->addLayout(buttonsLayout, 3, 0, 1, 2); // GB changed 2 to 3
+    mainLayout->addLayout(buttonsLayout, 3, 0, 1, 2);
 
     setLayout(mainLayout);
 
-
-
-
-
-    /// DEV
     updateProcModeCompatibility();
 }
 
@@ -316,14 +306,12 @@ void PupilDetectionSettingsDialog::updateForm() {
 
     pupilMethodSettings[algorithmBox->currentIndex()]->applyAndSaveSpecificSettings();
 
-    // GB begin
     procModeBox->setCurrentIndex(pupilDetection->getCurrentProcMode());
     if(pupilDetection->isTrackingOn()) {
         procModeGroup->setDisabled(true);
     } else {
         procModeGroup->setDisabled(false);
     }
-    // GB end
 }
 
 void PupilDetectionSettingsDialog::reject() {
@@ -341,7 +329,6 @@ void PupilDetectionSettingsDialog::onShowHelpDialog() {
 // Load pupil detection settings from the application wide settings (which are stored in file)
 // Default values if no application settings are available are the current values from the pupil detection process
 void PupilDetectionSettingsDialog::loadSettings() {
-    // GB begin
     if(!pupilDetection->isTrackingOn() && pupilDetection->hasOpenCamera()) {
         // Note: workaround: these should not stay "undetermined" at any time, so use meaningful default values, even though they could be changed in GUI
         if(!pupilDetection->isStereo()) {
@@ -352,7 +339,6 @@ void PupilDetectionSettingsDialog::loadSettings() {
             //std::cout << "LOADED STEREO CAM PROC MODE" << std::endl;
         }
     }
-    // GB end
 
     pupilDetection->setAlgorithm(applicationSettings->value("PupilDetectionSettingsDialog.algorithm", algorithmBox->currentText()).toString());
     pupilDetection->enableOutlineConfidence(applicationSettings->value("PupilDetectionSettingsDialog.outlineConfidence", outlineConfidenceBox->isChecked()).toBool());
@@ -367,14 +353,13 @@ void PupilDetectionSettingsDialog::loadSettings() {
 
 // Save the detection settings to the application settings which are persisted on disk
 void PupilDetectionSettingsDialog::saveUniversalSettings() {
-    // GB begin
     if(!pupilDetection->isTrackingOn() && procModeBox->currentIndex()!=0) {
-        if(!pupilDetection->isStereo())
+        if(!pupilDetection->isStereo()) {
             applicationSettings->setValue("PupilDetectionSettingsDialog.singleCam.procMode", procModeBox->currentIndex());
-        else
+        } else {
             applicationSettings->setValue("PupilDetectionSettingsDialog.stereoCam.procMode", procModeBox->currentIndex());
+        }
     }
-    // GB end
 
     applicationSettings->setValue("PupilDetectionSettingsDialog.algorithm", algorithmBox->currentText());
     applicationSettings->setValue("PupilDetectionSettingsDialog.outlineConfidence", outlineConfidenceBox->isChecked());
@@ -426,14 +411,12 @@ void PupilDetectionSettingsDialog::onAlgorithmSelection(int idx) {
 
 // Apply the settings to the pupil detection process and save them to the application settings
 void PupilDetectionSettingsDialog::applyButtonClick() {
-    // GB begin
     if(pupilDetection->hasOpenCamera() && !pupilDetection->isTrackingOn()) {
         // NOTE: so the combobox change itself does not change procMode, but we need to hit Apply too
         emit pupilDetectionProcModeChanged(procModeBox->currentIndex());
     } else {
         procModeBox->setCurrentIndex(pupilDetection->getCurrentProcMode());
     }
-    // GB end
 
     pupilDetection->setAlgorithm(algorithmBox->currentText());
     pupilDetection->enableOutlineConfidence(outlineConfidenceBox->isChecked());
@@ -468,10 +451,8 @@ void PupilDetectionSettingsDialog::applyCloseButtonClick() {
 void PupilDetectionSettingsDialog::onSettingsChange() {
     loadSettings();
 
-    // GB begin
     updateProcModeEnabled();
     updateProcModeCompatibility();
-    // GB end
 }
 
 void PupilDetectionSettingsDialog::onPupilUndistortionClick(int state) {
@@ -539,4 +520,8 @@ void PupilDetectionSettingsDialog::updateProcModeCompatibility() {
 
     }
     //procModeGroup->setEnabled(state);
+}
+
+void PupilDetectionSettingsDialog::onDisableProcModeSelector(bool state) {
+    procModeGroup->setEnabled(!state);
 }

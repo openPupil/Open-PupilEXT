@@ -75,7 +75,7 @@ void MainWindow::PRGsetOutPath(const QString &str) {
     outputDirectory = fullPath;
     //std::cout << "outputDirectory (image dir) after image dir setting = " << outputDirectory.toStdString() << std::endl;
 
-    // GB NOTE: recentPath is NOT set programmatically, as we can not ensure that the path exists at this point, 
+    // NOTE: recentPath is NOT set programmatically, as we can not ensure that the path exists at this point,
     // which could later crash the GUI or whatever
     if(selectedCamera && selectedCamera->getType()!=SINGLE_IMAGE_FILE && selectedCamera->getType()!=STEREO_IMAGE_FILE)
         recordImagesAct->setDisabled(false);
@@ -91,7 +91,7 @@ void MainWindow::PRGsetCsvPathAndName(const QString &str) {
     pupilDetectionDataFile = fullPathAndName;
 
     QFileInfo fileInfo(pupilDetectionDataFile);
-    // GB NOTE: recentPath is NOT set programmatically, as we can not ensure that the path exists at this point, 
+    // NOTE: recentPath is NOT set programmatically, as we can not ensure that the path exists at this point,
     // which could later crash the GUI or whatever
 
     // check if filename has extension
@@ -198,8 +198,12 @@ void MainWindow::PRGsetImageOutputFormat(QString format) {
         return;
 
     format.replace(".", "");
-    if(format=="tiff" || format =="jpg" || format=="bmp" || format=="png") {
-        applicationSettings->setValue("imageWriterFormat", format);
+    if(format=="tiff" || format=="tif" || format =="png"  || format =="bmp" || format=="jpeg" || format=="jpg" ||  format=="webp" || format=="pgm") {
+        if(format=="tif")
+            format="tiff";
+        else if(format=="jpg")
+            format="jpeg";
+        applicationSettings->setValue("imageWriterFormat.chosenFormat", format);
     }
 }
 
@@ -236,6 +240,7 @@ void MainWindow::PRGconnectRemoteUDP(QString conf) {
 
     QString ip;
     quint16 port;
+    ConnPoolUDPInstanceSettings p;
     bool valid;
 
     conf.replace(" ", "");
@@ -254,9 +259,12 @@ void MainWindow::PRGconnectRemoteUDP(QString conf) {
     if(!valid)
         return;
 
-    // GB TODO: This way the GUI displayed values will not always be congruent, until they get refreshed/updated deliberately...
+    p.ipAddress = QHostAddress(ip);
+    p.portNumber = port;
+
+    // TODO: This way the GUI displayed values will not always be congruent, until they get refreshed/updated deliberately...
     // we could solve this in different ways
-    remoteCCDialog->connectUDP(QHostAddress(ip), port);
+    remoteCCDialog->connectUDP(p);
 }
 void MainWindow::PRGconnectRemoteCOM(QString conf) {
     if(remoteCCDialog->isCOMConnected())
@@ -333,6 +341,7 @@ void MainWindow::PRGconnectStreamUDP(QString conf) {
 
     QString ip;
     quint16 port;
+    ConnPoolUDPInstanceSettings p;
     bool valid;
 
     conf.replace(" ", "");
@@ -363,13 +372,16 @@ void MainWindow::PRGconnectStreamUDP(QString conf) {
     else 
         return;
 
-    // GB TODO: This way the GUI displayed values will not always be congruent, until they get refreshed/updated deliberately...
+    p.ipAddress = QHostAddress(ip);
+    p.portNumber = port;
+
+    // TODO: This way the GUI displayed values will not always be congruent, until they get refreshed/updated deliberately...
     // we could solve this in different ways
     applicationSettings->setValue("StreamingSettings.UDP.dataContainer", dataContainer);
-    applicationSettings->setValue("StreamingSettings.UDP.ip", ip);
-    applicationSettings->setValue("StreamingSettings.UDP.port", port);
+//    applicationSettings->setValue("StreamingSettings.UDP.ip", ip);
+//    applicationSettings->setValue("StreamingSettings.UDP.port", port);
 
-    streamingSettingsDialog->connectUDP();
+    streamingSettingsDialog->connectUDP(p);
 }
 void MainWindow::PRGconnectStreamCOM(QString conf) {
     if(streamingSettingsDialog->isCOMConnected())
@@ -453,8 +465,39 @@ void MainWindow::PRGconnectStreamCOM(QString conf) {
 
     streamingSettingsDialog->connectCOM(p);
 }
+void MainWindow::PRGconnectMicrocontrollerUDP(QString conf) {
+    if(MCUSettingsDialogInst->isConnected())
+        return;
+
+    QString ip;
+    quint16 port;
+    ConnPoolUDPInstanceSettings p;
+    bool valid;
+
+    conf.replace(" ", "");
+    //QStringList subStrings = conf.split(',');
+    QRegExp separator("[,|;|*|&|#|:]");
+    QStringList subStrings = conf.split(separator);
+    if(subStrings.length() < 3)
+        return;
+
+    if(subStrings[0].isEmpty())
+        return;
+    ip = subStrings[0];
+
+    valid = false;
+    port = (quint16)subStrings[1].toInt(&valid, 10);
+    if(!valid)
+        return;
+
+    p.ipAddress = QHostAddress(ip);
+    p.portNumber = port;
+
+    MCUSettingsDialogInst->selectConnectionMethod(MCUSettingsDialog::ConnectionMethod::UDP);
+    MCUSettingsDialogInst->connectUDP(p);
+}
 void MainWindow::PRGconnectMicrocontrollerCOM(QString conf) {
-    if(serialSettingsDialog->isCOMConnected())
+    if(MCUSettingsDialogInst->isConnected())
         return;
 
     ConnPoolCOMInstanceSettings p;
@@ -519,7 +562,8 @@ void MainWindow::PRGconnectMicrocontrollerCOM(QString conf) {
     p.stringFlowControl = QString::number(flowControl);
     p.localEchoEnabled = true; // always on now
 
-    serialSettingsDialog->connectCOM(p);
+    MCUSettingsDialogInst->selectConnectionMethod(MCUSettingsDialog::ConnectionMethod::COM);
+    MCUSettingsDialogInst->connectCOM(p);
 }
 void MainWindow::PRGdisconnectRemoteUDP() {
     if(remoteCCDialog->isUDPConnected())
@@ -537,9 +581,9 @@ void MainWindow::PRGdisconnectStreamCOM() {
     if(streamingSettingsDialog->isCOMConnected())
         streamingSettingsDialog->disconnectCOM();
 }
-void MainWindow::PRGdisconnectMicrocontrollerCOM() {
-    if(serialSettingsDialog->isCOMConnected())
-        serialSettingsDialog->disconnectCOM();
+void MainWindow::PRGdisconnectMicrocontroller() {
+    if(MCUSettingsDialogInst->isConnected())
+        MCUSettingsDialogInst->doDisconnect();
 }
 
 void MainWindow::PRGenableHWT(bool state) {
@@ -590,11 +634,15 @@ void MainWindow::PRGsetHWTframerate(int fps) {
     else /*if(selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA)*/
         stereoCameraSettingsDialog->setHWTframerate(fps);
 }
-void MainWindow::PRGenableSWTframerateLimiting(bool state) {
+void MainWindow::PRGenableSWTframerateLimiting(const QString &state) {
     if(!selectedCamera || selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
         return;
 
-    singleCameraSettingsDialog->enableAcquisitionFrameRate(state);
+    if(state == "true" || state == "1") {
+        singleCameraSettingsDialog->enableAcquisitionFrameRate(true);
+    } else if(state == "false" || state == "0") {
+        singleCameraSettingsDialog->enableAcquisitionFrameRate(false);
+    }
 }
 void MainWindow::PRGsetSWTframerate(int fps) {
     if(!selectedCamera || selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)

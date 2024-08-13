@@ -50,6 +50,7 @@
         <file>icons/computer-connection.svg</file>
         <file>icons/equals1b.svg</file>
         <file>icons/plus1b.svg</file>
+        <file>icons/messageEmpty.svg</file>
         <file>icons/camera-video-stereo.svg</file>
 
         <file>icons/Breeze/actions/22/composite-track-preview.svg</file>
@@ -57,8 +58,15 @@
         <file>icons/Breeze/actions/22/adjustlevels.svg</file>
         <file>icons/Breeze/actions/22/table.svg</file>
         <file>icons/Breeze/actions/22/labplot-xy-interpolation-curve.svg</file>
-        <file>icons/Breeze/applets/22/webcam.svg</file>
+        <file>icons/Breeze/devices/22/camera-web.svg</file>
         <file>icons/Breeze/actions/22/show-gpu-effects.svg</file>
+
+        <file>icons/Breeze/actions/22/kdenlive-composite.svg</file>
+        <file>icons/Breeze/actions/22/view-preview.svg</file>
+        <file>icons/Breeze/actions/22/run-build.svg</file>
+
+        <file>icons/crosshairs-gaze-calibration.svg</file>
+        <file>icons/crosshairs-gaze-validation.svg</file>
 
     </qresource>
 </RCC>

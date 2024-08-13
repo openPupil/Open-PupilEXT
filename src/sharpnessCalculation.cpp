@@ -7,7 +7,7 @@
 // This should be run in a separate thread as the pattern detection is slow
 SharpnessCalculation::SharpnessCalculation(QObject *parent) : QObject(parent) {
 
-    updateDelay = 33;
+    drawDelay = 33;
 
     scalingFactor = 0.5; // Scales the image down to increase pattern detection speed, for sharpness calculation, the original resolution is used
 
@@ -27,7 +27,7 @@ SharpnessCalculation::~SharpnessCalculation() {
 void SharpnessCalculation::onNewImage(const CameraImage &cimg) {
 
 
-    if(timer.elapsed() > updateDelay && !cimg.img.empty()) {
+    if(timer.elapsed() > drawDelay && !cimg.img.empty()) {
         timer.restart();
 
         // If user changes boardsize in between frames it could result in errors
@@ -75,7 +75,7 @@ void SharpnessCalculation::onNewImage(const CameraImage &cimg) {
             cv::putText(img, "No Chessboard pattern found!", cv::Point(0.25*img.cols, 0.25*img.rows), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(0,0,255), 3);
         }
 
-        emit processedImage(mimg);
+        emit processedImageLowFPS(mimg);
 
     }
 

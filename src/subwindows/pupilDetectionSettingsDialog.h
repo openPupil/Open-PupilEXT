@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_PUPILDETECTIONSETTINGSDIALOG_H
-#define PUPILEXT_PUPILDETECTIONSETTINGSDIALOG_H
+#pragma once
 
 /**
     @author Moritz Lode, Gabor Benyei, Attila Boncser
@@ -55,7 +53,6 @@ private:
     QCheckBox *pupilUndistortionBox;
     QCheckBox *imageUndistortionBox;
 
-    // GB begin
     QIcon procModeIcon_undetermined;
     QIcon procModeIcon_1cam1pup;
     QIcon procModeIcon_1cam2pup;
@@ -67,7 +64,6 @@ private:
     QGroupBox *procModeGroup;
     QLabel *procModeInfoLabel;
     QComboBox *procModeBox;
-    // GB end
 
     void createForm();
     void updateForm();
@@ -85,21 +81,16 @@ private slots:
     void onPupilUndistortionClick(int state);
     void onImageUndistortionClick(int state);
 
-    // GB begin
     void onProcModeSelection(int idx);
     void updateProcModeEnabled();
     void updateProcModeCompatibility();
-    // GB end
 
 public slots:
 
     void onSettingsChange();
+    void onDisableProcModeSelector(bool state);
 
-signals: 
-    // GB added
+signals:
     void pupilDetectionProcModeChanged(int val);
 
 };
-
-
-#endif //PUPILEXT_PUPILDETECTIONSETTINGSDIALOG_H

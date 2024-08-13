@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_SWIRSKI2DSETTINGS_H
-#define PUPILEXT_SWIRSKI2DSETTINGS_H
+#pragma once
 
 /**
     @authors Moritz Lode, Gabor Benyei, Attila Boncser
@@ -26,7 +24,6 @@ class Swirski2DSettings : public PupilMethodSetting {
 
 public:
 
-    // GB: added pupilDetection instance to get the actual ROIs for Autometric Parametrization calculations
     explicit Swirski2DSettings(PupilDetection * pupilDetection, Swirski2D *m_swirski, QWidget *parent=0) : 
         PupilMethodSetting("Swirski2DSettings.configParameters","Swirski2DSettings.configIndex", parent), 
         p_swirski(m_swirski), 
@@ -35,17 +32,16 @@ public:
         PupilMethodSetting::setDefaultParameters(defaultParameters);
         createForm();
         configsBox->setCurrentText(settingsMap.key(configIndex));
-        // GB added begin
+
         if(isAutoParamEnabled()) {
             minRadiusBox->setEnabled(false);
             maxRadiusBox->setEnabled(false);
         } else {
             minRadiusBox->setEnabled(true);
             maxRadiusBox->setEnabled(true);
-        } 
-        // GB added begin
+        }
 
-        QGridLayout *infoLayout = new QGridLayout(infoBox);
+        QVBoxLayout *infoLayout = new QVBoxLayout(infoBox);
 
         QPushButton *iLabelFakeButton = new QPushButton();
         iLabelFakeButton = new QPushButton();
@@ -56,38 +52,35 @@ public:
         iLabelFakeButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings));
         iLabelFakeButton->setFixedSize(QSize(32,32));
         iLabelFakeButton->setIconSize(QSize(32,32));
-        infoLayout->addWidget(iLabelFakeButton, 0, 0);
+        infoLayout->addWidget(iLabelFakeButton);
 
         QLabel *pLabel = new QLabel();
         pLabel->setWordWrap(true);
         pLabel->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
         pLabel->setOpenExternalLinks(true);
         pLabel->setText("Lech Swirski, Andreas Bulling, Neil A. Dodgson, \"Robust real-time pupil tracking in highly off-axis images\", 2012 <a href=\"http://www.cl.cam.ac.uk/research/rainbow/projects/pupiltracking\">Website</a><br/>License: <a href=\"https://opensource.org/licenses/MIT\">MIT</a>");
-        infoLayout->addWidget(pLabel, 1, 0);
+        infoLayout->addWidget(pLabel);
 
-        // GB modified begin
-        // GB NOTE: removed \n to let it fit more efficiently
         QLabel *confLabel;
         if(p_swirski->hasConfidence())
             confLabel = new QLabel("Info: This method does provide its own confidence.");
         else
             confLabel = new QLabel("Info: This method does not provide its own confidence, use the outline confidence.");
         confLabel->setWordWrap(true);
-        infoLayout->addWidget(confLabel, 2, 0);
+        infoLayout->addWidget(confLabel);
 
         QLabel *infoLabel = new QLabel("CAUTION: Processing using this algorithm may be very slow, reduce the camera acquiring fps accordingly.");
         infoLabel->setWordWrap(true);
         infoLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
-        infoLayout->addWidget(infoLabel, 3, 0);
+        infoLayout->addWidget(infoLabel);
 #if _DEBUG
         QLabel *warnLabel = new QLabel("CAUTION: Debug build may perform very slow. Use release build or adjust processing speed to not risk memory overflow.");
         warnLabel->setWordWrap(true);
         warnLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
-        infoLayout->addWidget(warnLabel, 4, 0);
+        infoLayout->addWidget(warnLabel);
 #endif
 
         infoBox->setLayout(infoLayout);
-        // GB modified end
     }
 
     ~Swirski2DSettings() override = default;
@@ -106,7 +99,6 @@ public slots:
     void loadSettings() override {
         PupilMethodSetting::loadSettings();
 
-        // GB added begin
         if(isAutoParamEnabled()) {
             float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
             pupilDetection->setAutoParamEnabled(true);
@@ -119,15 +111,12 @@ public slots:
             pupilDetection->setAutoParamEnabled(false);
             minRadiusBox->setEnabled(true);
             maxRadiusBox->setEnabled(true);
-        } 
-        // GB added end
+        }
 
         applySpecificSettings();
     }
 
     void applySpecificSettings() override {
-
-        // GB modified begin
         
         // First come the parameters roughly independent from ROI size and relative pupil size 
         p_swirski->params.CannyBlur = cannyBlurBox->value();
@@ -218,7 +207,6 @@ public slots:
             }
             
         }
-        // GB modified end
 
         emit onConfigChange(configsBox->currentText());
     }
@@ -231,14 +219,11 @@ public slots:
 private:
 
     Swirski2D *p_swirski;
-    //Swirski2D *secondarySwirski = nullptr; // GB: refactored
-    // GB added begin
     Swirski2D *swirski2 = nullptr;
     Swirski2D *swirski3 = nullptr;
     Swirski2D *swirski4 = nullptr;
 
     PupilDetection *pupilDetection;
-    // GB added end
 
     QSpinBox *minRadiusBox;
     QSpinBox *maxRadiusBox;
@@ -278,11 +263,9 @@ private:
         QHBoxLayout *configsLayout = new QHBoxLayout();
 
         configsBox = new QComboBox();
-        // GB modified begin
         QLabel *parameterConfigsLabel = new QLabel(tr("Parameter configuration:"));
         configsBox->setFixedWidth(250);
         configsLayout->addWidget(parameterConfigsLabel);
-        // GB modified end
         configsLayout->addWidget(configsBox);
 
         for (QMap<QString, Settings>::const_iterator cit = settingsMap.cbegin(); cit != settingsMap.cend(); cit++)
@@ -306,25 +289,23 @@ private:
         mainLayout->addSpacerItem(new QSpacerItem(40, 5, QSizePolicy::Fixed));
 
 
-        QGroupBox *ellipseGroup = new QGroupBox("Algorithm specific: Ellipse Detection"); // GB: added "Algorithm specific: "
-        QGroupBox *optionsGroup = new QGroupBox("Algorithm specific: Options"); // GB: "Algorithm specific: "
+        QGroupBox *ellipseGroup = new QGroupBox("Algorithm specific: Ellipse Detection");
+        QGroupBox *optionsGroup = new QGroupBox("Algorithm specific: Options");
 
         QFormLayout *ellipseLayout = new QFormLayout();
         QFormLayout *optionsLayout = new QFormLayout();
 
-        // GB modified begin
-        // GB NOTE: to fit in smaller screen area
-        QLabel *minRadiusLabel = new QLabel(tr("Min. Radius [px]:")); // GB: px added
+        QLabel *minRadiusLabel = new QLabel(tr("Min. Radius [px]:"));
         minRadiusBox = new QSpinBox();
         minRadiusBox->setMaximum(5000);
         minRadiusBox->setValue(Radius_Min);
-        minRadiusBox->setFixedWidth(50); // GB
+        minRadiusBox->setFixedWidth(50);
 
-        QLabel *maxRadiusLabel = new QLabel(tr("Max. Radius [px]:")); // GB: px added
+        QLabel *maxRadiusLabel = new QLabel(tr("Max. Radius [px]:"));
         maxRadiusBox = new QSpinBox();
         maxRadiusBox->setMaximum(5000);
         maxRadiusBox->setValue(Radius_Max);
-        maxRadiusBox->setFixedWidth(50); // GB
+        maxRadiusBox->setFixedWidth(50);
 
         QHBoxLayout *layoutRow1 = new QHBoxLayout;
         layoutRow1->addWidget(minRadiusBox);
@@ -339,18 +320,18 @@ private:
         QLabel *cannyBlurLabel = new QLabel(tr("Canny Blur:"));
         cannyBlurBox = new QDoubleSpinBox();
         cannyBlurBox->setValue(CannyBlur);
-        cannyBlurBox->setFixedWidth(50); // GB
+        cannyBlurBox->setFixedWidth(50);
         ellipseLayout->addRow(cannyBlurLabel, cannyBlurBox);
 
         QLabel *cannyThreshold1Label = new QLabel(tr("Canny Threshold 1:"));
         cannyThreshold1Box = new QDoubleSpinBox();
         cannyThreshold1Box->setValue(CannyThreshold1);
-        cannyThreshold1Box->setFixedWidth(50); // GB
+        cannyThreshold1Box->setFixedWidth(50);
 
         QLabel *cannyThreshold2Label = new QLabel(tr("Canny Threshold 2:"));
         cannyThreshold2Box = new QDoubleSpinBox();
         cannyThreshold2Box->setValue(CannyThreshold2);
-        cannyThreshold2Box->setFixedWidth(50); // GB
+        cannyThreshold2Box->setFixedWidth(50);
 
         QHBoxLayout *layoutRow2 = new QHBoxLayout;
         layoutRow2->addWidget(cannyThreshold1Box);
@@ -365,18 +346,18 @@ private:
         QLabel *starburstPointsLabel = new QLabel(tr("Starburst Points:"));
         starburstPointsBox = new QSpinBox();
         starburstPointsBox->setValue(StarburstPoints);
-        starburstPointsBox->setFixedWidth(50); // GB
+        starburstPointsBox->setFixedWidth(50);
         ellipseLayout->addRow(starburstPointsLabel, starburstPointsBox);
 
         QLabel *percInlierLabel = new QLabel(tr("Perc. Inliers:"));
         percInlierBox = new QSpinBox();
         percInlierBox->setValue(PercentageInliers);
-        percInlierBox->setFixedWidth(50); // GB
+        percInlierBox->setFixedWidth(50);
 
         QLabel *iterInlierLabel = new QLabel(tr("Inlier Iterations:"));
         iterInlierBox = new QSpinBox();
         iterInlierBox->setValue(InlierIterations);
-        iterInlierBox->setFixedWidth(50); // GB
+        iterInlierBox->setFixedWidth(50);
 
         QHBoxLayout *layoutRow3 = new QHBoxLayout;
         layoutRow3->addWidget(percInlierBox);
@@ -395,7 +376,7 @@ private:
         QLabel *termPercLabel = new QLabel(tr("Early Termination Perc.:"));
         termPercBox = new QSpinBox();
         termPercBox->setValue(EarlyTerminationPercentage);
-        termPercBox->setFixedWidth(50); // GB
+        termPercBox->setFixedWidth(50);
         optionsLayout->addRow(termPercLabel, termPercBox);
 
         QLabel *imageAwareLabel = new QLabel(tr("Image Aware RANSAC:"));
@@ -407,7 +388,6 @@ private:
         earlyRejectionBox = new QCheckBox();
         earlyRejectionBox->setChecked(EarlyRejection);
         optionsLayout->addRow(earlyRejectionLabel, earlyRejectionBox);
-        // GB modified end
 
         optionsGroup->setLayout(optionsLayout);
         mainLayout->addWidget(optionsGroup);
@@ -415,8 +395,8 @@ private:
 
         QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
-        resetButton = new QPushButton("Reset algorithm parameters"); // GB: clarified text
-        fileButton = new QPushButton("Load config file"); // GB: clarified text
+        resetButton = new QPushButton("Reset algorithm parameters");
+        fileButton = new QPushButton("Load config file");
 
         buttonsLayout->addWidget(resetButton);
         connect(resetButton, SIGNAL(clicked()), this, SLOT(onResetClick()));
@@ -482,7 +462,7 @@ private:
             { Settings::ROI_0_6_OPTIMIZED, {21.0f, 108.0f, 0.3f, 21.0f, 79.0f, 31.0f, 25.0f, 2.0f, 14.0f, 1.0f, 0.0f} },
             { Settings::FULL_IMAGE_OPTIMIZED, {19.0f, 115.0f, 0.4f, 46.0f, 63.0f, 25.0f, 38.0f, 10.0f, 27.0f, 0.0f, 1.0f} },
             { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, -1.0f, 0.4f, 46.0f, 63.0f, 25.0f, 38.0f, 10.0f, 27.0f, 0.0f, 1.0f} },
-            { Settings::CUSTOM, {-1.0f, -1.0f, 0.4f, 46.0f, 63.0f, 25.0f, 38.0f, 10.0f, 27.0f, 0.0f, 1.0f} } // GB added
+            { Settings::CUSTOM, {-1.0f, -1.0f, 0.4f, 46.0f, 63.0f, 25.0f, 38.0f, 10.0f, 27.0f, 0.0f, 1.0f} }
     };
 
 
@@ -491,8 +471,6 @@ private slots:
     void onParameterConfigSelection(QString configKey) {
         setConfigIndex(configKey);
         QList<float>& selectedParameter = getCurrentParameters();
-
-        // GB modified begin
 
         // First come the parameters roughly independent from ROI size and relative pupil size 
         cannyBlurBox->setValue(selectedParameter[2]);
@@ -518,12 +496,8 @@ private slots:
             minRadiusBox->setValue(selectedParameter[0]);
             maxRadiusBox->setValue(selectedParameter[1]);
         }
-        // GB modified end
 
         //applySpecificSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
     }
 
 };
-
-
-#endif //PUPILEXT_SWIRSKI2DSETTINGS_H

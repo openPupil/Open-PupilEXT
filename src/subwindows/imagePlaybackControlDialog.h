@@ -24,38 +24,14 @@
 #include <QKeyEvent> // DEV
 
 /**
-    
     This dialog gives the opportunity of playing and stopping image playback for ths user.
     It also shows basic information about the currently played/displayed frame.
     There is a dial widget for stepping frame-by-frame, if the user would like to inspect 
     interesting frames more closely. On the slider a green tick shows the position of file read, 
-    (that last went into pupilDetection) and the slider handle marks the actually diaplayed image position
+    (that last went into pupilDetection) and the slider handle marks the actually displayed image position
     (that just arrived from pupilDetection).
 
-    This dialog is designed to be only visible and interactable while an image directory is opened. 
-
-    IMPORTANT:
-        The dial steps to next or previous frames in a way that the read image will pass through the 
-        pupil detection processing, but the Slider clicks will only seek images and display them in the 
-        camera view, but pupilDetection is not performed on them
-
-    GB NOTE:
-        Playback speed and loop settings were moved here from GeneralSettingsDialog, 
-        so were play and stop buttons from main window.
-    
-    GB NOTE: 
-        In case of pupil detection /tracking going on, handling "dead time" between pausing/stopping 
-        playback and actual end of pupildetection signals should be consistent with the 
-        Enabled/Disabled state of button controls in this dialog. 
-        This is as far as I know fulfilled, but I did not employ any full proof async code.
-
-    GB NOTE:
-        recEventTracker->resetReplay(timestamp) should be called:
-        1, Upon playback safely ended (meaning that the last read image got processed through pupilDetection)
-            but when stopped (not paused), it should also call recEventTracker->resetReplay() to reset to beginning
-        2, Also when someone uses the slider to jump to a timepoint
-        This is supposed to ok, but if widgets enable/disable does erroneously let the user click anywhere, problems can arise
-
+    This dialog is designed to be only visible and interactable while an image directory is opened.
 */
 
 
@@ -104,19 +80,14 @@ private:
     TimestampSpinBox *timestampVal;
     QSpinBox *selectedFrameBox;
     QLabel *timestampHumanValLabel;
-    QLabel *imgNumberValLabel;
+    QLabel *numImagesTotalLabel;
     QLabel *elapsedTimeValLabel;
     QLabel *acqFPSValLabel;
     QLabel *percentValLabel;
     QLabel *trialValLabel;
-
-    QElapsedTimer drawTimer;
-    int drawDelay;
+    QLabel *messageValLabel;
 
     int numImagesTotal = -1;
-    bool waitingForReset = false;
-    uint64_t stalledTimestamp = 0;
-    bool playbackStalled = false;
     uint64_t lastTimestamp = 0;
     uint64_t startTimestamp = 0;
     QTime timeTotal;
@@ -165,8 +136,9 @@ private slots:
     
     void updateInfoInternal(int frameNumber);
 
-    void onPupilDetectionStart();
-    void onPupilDetectionStop();
+    // not needed anymore, as signals always go through pupildetection instance
+//    void onPupilDetectionStart();
+//    void onPupilDetectionStop();
 
     void onDialForward();
     void onDialBackward();

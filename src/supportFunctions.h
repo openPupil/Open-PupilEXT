@@ -13,6 +13,7 @@
 #include <QRectF>
 #include <QColor>
 #include "subwindows/outputDataRuleDialog.h"
+#include <opencv2/core/mat.hpp>
 
 /**
 
@@ -296,6 +297,23 @@ public:
         return dataFile.absolutePath() + '/' + dataFile.fileName();
     };
 
+    // Shortens a long string for display on the GUI, depending on allowed max character length
+    // e.g. from C:/something/another/file.csv it makes C:/somethin...er/file.csv
+    static QString shortenStringForDisplay(const QString &str, int numMaxCharacters) {
+
+        if(numMaxCharacters < 5) {
+            std::cerr << "Cannot shorten string to fit on less than 5 characters, using 5 now" << std::endl;
+            numMaxCharacters = 5;
+        }
+
+        if(str.length() < numMaxCharacters)
+            return str;
+
+        int numCharsOneSide = floor(numMaxCharacters/2)-2;
+        return QString(str.mid(0, numCharsOneSide) + "..." + str.mid(str.length()-numCharsOneSide, numCharsOneSide));
+
+    };
+
     /**
      * If previously loaded discrete ROI is valid, returns same discrete ROI, otherwise returns one at 60%.
     */
@@ -405,4 +423,87 @@ public:
 
         return color;
     };
+
+    // This function was in videoView but moved here as other classes may use it in future
+    // Source Andy Maloney: https://github.com/asmaloney/asmOpenCV/blob/master/asmOpenCV.h
+    static inline QImage cvMatToQImage(const cv::Mat &inMat)
+    {
+        switch (inMat.type())
+        {
+            // 8-bit, 4 channel
+            case CV_8UC4:
+            {
+                QImage image(inMat.data,
+                             inMat.cols, inMat.rows,
+                             static_cast<int>(inMat.step),
+                             QImage::Format_ARGB32);
+
+                return image;
+            }
+
+                // 8-bit, 3 channel
+            case CV_8UC3:
+            {
+                QImage image(inMat.data,
+                             inMat.cols, inMat.rows,
+                             static_cast<int>(inMat.step),
+                             QImage::Format_RGB888);
+
+                return image.rgbSwapped();
+            }
+
+                // 8-bit, 1 channel
+            case CV_8U:
+            {
+#if QT_VERSION >= 0x050500
+
+                // From Qt 5.5
+                QImage image(inMat.data, inMat.cols, inMat.rows,
+                             static_cast<int>(inMat.step),
+                             QImage::Format_Grayscale8);
+#else
+                static QVector<QRgb>  sColorTable;
+
+                // only create our color table the first time
+                if (sColorTable.isEmpty())
+                {
+                    sColorTable.resize(256);
+                    for (int i = 0; i < 256; ++i)
+                    {
+                        sColorTable[i] = qRgb(i, i, i);
+                    }
+                }
+
+                QImage image(inMat.data,
+                    inMat.cols, inMat.rows,
+                    static_cast<int>(inMat.step),
+                    QImage::Format_Indexed8);
+
+                image.setColorTable(sColorTable);
+#endif
+                return image;
+            }
+
+            default:
+                std::cerr << "cvMatToQImage() - cv::Mat image type not handled in switch:" << inMat.type() << std::endl;
+                break;
+        }
+
+        return QImage();
+    }
+
+    // Reads out a bool value from QSettings in a safe way, to surely work around a that sometimes the bool values
+    // are saved as textual true/false values, but anything other than number 0 will be read as true,
+    // ultimately causing any state to be read as true
+    static bool readBoolFromQSettings(QString keyString, bool defaultState, QSettings *applicationSettings) {
+        const QByteArray readData = applicationSettings->value(keyString, QString::number((int)defaultState)).toByteArray();
+        //std::cout << m_metaSnapshotsEnabled.toStdString() << std::endl; //
+        if (readData.isEmpty()) {
+            return defaultState;
+        }
+        if (readData == "1" || readData == "true")
+            return true;
+        else
+            return false;
+    }
 };

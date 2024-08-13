@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_PURESETTINGS_H
-#define PUPILEXT_PURESETTINGS_H
+#pragma once
 
 /**
     @authors Moritz Lode, Gabor Benyei, Attila Boncser
@@ -26,7 +24,6 @@ class PuReSettings : public PupilMethodSetting {
 
 public:
 
-    // GB: added pupilDetection instance to get the actual ROIs for Autometric Parametrization calculations
     explicit PuReSettings(PupilDetection * pupilDetection, PuRe *pure, QWidget *parent=0) : 
         PupilMethodSetting("PuReSettings.configParameters", "PuReSettings.configIndex", parent), 
         pure(pure), 
@@ -35,7 +32,7 @@ public:
         PupilMethodSetting::setDefaultParameters(defaultParameters);
         createForm();
         configsBox->setCurrentText(settingsMap.key(configIndex));
-        // GB added begin
+
         if(isAutoParamEnabled()) {
             canthiDistanceBox->setEnabled(false);
             minPupilBox->setEnabled(false);
@@ -44,10 +41,9 @@ public:
             canthiDistanceBox->setEnabled(true);
             minPupilBox->setEnabled(true);
             maxPupilBox->setEnabled(true);
-        } 
-        // GB added end
+        }
 
-        QGridLayout *infoLayout = new QGridLayout(infoBox);
+        QVBoxLayout *infoLayout = new QVBoxLayout(infoBox);
 
         QPushButton *iLabelFakeButton = new QPushButton();
         iLabelFakeButton = new QPushButton();
@@ -58,33 +54,30 @@ public:
         iLabelFakeButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings));
         iLabelFakeButton->setFixedSize(QSize(32,32));
         iLabelFakeButton->setIconSize(QSize(32,32));
-        infoLayout->addWidget(iLabelFakeButton, 0, 0);
+        infoLayout->addWidget(iLabelFakeButton);
 
         QLabel *pLabel = new QLabel();
         pLabel->setWordWrap(true);
         pLabel->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
         pLabel->setOpenExternalLinks(true);
         pLabel->setText("Thiago Santini, Wolfgang Fuhl, Enkelejda Kasneci, \"PuRe: Robust pupil detection for real-time pervasive eye tracking.\", 2018<br/>Part of the <a href=\"https://www-ti.informatik.uni-tuebingen.de/santini/EyeRecToo\">EyeRecToo</a> software. Copyright (c) 2018, Thiago Santini");
-        infoLayout->addWidget(pLabel, 1, 0);
+        infoLayout->addWidget(pLabel);
 
-        // GB modified begin
-        // GB: removed \n to let it fit more efficiently
         QLabel *confLabel;
         if(pure->hasConfidence())
             confLabel = new QLabel("Info: This method does provide its own confidence.");
         else
             confLabel = new QLabel("Info: This method does not provide its own confidence, use the outline confidence.");
         confLabel->setWordWrap(true);
-        infoLayout->addWidget(confLabel, 2, 0);
+        infoLayout->addWidget(confLabel);
 
 #if _DEBUG
         QLabel *warnLabel = new QLabel("CAUTION: Debug build may perform very slow. Use release build or adjust processing speed to not risk memory overflow.");
         warnLabel->setWordWrap(true);
         warnLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
-        infoLayout->addWidget(warnLabel, 3, 0);
+        infoLayout->addWidget(warnLabel);
 #endif
         infoBox->setLayout(infoLayout);
-        // GB modified end
     }
 
     ~PuReSettings() override = default;
@@ -103,7 +96,6 @@ public slots:
 
     void loadSettings() override {
 
-        // GB added begin
         if(isAutoParamEnabled()) {
             float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
             pupilDetection->setAutoParamEnabled(true);
@@ -118,16 +110,12 @@ public slots:
             canthiDistanceBox->setEnabled(true);
             minPupilBox->setEnabled(true);
             maxPupilBox->setEnabled(true);
-        } 
-        // GB added end
+        }
 
         applySpecificSettings();
     }
 
     void applySpecificSettings() override {
-
-        // GB modified begin
-        // NOTE: To support autoParam, and also 4 threaded pupil detection for 4 pupils
 
         // First come the parameters roughly independent from ROI size and relative pupil size 
         int baseWidth = pure->baseSize.width;
@@ -192,7 +180,6 @@ public slots:
             }
             
         }
-        // GB modified end
 
         emit onConfigChange(configsBox->currentText());
     }
@@ -205,14 +192,11 @@ public slots:
 private:
 
     PuRe *pure;
-    //PuRe *secondaryPure = nullptr; //GB: refactored
-    // GB added begin
     PuRe *pure2 = nullptr;
     PuRe *pure3 = nullptr;
     PuRe *pure4 = nullptr;
 
-    PupilDetection *pupilDetection; 
-    // GB added end
+    PupilDetection *pupilDetection;
 
     QSpinBox *imageWidthBox;
     QSpinBox *imageHeightBox;
@@ -237,11 +221,9 @@ private:
         QHBoxLayout *configsLayout = new QHBoxLayout();
 
         configsBox = new QComboBox();
-        // GB modified begin
         QLabel *parameterConfigsLabel = new QLabel(tr("Parameter configuration:"));
         configsBox->setFixedWidth(250);
         configsLayout->addWidget(parameterConfigsLabel);
-        // GB modified end
         configsLayout->addWidget(configsBox);
 
         for (QMap<QString, Settings>::const_iterator cit = settingsMap.cbegin(); cit != settingsMap.cend(); cit++)
@@ -264,25 +246,23 @@ private:
 
         mainLayout->addSpacerItem(new QSpacerItem(40, 5, QSizePolicy::Fixed));
 
-        QGroupBox *sizeGroup = new QGroupBox("Algorithm specific: Image Size (Downscaling)"); // GB: "Algorithm specific: "
+        QGroupBox *sizeGroup = new QGroupBox("Algorithm specific: Image Size (Downscaling)");
         QGroupBox *physGroup = new QGroupBox("Algorithm specific: Physical Parameter");
 
         QFormLayout *sizeLayout = new QFormLayout();
         QFormLayout *physLayout = new QFormLayout();
 
-        // GB modified begin
-        // GB NOTE: to fit in smaller screen area
-        QLabel *widthLabel = new QLabel(tr("Image width [px]:")); // GB: px notation added
+        QLabel *widthLabel = new QLabel(tr("Image width [px]:"));
         imageWidthBox = new QSpinBox();
         imageWidthBox->setMaximum(5000);
         imageWidthBox->setValue(baseWidth);
-        imageWidthBox->setFixedWidth(50); // GB
+        imageWidthBox->setFixedWidth(50);
         
-        QLabel *heightLabel = new QLabel(tr("Image height [px]:")); // GB: px notation added
+        QLabel *heightLabel = new QLabel(tr("Image height [px]:"));
         imageHeightBox = new QSpinBox();
         imageHeightBox->setMaximum(5000);
         imageHeightBox->setValue(baseHeight);
-        imageHeightBox->setFixedWidth(50); // GB
+        imageHeightBox->setFixedWidth(50);
         
         QHBoxLayout *layoutRow1 = new QHBoxLayout;
         layoutRow1->addWidget(imageWidthBox);
@@ -300,18 +280,18 @@ private:
         QLabel *canthiDistanceLabel = new QLabel(tr("Mean Canthi Distance [mm]:"));
         canthiDistanceBox = new QDoubleSpinBox();
         canthiDistanceBox->setValue(meanCanthiDistanceMM);
-        canthiDistanceBox->setFixedWidth(50); // GB
+        canthiDistanceBox->setFixedWidth(50);
         physLayout->addRow(canthiDistanceLabel, canthiDistanceBox);
 
         QLabel *maxPupilLabel = new QLabel(tr("Max. Pupil Size [mm]:"));
         maxPupilBox = new QDoubleSpinBox();
         maxPupilBox->setValue(maxPupilDiameterMM);
-        maxPupilBox->setFixedWidth(50); // GB
+        maxPupilBox->setFixedWidth(50);
 
         QLabel *minPupilLabel = new QLabel(tr("Min. Pupil Size [mm]:"));
         minPupilBox = new QDoubleSpinBox();
         minPupilBox->setValue(minPupilDiameterMM);
-        minPupilBox->setFixedWidth(50); // GB
+        minPupilBox->setFixedWidth(50);
 
         QHBoxLayout *layoutRow2 = new QHBoxLayout;
         layoutRow2->addWidget(maxPupilBox);
@@ -321,15 +301,14 @@ private:
         layoutRow2->addWidget(minPupilBox);
         //layoutRow2->addSpacerItem(sp);
         physLayout->addRow(maxPupilLabel, layoutRow2);
-        // GB modified end
 
         physGroup->setLayout(physLayout);
         mainLayout->addWidget(physGroup);
 
         QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
-        resetButton = new QPushButton("Reset algorithm parameters"); // GB: clarified text
-        fileButton = new QPushButton("Load config file"); // GB: clarified text
+        resetButton = new QPushButton("Reset algorithm parameters");
+        fileButton = new QPushButton("Load config file");
 
         buttonsLayout->addWidget(resetButton);
         connect(resetButton, SIGNAL(clicked()), this, SLOT(onResetClick()));
@@ -367,7 +346,7 @@ private:
             { Settings::ROI_0_6_OPTIMIZED, {320, 240, 38.7f, 1.9f, 16.8f} },
             { Settings::FULL_IMAGE_OPTIMIZED, {320, 240, 94.1f, 0.1f, 16.0f} },
             { Settings::AUTOMATIC_PARAMETRIZATION, {320, 240, -1.0f, -1.0f, -1.0f} },
-            { Settings::CUSTOM, {320, 240, -1.0f, -1.0f, -1.0f} } // GB added
+            { Settings::CUSTOM, {320, 240, -1.0f, -1.0f, -1.0f} }
     };
 
       // Parameters from second optimization run
@@ -386,8 +365,6 @@ private slots:
         QList<float>& selectedParameter = getCurrentParameters();
 
         qDebug() << "configIndex = " << configIndex;
-
-        // GB modified begin
 
         // First come the parameters roughly independent from ROI size and relative pupil size 
         imageWidthBox->setValue(selectedParameter[0]);
@@ -408,12 +385,8 @@ private slots:
             minPupilBox->setValue(selectedParameter[3]);
             maxPupilBox->setValue(selectedParameter[4]);
         }
-        // GB modified end
 
         //applySpecificSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
     }
 
 };
-
-
-#endif //PUPILEXT_PURESETTINGS_H

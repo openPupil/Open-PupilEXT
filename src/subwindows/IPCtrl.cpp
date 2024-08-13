@@ -3,10 +3,7 @@
 IPCtrl::IPCtrl(QWidget *parent) : QFrame(parent)
 {
     setFrameShape( QFrame::StyledPanel );
-
-    // BG modified
-    setFrameShadow( QFrame::Plain ); 
-    // BG modified end
+    setFrameShadow( QFrame::Plain );
 
     QHBoxLayout* pLayout = new QHBoxLayout( this );
     setLayout( pLayout );
@@ -44,9 +41,7 @@ IPCtrl::IPCtrl(QWidget *parent) : QFrame(parent)
 
     }
 
-    // BG modified
     setMaximumWidth( 30 * QTUTL_IP_SIZE +10);
-    // BG modified end
 
     connect( this, SIGNAL(signalTextChanged(QLineEdit*)),
              this, SLOT(slotTextChanged(QLineEdit*)),
@@ -58,7 +53,6 @@ IPCtrl::~IPCtrl()
 
 }
 
-// BG
 void IPCtrl::setValue(QString ip) {
     QStringList subStrings = ip.split('.');
 
@@ -69,7 +63,6 @@ void IPCtrl::setValue(QString ip) {
             m_pLineEdit[i]->setText("0");
 }
 
-// BG
 QString IPCtrl::getValue() {
     return QString( m_pLineEdit[0]->text() + '.' + m_pLineEdit[1]->text() + '.' + m_pLineEdit[2]->text() + '.' + m_pLineEdit[3]->text() );
 }

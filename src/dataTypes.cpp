@@ -2,8 +2,9 @@
 #include "./DataTypes.h"
 
 QMap<DataTypes::DataType, QString> DataTypes::map = {
+    {DataType::TIME_RAW_TIMESTAMP,       "Timestamp"},
     {DataType::TIME,                     "Time"},
-    {DataType::FRAME_NUMBER,             "Frame#"},
+    {DataType::FRAME_NUMBER,             "Frame #"},
     {DataType::CAMERA_FPS,               "Camera/Image read FPS"},
     {DataType::PUPIL_FPS,                "Processing FPS"},
     {DataType::PUPIL_CENTER_X,           "Pupil center x"},

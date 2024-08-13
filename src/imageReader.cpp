@@ -43,11 +43,9 @@ ImageReader::ImageReader(QString directory, QMutex *imageMutex, QWaitCondition *
         cv::glob(imageDirectory.filePath("0").toStdString(), filenames, false);
         cv::glob(imageDirectory.filePath("1").toStdString(), filenamesSecondary, false);
 
-        // GB added begin
         purgeFilenamesVector(filenames);
         purgeFilenamesVector(filenamesSecondary);
         // TODO: add check to ensure the same timestamp has images in both directories
-        // GB added end
 
         assert(filenames.size() == filenamesSecondary.size());
     } else {
@@ -58,20 +56,16 @@ ImageReader::ImageReader(QString directory, QMutex *imageMutex, QWaitCondition *
         // glob sorts the names alphabetically, so filenames without zeros like _19 come after _189
         cv::glob(imageDirectory.path().toStdString(), filenames, false);
 
-        // GB added begin
         purgeFilenamesVector(filenames);
-        // GB added end
     }
 
 //    qDebug()<<"ImageReader: found " << filenames.size() << " images. Ready." ;
 
-    // GB added begin
     bool ok;
     for(size_t u = 0; u < filenames.size(); u++) {
         acqTimestamps.push_back( QFileInfo(QString::fromStdString(filenames[u])).baseName().toULongLong(&ok, 10) );
     }
 
-    // GB added begin
     // GB: measure found images px size, for documenting in meta-snapshot
     int b=0;
     cv::Mat checkImg;
@@ -80,7 +74,6 @@ ImageReader::ImageReader(QString directory, QMutex *imageMutex, QWaitCondition *
         foundImageWidth = checkImg.cols;
         foundImageHeight = checkImg.rows;
     }
-    // GB added end
 
     setPlaybackSpeed(playbackSpeed);
 }
@@ -161,13 +154,11 @@ void ImageReader::run() {
     // Playback loop finished, either due to end of files, or pause/stop action
     if(state != PlaybackState::PAUSED) {
         state = PlaybackState::STOPPED;
-        // GB added begin
-        // GB: to signal when we automatically reached the end
+        // to signal when we automatically reached the end
         if(currentImageIndex == filenames.size()){
             emit endReached();
             lastCommissionedFrameNumber = -1; // corner case
         }
-        // GB added end
         currentImageIndex = 0;
 //        qDebug() << "finished()";
         emit finished();
@@ -194,9 +185,9 @@ void ImageReader::runImpl(std::chrono::steady_clock::time_point& startTime, std:
     CameraImage cimg;
     cimg.type = CameraImageType::SINGLE_IMAGE_FILE;
     cimg.img = img.clone();
-    //cimg.timestamp = startTimestamp; // GB corrected /commented out
-    cimg.timestamp = acqTimestamps[currentImageIndex]; // GB: using the file name, not the time of image reading operation
-    cimg.frameNumber = currentImageIndex; // GB: added here too, as playbackControlDialog needs it
+    //cimg.timestamp = startTimestamp;
+    cimg.timestamp = acqTimestamps[currentImageIndex]; // using the file name, not the time of image reading operation
+    cimg.frameNumber = currentImageIndex; // playbackControlDialog needs it
     cimg.filename = filenames[currentImageIndex];
     img.release();
 
@@ -209,10 +200,8 @@ void ImageReader::runImpl(std::chrono::steady_clock::time_point& startTime, std:
         }
     }
     */
-    // GB added begin
 //    qDebug() << "lastCommissionedFrameNumber: " << lastCommissionedFrameNumber;
     lastCommissionedFrameNumber = currentImageIndex;
-    // GB adde end
 
     emit onNewImage(cimg);
 }
@@ -275,14 +264,12 @@ void ImageReader::runStereo() {
     // Playback loop finished, either due to end of files, or pause/stop action
     if(state != PlaybackState::PAUSED) {
         state = PlaybackState::STOPPED;
-        // GB added begin
-        // GB: to signal when we automatically reached the end
+        // to signal when we automatically reached the end
         if(currentImageIndex == filenames.size()){
             emit endReached();
             qDebug() << "endReached";
             lastCommissionedFrameNumber = -1; // corner case
         }
-        // GB added end
         currentImageIndex = 0;
         qDebug() << "finished()";
         emit finished();
@@ -310,8 +297,8 @@ ImageReader::runStereoImpl(std::chrono::steady_clock::time_point &startTime, std
     cimg.type = CameraImageType::STEREO_IMAGE_FILE;
     cimg.img = img.clone();
     cimg.imgSecondary = imgSecondary.clone();
-    //cimg.timestamp = startTimestamp; // GB corrected /commented out
-    cimg.timestamp = acqTimestamps[currentImageIndex]; // GB: using the file name, not the time of image reading operation
+    //cimg.timestamp = startTimestamp;
+    cimg.timestamp = acqTimestamps[currentImageIndex]; // using the file name, not the time of image reading operation
     cimg.frameNumber = currentImageIndex;
     cimg.filename = filenames[currentImageIndex];
     img.release();
@@ -326,9 +313,7 @@ ImageReader::runStereoImpl(std::chrono::steady_clock::time_point &startTime, std
         }
     }
     */
-    // GB added begin
     lastCommissionedFrameNumber = currentImageIndex;
-    // GB adde end
 
     emit onNewImage(cimg);
 }
@@ -465,7 +450,7 @@ void ImageReader::step1frame(bool next) {
 
     state = PlaybackState::PAUSED;
 
-    // GB NOTE: at this point, currentImageIndex is marking the NEXT (yet unplayed) frame for the run() method, so we keep that in respect
+    // NOTE: at this point, currentImageIndex is marking the NEXT (yet unplayed) frame for the run() method
 
     if(next)
         currentImageIndex+=1;
@@ -496,8 +481,8 @@ void ImageReader::step1frame(bool next) {
         cimg.type = CameraImageType::STEREO_IMAGE_FILE;
         cimg.img = img.clone();
         cimg.imgSecondary = imgSecondary.clone();
-        //cimg.timestamp = startTimestamp; // GB corrected /commented out
-        cimg.timestamp = acqTimestamps[currentImageIndex]; // GB: using the file name, not the time of image reading operation
+        //cimg.timestamp = startTimestamp;
+        cimg.timestamp = acqTimestamps[currentImageIndex]; // using the file name, not the time of image reading operation
         cimg.frameNumber = currentImageIndex;
         cimg.filename = filenames[currentImageIndex];
         img.release();
@@ -514,8 +499,8 @@ void ImageReader::step1frame(bool next) {
         CameraImage cimg;
         cimg.type = CameraImageType::SINGLE_IMAGE_FILE;
         cimg.img = img.clone();
-        //cimg.timestamp = startTimestamp; // GB corrected /commented out
-        cimg.timestamp = acqTimestamps[currentImageIndex]; // GB: using the file name, not the time of image reading operation
+        //cimg.timestamp = startTimestamp;
+        cimg.timestamp = acqTimestamps[currentImageIndex]; // using the file name, not the time of image reading operation
         cimg.frameNumber = currentImageIndex;
         cimg.filename = filenames[currentImageIndex];
         img.release();

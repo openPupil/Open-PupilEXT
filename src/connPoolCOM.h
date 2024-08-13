@@ -1,4 +1,3 @@
-
 #pragma once
 
 /**
@@ -7,28 +6,14 @@
 
 #include <QtCore/QObject>
 #include <QByteArray>
+#include "connPool.h"
 #include <QUdpSocket>
 #include <QSerialPort>
 
 Q_DECLARE_METATYPE(QSerialPort::SerialPortError)
 
 /**
-    
-    This enum contains flags that can be used to manage sockets/ports used for multiple purposes, by different classes.
-
-*/
-enum class ConnPoolPurposeFlag
-{
-    CAMERA_TRIGGER = 1 << 0, // 1
-    STREAMING = 1 << 1, // 2
-    REMOTE_CONTROL = 1 << 2 //, // 4
-};
-
-
-/**
-    
     This struct holds a bundle of settings that are necessary for opening a COM port
-
 */
 struct ConnPoolCOMInstanceSettings {
         QString name;
@@ -46,9 +31,7 @@ struct ConnPoolCOMInstanceSettings {
     };
 
 /**
-    
     This class is necessary for the COM pool to work. Each of these instances can start a separate listener.
-
 */
 class ConnPoolCOMInstance : public QObject {
     Q_OBJECT
@@ -119,7 +102,6 @@ class ConnPoolCOMInstance : public QObject {
 };
 
 /**
-    
     This class helps handling a COM connection to another machine, in a way that different classes can use the same connection for a purpose they specify. 
     
     Incoming data is read once, and any method that has subcribed beforehand to get the message, will receive it as a signal. 
@@ -133,23 +115,25 @@ class ConnPoolCOMInstance : public QObject {
     For sending data, or accessing socket directly, the socket instance pointer can be gotten from outside this class, via getInstance().
     This should be used with caution, as the connection should not be closed directly, but only via closeConnection() method of the pool class.
 
-    IMPORTANT: 
-        When this class is told to open a new connection (and assign an instance) to a COM port, whose NAME matches 
-        that of an already opened port /existing instance:
-            - if other COM port settings match, only NAME differs, it will:
-                - not open a new port and assign a pool COM instance, 
-                - but return with the identifier (vector index) of the matching instance.
-                => Connection will be seen as unsuccessful from the method that called setupAndOpenConnection().
-            - if other COM Settings are also different, it will follow a conservative strategy:
-                - not open a new port and assign a pool COM instance, 
-                - and neither return with the identifier (vector index) of the matching instance. 
-                => Connection will be seen as successful from the method that called setupAndOpenConnection().
+    IMPORTANT:
+        ! The NAME field is used as a unique key for identifying a COM port.
+        When this class is told to open a new connection (and assign an instance) to a COM port,
+            1, whose NAME matches that of an already opened port /existing instance:
+                - if other COM port settings are not matching with the desired one, it will:
+                    - not open a new port and assign a pool COM instance,
+                    - and neither return with the identifier (vector index) of the matching instance.
+                    => Connection will be seen as unsuccessful from the method that called setupAndOpenConnection().
+                - if other COM Settings are also the same, it will follow a conservative strategy:
+                    - not open a new port and assign a pool COM instance,
+                    - but return with the identifier (vector index) of the matching instance.
+                    => Connection will be seen as successful from the method that called setupAndOpenConnection().
+            2, whose NAME does NOT match with the desired one, then it will:
+                    - open a new port and assign a pool COM instance.
 
         One opened COM port /pool COM instance can be used for multiple purposes, marked by purposeFlags. 
         Also - in this version - multiple ports can be used for the same purpose.
         Classes that use these pools must internally keep track of their pool instance IDs assigned, returned by 
         setupAndOpenConnection(), and reset it to e.g. -1 or other invalid value when the connection is closed.
-
 */
 class ConnPoolCOM : public QObject {
     Q_OBJECT
@@ -215,8 +199,8 @@ public:
             for(int c=0; c<instancePool.size(); c++)
                 if(instancePool[c] == nullptr) { //  || (instancePool[c] != nullptr && instancePool[c]->port == nullptr) ) {
                     instancePool[c] = new ConnPoolCOMInstance(serialPort, purposeFlag, this);
-                    instancePool[c]->purposeFlags = (uint8_t)purposeFlag;
-                    instancePool[c]->port = serialPort;
+//                    instancePool[c]->purposeFlags = (uint8_t)purposeFlag;
+//                    instancePool[c]->port = serialPort;
                     qDebug() << "Previously abandoned COM pool instance added to pool again.";
                     return c;
                 }
@@ -269,8 +253,15 @@ public:
         if(instancePool.size() > idx && instancePool[idx] != nullptr && instancePool[idx]->port != nullptr)
             return instancePool[idx]->port;
         qDebug() << "No instance found.";
-        // ideally this line should never be reached
         return nullptr;
+    };
+
+    qint64 writeToInstance(int idx, const QByteArray &byteArray) {
+        if(instancePool.size() > idx && instancePool[idx] != nullptr && instancePool[idx]->port != nullptr) {
+            return instancePool[idx]->port->write(byteArray);
+        }
+        qDebug() << "No instance found.";
+        return 0;
     };
 
     bool subscribeListener(int idx, QObject *receiver, const char *method, Qt::ConnectionType type = Qt::AutoConnection) {

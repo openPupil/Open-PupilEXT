@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_STEREOFILECAMERACALIBRATIONVIEW_H
-#define PUPILEXT_STEREOFILECAMERACALIBRATIONVIEW_H
+#pragma once
 
 /**
     @author Moritz Lode
@@ -50,6 +48,3 @@ public slots:
     void onLoadClick();
 
 };
-
-
-#endif //PUPILEXT_STEREOFILECAMERACALIBRATIONVIEW_H

@@ -18,8 +18,9 @@ class PupilEXT(object):
     Method = 0 
     UDP_IP = '192.168.40.1'
     UDP_Port = 6900
+    UDP_LocalPort = 6900
     COM_Port = 'COM1'
-    COM_BaudRate = 9600
+    COM_BaudRate = 115200
     # COM_ByteOrder = 
     COM_FlowControl = False
     COM_StopBits = serial.STOPBITS_ONE
@@ -38,6 +39,7 @@ class PupilEXT(object):
         try:
             if self.Method == 0:
                 self.UDP_Conn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                self.UDP_Conn.bind(('',self.UDP_LocalPort))
             else:
                 self.COM_Conn = serial.Serial(
                     port = self.COM_Port, 
@@ -190,4 +192,101 @@ class PupilEXT(object):
             self.__sendRaw('PO true')
         else:
             self.__sendRaw('PO false')
+    
+    def connectRemoteControlUDP(self, ipAddress, portNumber):
+        if not self.Enabled : return
+        self.__sendRaw('CRC udp;' + ipAddress + ';' + str(portNumber))
+    
+    def connectRemoteControlCOM(self, portName, baudRate):
+        if not self.Enabled : return
+        self.__sendRaw('CRC com;' + portName + ';' + str(baudRate))
+    
+    def disconnectRemoteControlUDP(self):
+        if not self.Enabled : return
+        self.__sendRaw('CRD udp')
+    
+    def disconnectRemoteControlCOM(self):
+        if not self.Enabled : return
+        self.__sendRaw('CRD com')
+    
+    def connectStreamingUDP(self, ipAddress, portNumber):
+        if not self.Enabled : return
+        self.__sendRaw('CSC udp;' + ipAddress + ';' + str(portNumber))
+    
+    def connectStreamingCOM(self, portName, baudRate):
+        if not self.Enabled : return
+        self.__sendRaw('CSC com;' + portName + ';' + str(baudRate))
+    
+    def disconnectStreamingUDP(self):
+        if not self.Enabled : return
+        self.__sendRaw('CSD udp')
+    
+    def disconnectStreamingCOM(self):
+        if not self.Enabled : return
+        self.__sendRaw('CSD com')
+    
+    def connectMicrocontrollerUDP(self, ipAddress, portNumber):
+        if not self.Enabled : return
+        self.__sendRaw('CMC udp;' + ipAddress + ';' + str(portNumber))
+    
+    def connectMicrocontrollerCOM(self, portName, baudRate):
+        if not self.Enabled : return
+        self.__sendRaw('CMC com;' + portName + ';' + str(baudRate))
+    
+    def disconnectMicrocontroller(self):
+        if not self.Enabled : return
+        self.__sendRaw('CMD')
+
+    def switchToHardwareTriggeringMode(self):
+        if not self.Enabled : return
+        self.__sendRaw('IT H')
+    
+    def switchToSoftwareTriggeringMode(self):
+        if not self.Enabled : return
+        self.__sendRaw('IT S')
+    
+    def startHardwareTriggering(self):
+        if not self.Enabled : return
+        self.__sendRaw('IHQ')
+    
+    def stopHardwareTriggering(self):
+        if not self.Enabled : return
+        self.__sendRaw('IHY')
+    
+    def setHardwareTriggeringLineSource(self, lineSourceNumber):
+        if (lineSourceNumber > 4) or (lineSourceNumber < 1) : return
+        if not self.Enabled : return
+        self.__sendRaw('IHL ' + str(lineSourceNumber))
+    
+    def setHardwareTriggeringRuntimeLength(self, runtimeLengthMinutes):
+        if (runtimeLengthMinutes < 0) : return
+        if not self.Enabled : return
+        self.__sendRaw('IHR ' + str(runtimeLengthMinutes))
+
+    def setHardwareTriggeringFramerate(self, fps):
+        if (fps < 1) : return
+        if not self.Enabled : return
+        self.__sendRaw('IHT ' + str(fps))
+
+    def setSoftwareTriggeringFramerateLimitingEnabled(self, state):
+        if not self.Enabled : return
+        if state:
+            self.__sendRaw('ISC true')
+        else:
+            self.__sendRaw('ISC false')
+
+    def setSoftwareTriggeringFramerateLimit(self, fps):
+        if (fps < 1) : return
+        if not self.Enabled : return
+        self.__sendRaw('IST ' + str(fps))
+
+    def setExposureTimeMicrosec(self, expo):
+        if (expo < 0) : return
+        if not self.Enabled : return
+        self.__sendRaw('IE ' + str(expo))
+
+    def setGain(self, gain):
+        if (gain < 0) : return
+        if not self.Enabled : return
+        self.__sendRaw('IG ' + str(gain))
     

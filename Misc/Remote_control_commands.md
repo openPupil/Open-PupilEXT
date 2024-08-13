@@ -68,11 +68,11 @@ Important: The "smaller than" and "less than" signs (i.e. "<>") below are for de
 
 `M <message>` - Send textual message, to be saved along with the image recording as timestamped annotation, just like trial numbering increment triggers.
 
-`A1 <camera>` - Open a single camera. Friendly name of the device should be provided. A friendly name means the name that is displayed to you in Pylon Viewer of your Basler camera, e.g. "Basler a2A1920-160umBAS (12345678)" where the number in parentheses is the serial number of your camera device.
+`A1 <camera>` - Open a single camera. Friendly name of the device should be provided. A friendly name means the name that is displayed to you in Pylon Viewer of your Basler camera, e.g. `Basler a2A1920-160umBAS (12345678)` where the number in parentheses is the serial number of your camera device.
 
-`A2 <camera>;<camera>` - Open a stereo camera. Friendly names of the devices should be provided, separated by either "," or "|" or ";" characters.
+`A2 <camera>;<camera>` - Open a stereo camera. Friendly names of the devices should be provided, separated by either `,` or `|` or `;` characters.
 
-`AW <camera>` - Open a single OpenCV camera device ("webcam"). Device ID should be provided, which is an integer, enumerating devices starting from 0.
+`AW <deviceID>` - Open a single OpenCV camera device ("webcam"). Device ID should be provided, which is an integer, enumerating devices starting from `0`.
 
 `AT` - Start pupil tracking. A camera needs to be opened beforehand.
 
@@ -101,25 +101,31 @@ Important: The "smaller than" and "less than" signs (i.e. "<>") below are for de
 
 `GC <delimiter>` - Set global delimiter character. Accepted characters are a comma, a semicolon or tab character. Cannot be altered while a data ("csv") recording is going on.
 
-`GI <format>` - Set image recording output format. Format name should be provided: "tiff" or "bmp" or "jpg". Cannot be altered while an image recording is going on.
+`GI <format>` - Set image recording output format. Format name should be provided: `tiff` or `png` or `bmp` or `jpeg` or `webp` or `pgm`. Cannot be altered while an image recording is going on.
 
-`PA <algorithm>` - Set pupil detection algorithm. Accepted algorithms: "else" or "excuse" or "pure" or "purest" or "starburst" or "swirski2d".
+`PA <algorithm>` - Set pupil detection algorithm. Accepted algorithms: `else` or `excuse` or `pure` or `purest` or `starburst` or `swirski2d`.
 
-`PR <state>` - Use ROI Area Selection. Either "true" or "false".
+`PR <state>` - Use ROI Area Selection. Either `true` or `false`.
 
-`PO <state>` - Compute Additional Outline Confidence. Either "true" or "false".
+`PO <state>` - Compute Additional Outline Confidence. Either `true` or `false`.
 
 `CRC udp;<IP>;<port>` - Establish connection (start listening) for remote control using a UDP port.
 
 `CRC com;<port>;<baud>` - Establish connection (start listening) for remote control using a COM/serial port.
 
-`CRD <interface>` - Disconnect (stop listening) for remote control. Interface type should be provided: "udp" or "com".
+`CRD <interface>` - Disconnect (stop listening) for remote control. Interface type should be provided: `udp` or `com`.
 
 `CSC udp;<IP>;<port>` - Establish connection for pupil data streaming target using a UDP port.
 
 `CSC com;<port>;<baud>` - Establish connection for pupil data streaming target using a COM/serial port.
 
-`CSD <interface>` - Disconnect streaming target. Interface type should be provided: "udp" or "com".
+`CSD <interface>` - Disconnect streaming target. Interface type should be provided: `udp` or `com`.
+
+`CMC udp;<IP>;<port>` - Establish connection to the microcontroller unit using a UDP port.
+
+`CMC com;<port>;<baud>` - Establish connection to the microcontroller unit using a COM/serial port.
+
+`CMD` - Disconnect microcontroller unit.
 
 `IT <image acq. triggering mode>` Set Image Acquisition triggering mode. Valid inputs are: `H` for hardware-based and: `S` for software-based image acquisition triggering
 
@@ -133,10 +139,10 @@ Important: The "smaller than" and "less than" signs (i.e. "<>") below are for de
 
 `IHT <value>` Set hardware triggering framerate, any >=1 positive integer number is accepted
 
-`ISC <value>` Enable framerate limiting for software triggering. Accepted values are: `0` or `1`
+`ISC <value>` Enable framerate limiting for software triggering. Either `true` or `false`.
 
-`IST <value>` Set software triggering framerate, any >=1 positive integer number is accepted
+`IST <value>` Set software triggering framerate limit, any >=1 positive integer number is accepted
 
 `IE <value>` Set exposure in microseconds, any positive floating point number is accepted
 
-`IG <value>` Set gain, any floating point number is accepted
+`IG <value>` Set gain, any floating point number is accepted, minimum `0.0`

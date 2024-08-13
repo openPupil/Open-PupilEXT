@@ -1,9 +1,4 @@
-//
-// Created by aboncser on 2024. 03. 16..
-//
-
-#ifndef PUPILEXT_PLAYBACKSYNCHRONISER_H
-#define PUPILEXT_PLAYBACKSYNCHRONISER_H
+#pragma once
 
 /**
     @author Attila Boncser
@@ -41,10 +36,4 @@ public:
     void onPupilDetectionStarted();
     void onPupilDetectionStopped();
 
-
-
-
 };
-
-
-#endif //PUPILEXT_PLAYBACKSYNCHRONISER_H

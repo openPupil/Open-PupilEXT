@@ -30,10 +30,8 @@ public:
     IPCtrl(QWidget *parent = 0);
     ~IPCtrl();
 
-    // BG added
     void setValue(QString ip);
     QString getValue();
-    // BG added end
 
     virtual bool eventFilter( QObject *obj, QEvent *event );
 

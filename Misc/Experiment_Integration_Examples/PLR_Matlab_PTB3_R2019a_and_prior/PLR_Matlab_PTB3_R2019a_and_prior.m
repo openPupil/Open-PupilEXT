@@ -20,10 +20,16 @@ pupilEXT.Enabled = true; % Easy way to turn off if you are debugging
 pupilEXT.Method = 0;
 pupilEXT.UDP_IP = '192.168.40.1';
 pupilEXT.UDP_Port = 6900;
+% For simplicity we use the same local port number as the target port 
+% number by default, but if you operate on localhost (i.e. the experiment 
+% computer and host computer are physically the same), then you may
+% want to specify some other local port because Matlab and PupilEXT cannot
+% bind the same one port for themselves.
+% pupilEXT.UDP_LocalPort = 6500; 
 
 % pupilEXT.Method = 1;
 % pupilEXT.COM_Port = 'COM1';
-% pupilEXT.COM_BaudRate = 9600;
+% pupilEXT.COM_BaudRate = 115200;
 
 pupilEXT.RecordingsPath = 'C:/PupilEXT_Recordings'; % A slash at the end is not necessary
 pupilEXT.ParticipantName = participantName;
@@ -112,7 +118,7 @@ for j = 1 : numTrials
     % instruction of Psychtoolbox (Screen(window,'Flip');) right after the 
     % pupilEXT.incrementTrial(); or pupilEXT.sendMessage(); call(s), as the
     % program is executed serially in Matlab.
-    pupilEXT.sendMessage(['TRIAL ' num2str(j)]);
+    pupilEXT.sendMessage(['STIM_PRES_' num2str(j)]);
     
     Screen(window,'Flip');
     WaitSecs(timeStimOnScreen);

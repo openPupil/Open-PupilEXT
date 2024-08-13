@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_SINGLECAMERAIMAGEEVENTHANDLER_H
-#define PUPILEXT_SINGLECAMERAIMAGEEVENTHANDLER_H
+#pragma once
 
 /**
     @author Moritz Lode
@@ -51,5 +49,3 @@ signals:
     void imagesSkipped();
 
 };
-
-#endif //PUPILEXT_SINGLECAMERAIMAGEEVENTHANDLER_H

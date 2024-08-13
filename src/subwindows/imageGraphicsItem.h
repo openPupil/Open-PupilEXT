@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_IMAGEGRAPHICSITEM_H
-#define PUPILEXT_IMAGEGRAPHICSITEM_H
+#pragma once
 
 /**
     @author Moritz Lode
@@ -42,5 +40,3 @@ private:
     QImage image;
 
 };
-
-#endif //PUPILEXT_IMAGEGRAPHICSITEM_H

@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_SINGLEFILECAMERACALIBRATIONVIEW_H
-#define PUPILEXT_SINGLEFILECAMERACALIBRATIONVIEW_H
+#pragma once
 
 /**
     @author Moritz Lode
@@ -52,6 +50,3 @@ public slots:
     void onLoadClick();
 
 };
-
-
-#endif //PUPILEXT_SINGLEFILECAMERACALIBRATIONVIEW_H

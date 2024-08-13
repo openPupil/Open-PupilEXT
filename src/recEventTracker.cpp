@@ -299,18 +299,16 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
     QDomElement currObj;
 
     // NOTE: Should this range inclusive on both sides? (Should be low inclusive high exclusive?) But now it surely prevents data loss
-    for (size_t i = 0; i < trialIncrements.size(); i++)
-        if (trialIncrements[i].timestamp >= timestampFrom && trialIncrements[i].timestamp < timestampTo)
-        {
+    for (size_t i = 0; i < trialIncrements.size(); i++) {
+        if (trialIncrements[i].timestamp >= timestampFrom && trialIncrements[i].timestamp < timestampTo) {
             currObj = document.createElement("TrialIncrement");
             currObj.setAttribute("TimestampMs", QString::number(trialIncrements[i].timestamp));
             currObj.setAttribute("TrialNumber", QString::number(trialIncrements[i].trialNumber));
             root.appendChild(currObj);
         }
-    for (size_t i = 0; i < temperatureChecks.size(); i++)
-    {
-        if (temperatureChecks[i].temperatures[0] != 0 && temperatureChecks[i].timestamp >= timestampFrom && temperatureChecks[i].timestamp < timestampTo)
-        {
+    }
+    for (size_t i = 0; i < temperatureChecks.size(); i++) {
+        if (temperatureChecks[i].temperatures[0] != 0 && temperatureChecks[i].timestamp >= timestampFrom && temperatureChecks[i].timestamp < timestampTo) {
             currObj = document.createElement("CameraTempCheck");
             currObj.setAttribute("TimestampMs", QString::number(temperatureChecks[i].timestamp));
             currObj.setAttribute("Camera1", temperatureChecks[i].temperatures[0]);
@@ -319,14 +317,14 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
             root.appendChild(currObj);
         }
     }
-    for (size_t i = 0; i < messages.size(); i++)
-        if (messages[i].timestamp >= timestampFrom && messages[i].timestamp < timestampTo)
-        {
+    for (size_t i = 0; i < messages.size(); i++) {
+        if (messages[i].timestamp >= timestampFrom && messages[i].timestamp < timestampTo) {
             currObj = document.createElement("Message");
             currObj.setAttribute("TimestampMs", QString::number(messages[i].timestamp));
             currObj.setAttribute("MessageString", messages[i].messageString);
             root.appendChild(currObj);
         }
+    }
 
     // NOTE: search intervals are only inclusive on the left, but exclusive on the right. Consider this
     // TODO: clear file even if appended, as new XML is flushed into it
@@ -345,6 +343,13 @@ uint RecEventTracker::getLastCommissionedTrialNumber()
 {
     return bufferTrialCounter;
 }
+QString RecEventTracker::getLastMessage()
+{
+    if(messages.size()==0)
+        return "";
+
+    return messages[messages.size()-1].messageString;
+}
 void RecEventTracker::resetBufferTrialCounter(const quint64 &timestamp)
 {
 
@@ -355,7 +360,25 @@ void RecEventTracker::resetBufferTrialCounter(const quint64 &timestamp)
         return;
 
     bufferTrialCounter = 0;
-    addTrialIncrement(timestamp); // will increase counter instantly to 1
+
+    // We do not clear the actual vector for safety!
+    // The entries before reset will also be logged in the event log, and the user can later decide whether they want to use it
+//    trialIncrements.clear();
+
+    // will increase counter instantly to 1
+    addTrialIncrement(timestamp);
+}
+void RecEventTracker::resetBufferMessageRegister(const quint64 &timestamp)
+{
+    if (mode == STORAGE)
+        return;
+
+    // We do not clear the actual vector for safety!
+    // The entries before reset will also be logged in the event log, and the user can later decide whether they want to use it
+//    messages.clear();
+
+    // will add and empty element
+    addMessage(timestamp,"");
 }
 bool RecEventTracker::isReady()
 {
@@ -389,6 +412,24 @@ RecEventTracker::TrialIncrement RecEventTracker::getTrialIncrement(quint64 times
             //        "timestamp " << trialIncrements[trialIncrements.size()-i].timestamp <<
             //        "trial number " << trialIncrements[trialIncrements.size()-i].trialNumber;
             return trialIncrements[trialIncrements.size() - i];
+        }
+        i++;
+    }
+    return (emptyElem);
+}
+
+RecEventTracker::Message RecEventTracker::getMessage(quint64 timestamp)
+{
+    Message emptyElem;
+    if (messages.size() < 1)
+        return emptyElem;
+
+    size_t i = 1;
+    while (i <= messages.size())
+    {
+        if (messages[messages.size() - i].timestamp < timestamp)
+        {
+            return messages[messages.size() - i];
         }
         i++;
     }

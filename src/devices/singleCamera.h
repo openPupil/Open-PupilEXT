@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_SINGLECAMERA_H
-#define PUPILEXT_SINGLECAMERA_H
+#pragma once
 
 /**
     @authors Moritz Lode, Gabor Benyei, Attila Boncser
@@ -27,11 +25,6 @@ using namespace Basler_UniversalCameraParams;
 
 /**
     SingleCamera represents a single camera (Basler camera)
-
-    NOTE: Modified by Gabor Benyei, 2023 jan
-    BG NOTE: 
-        Added getters/setters for changing image acquisition ROI size and offset,
-        binning, as well as camera coreboard temperature
 
     getFriendlyName(): return the Basler device name in a friendly formatting
     getFullName(): return the full Basler device name
@@ -96,7 +89,6 @@ public:
     void loadFromFile(const String_t &filename);
     void saveToFile(const String_t &filename);
 
-    // GB added begin
     int getImageROIwidth() override; 
     int getImageROIheight() override; 
     int getImageROIoffsetX() override; 
@@ -107,7 +99,6 @@ public:
     int getBinningVal();
     double getTemperature();
     bool isGrabbing() override;
-    // GB added end
 
 private:
 
@@ -142,13 +133,11 @@ public slots:
     void setAcquisitionFPSValue(int value);
     void enableHardwareTrigger(bool state);
 
-    // GB added begin
     bool setBinningVal(int value);
     bool setImageROIwidth(int width);
     bool setImageROIheight(int height);
     bool setImageROIoffsetX(int offsetX);
     bool setImageROIoffsetY(int offsetY);
-    // GB added end
 
 signals:
 
@@ -158,5 +147,3 @@ signals:
     void imagesSkipped();
 
 };
-
-#endif //PUPILEXT_SINGLECAMERA_H
