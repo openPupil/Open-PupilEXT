@@ -12,6 +12,7 @@
 #include "../../SVGIconColorAdjuster.h"
 
 #include "json.h"
+#include "../../supportFunctions.h"
 #include <fstream>
 // for convenience
 using json = nlohmann::json;
@@ -42,9 +43,8 @@ public:
         }
 
         QVBoxLayout *infoLayout = new QVBoxLayout(infoBox);
-
+        QHBoxLayout *infoLayoutRow1 = new QHBoxLayout();
         QPushButton *iLabelFakeButton = new QPushButton();
-        iLabelFakeButton = new QPushButton();
         iLabelFakeButton->setFlat(true);
         iLabelFakeButton->setAttribute(Qt::WA_NoSystemBackground, true);
         iLabelFakeButton->setAttribute(Qt::WA_TranslucentBackground, true);
@@ -52,30 +52,36 @@ public:
         iLabelFakeButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings));
         iLabelFakeButton->setFixedSize(QSize(32,32));
         iLabelFakeButton->setIconSize(QSize(32,32));
-        infoLayout->addWidget(iLabelFakeButton);
+        infoLayoutRow1->addWidget(iLabelFakeButton);
 
         QLabel *pLabel = new QLabel();
         pLabel->setWordWrap(true);
         pLabel->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
         pLabel->setOpenExternalLinks(true);
+        SupportFunctions::setSmallerLabelFontSize(pLabel);
         pLabel->setText("Wolfgang Fuhl, Thiago Santini, Thomas Kübler, Enkelejda Kasneci, \"ElSe: Ellipse Selection for Robust Pupil Detection in Real-World Environments.\", 2016<br/>Part of the <a href=\"https://www-ti.informatik.uni-tuebingen.de/santini/EyeRecToo\">EyeRecToo</a> software. Copyright (c) 2018, Thiago Santini / University of Tübingen");
-        infoLayout->addWidget(pLabel);
+        infoLayoutRow1->addWidget(pLabel);
+
+        infoLayout->addLayout(infoLayoutRow1);
 
         QLabel *confLabel;
         if(p_else->hasConfidence())
             confLabel = new QLabel("Info: This method does provide its own confidence.");
         else
-            confLabel = new QLabel("Info: This method does not provide its own confidence, use the outline confidence."); 
+            confLabel = new QLabel("Info: This method does not provide its own confidence, use the outline confidence.");
+        SupportFunctions::setSmallerLabelFontSize(confLabel);
         confLabel->setWordWrap(true);
         infoLayout->addWidget(confLabel);
 
-        QLabel *infoLabel = new QLabel("CAUTION: Processing using this algorithm may be very slow, reduce the camera acquiring fps accordingly."); 
+        QLabel *infoLabel = new QLabel("CAUTION: Processing using this algorithm may be very slow, reduce the camera acquiring fps accordingly.");
+        SupportFunctions::setSmallerLabelFontSize(infoLabel);
         infoLabel->setWordWrap(true);
         infoLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
         infoLayout->addWidget(infoLabel);
 
 #if _DEBUG
         QLabel *warnLabel = new QLabel("CAUTION: Debug build may perform very slow. Use release build or adjust processing speed to not risk memory overflow.");
+        SupportFunctions::setSmallerLabelFontSize(warnLabel);
         warnLabel->setWordWrap(true);
         warnLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
         infoLayout->addWidget(warnLabel);
@@ -211,9 +217,8 @@ private:
 
         QHBoxLayout *configsNoteLayout = new QHBoxLayout();
         QLabel* configsNoteLabel = new QLabel(tr("Note: Configurations marked with an asterisk (*) are recommended for Basler\nacA2040-120um (1/1.8\" sensor format) camera(s) equipped with f=50 mm 2/3\"\nnominal sensor format lens, using 4:3 aspect ratio pupil detection ROI(s)."));
-        //configsNoteLabel->setFixedWidth((int)this->size().width()/2);
-        configsNoteLabel->setFixedWidth(420);
-        configsNoteLabel->setFixedHeight(45);
+        SupportFunctions::setSmallerLabelFontSize(configsNoteLabel);
+        configsNoteLabel->setFixedHeight(60);
         configsNoteLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
         configsNoteLayout->addWidget(configsNoteLabel);
         mainLayout->addLayout(configsNoteLayout);
@@ -230,7 +235,7 @@ private:
         minAreaBox->setSingleStep(0.001);
         minAreaBox->setMaximum(100);
         minAreaBox->setValue(minAreaRatio);
-        minAreaBox->setFixedWidth(60);
+        minAreaBox->setFixedWidth(80);
         sizeLayout->addRow(minAreaLabel, minAreaBox);
 
         QLabel *maxAreaLabel = new QLabel(tr("Max. Area [%]:"));
@@ -239,7 +244,7 @@ private:
         maxAreaBox->setSingleStep(0.001);
         maxAreaBox->setMaximum(100);
         maxAreaBox->setValue(maxAreaRatio);
-        maxAreaBox->setFixedWidth(60);
+        maxAreaBox->setFixedWidth(80);
         sizeLayout->addRow(maxAreaLabel, maxAreaBox);
 
         sizeGroup->setLayout(sizeLayout);

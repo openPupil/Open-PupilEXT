@@ -259,10 +259,10 @@ public slots:
     void setAlgorithm(QString method);
     void setConfigLabel(QString config);
 
-    void onNewSingleImageForOnePupil(const CameraImage &img); // formerly onNewImage
-    void onNewSingleImageForTwoPupil(const CameraImage &img); // formerly did not exist
-    void onNewStereoImageForOnePupil(const CameraImage &simg); // formerly onNewStereoImage
-    void onNewStereoImageForTwoPupil(const CameraImage &simg); // formerly did not exist
+    void onNewSingleImageForOnePupil(const CameraImage &img);
+    void onNewSingleImageForTwoPupil(const CameraImage &img);
+    void onNewStereoImageForOnePupil(const CameraImage &simg);
+    void onNewStereoImageForTwoPupil(const CameraImage &simg);
 
     void setAutoParamEnabled(bool state);
     void setAutoParamPupSizePercent(float value);

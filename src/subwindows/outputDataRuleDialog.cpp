@@ -27,10 +27,15 @@ OutputDataRuleDialog::OutputDataRuleDialog(const QString windowTitle, QWidget *p
     buttonsLayout->addRow(buttonAppend, buttonKeepAndSaveNew);
     mainLayout->addLayout(buttonsLayout);
 
+    // Set default focus on the safer solution button
+    buttonAppend->setDefault(false);
+    buttonKeepAndSaveNew->setDefault(true);
+
     setLayout(mainLayout);
 
     connect(buttonAppend, &QPushButton::clicked, this, &OutputDataRuleDialog::onAppendClicked);
     connect(buttonKeepAndSaveNew, &QPushButton::clicked, this, &OutputDataRuleDialog::onKeepAndSaveNewClicked);
+//    connect(this, &QDialog::close, this, &OutputDataRuleDialog::onKeepAndSaveNewClicked);
 
 }
 

@@ -15,8 +15,9 @@
 // resulting in an image recording of 30000 frames in total, at 1 FPS 
 // (which ultimately results in 30000/500=60 seconds of recording)  
 // NOTE: The lowest possible FPS (in case of using this flashing code) is 0.00023283064 Hz
+// Even in case of 1000 FPS, the tick counter should last 4294967295/1000/60 =~ 71582 minutes safely
 
-long int ReceivedValue1; // Use 64bit signed vars for overflow detection
+long long int ReceivedValue1;
 long long int ReceivedValue2;
 char SerialReadChar;
 char SerialMessage[SERIAL_BUFFER_SIZE];
@@ -27,8 +28,8 @@ bool SerialReadFault = false;
 unsigned long int TimeOfLastRead = 0;
 char* TokenBuffer;
 
-int LEDTicksCount = 0;
-long int LEDTicksThreshold = 0; // NOTE: We store the threshold itself (= twice the gotten value), not half of it (=the gotten value), like Nucleo codes do currently
+unsigned long int LEDTicksCount = 0;
+unsigned long int LEDTicksThreshold = 0;
 unsigned long int DelayInterval = 0; 
 bool TriggerRunning = false; // true;
 bool TriggerRunningLast = false; // true;
@@ -66,13 +67,13 @@ void checkMessage() {
   TokenBuffer = strtok(SerialMessage, "X");
   if(SerialMessage[1] == 'T') {
     TokenBuffer = strtok(NULL, "X");
-    ReceivedValue1 = atol(TokenBuffer);
+    ReceivedValue1 = atoll(TokenBuffer);
 
     TokenBuffer = strtok(NULL, ">");
-    ReceivedValue2 = atol(TokenBuffer);
+    ReceivedValue2 = atoll(TokenBuffer);
   }
 
-  // Detect possible overflow (instead of using unsigned 32bit, we use signed 64bit, because why not if it exists)
+  // Detect possible overflow
   if(SerialReadFault || ReceivedValue1 < 0 || ReceivedValue2 < 0) {
     //Serial.print("Camera triggering not running. \n");
     TriggerRunning = false;
@@ -81,7 +82,7 @@ void checkMessage() {
   // NOTE: Still, is it okay if we accept 0 values?
 
   if(SerialMessage[1] == 'T') {
-    LEDTicksThreshold = ReceivedValue1 *2;
+    LEDTicksThreshold = (unsigned long int)ReceivedValue1;
     DelayInterval = (unsigned long int)ReceivedValue2;
     TriggerRunning = true;
     LEDTicksCount = 0;
@@ -116,7 +117,7 @@ void makeTick() {
   } else {
     digitalWrite(TRIGGER_PIN, LOW);
     digitalWrite(LED_PIN, LOW);
-    LEDTicksCount++;
+    //LEDTicksCount++;
     RisingOrFalling = true;
   }
 

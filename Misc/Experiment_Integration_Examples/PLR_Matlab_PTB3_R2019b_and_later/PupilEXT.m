@@ -293,14 +293,9 @@ classdef PupilEXT
           obj.sendRaw(['CMD']);
       end
 
-      function switchToHardwareTriggeringMode(obj)
+      function setAcquisitionTriggeringMode(obj, triggeringModeName)
           if ~obj.Enabled, return, end
-          obj.sendRaw(['IT H']);
-      end
-
-      function switchToSoftwareTriggeringMode(obj)
-          if ~obj.Enabled, return, end
-          obj.sendRaw(['IT S']);
+          obj.sendRaw(['IT ' triggeringModeName]);
       end
 
       function startHardwareTriggering(obj)

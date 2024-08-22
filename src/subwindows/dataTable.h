@@ -47,7 +47,11 @@ private:
     ProcMode procMode;
     int numCols = 1;
 
-    void setPupilData(const Pupil &pupil, int column=0);
+    bool resetScheduled = false;
+
+    void setPupilData(const Pupil &pupil, int columnID=0);
+
+    void reset();
 
 public slots:
 
@@ -61,6 +65,8 @@ public slots:
     void onContextMenuClick(QAction* action);
 
     void onTableRowDoubleClick(const QModelIndex &modelIndex);
+
+    void scheduleReset();
 
 signals:
 

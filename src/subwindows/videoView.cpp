@@ -6,6 +6,10 @@
 #include "videoView.h"
 #include "../supportFunctions.h"
 
+constexpr QRectF VideoView::defaultROImiddleR;
+constexpr QRectF VideoView::defaultROIleftHalfR;
+constexpr QRectF VideoView::defaultROIrightHalfR;
+
 // Creates a new live-view widget
 VideoView::VideoView(bool usingDoubleROI, QColor selectionColor1, QColor selectionColor2, QWidget *parent) : 
     QWidget(parent), 
@@ -444,12 +448,32 @@ void VideoView::drawProcessedOverlay() {
 
     for(std::size_t z=0; z<tPupils.size(); z++) {
         if(showROI) {
-            QGraphicsRectItem *ROIrect = new QGraphicsRectItem(tROIs[z].x, tROIs[z].y, tROIs[z].width, tROIs[z].height);
+            QRect targetRect = QRect(tROIs[z].x, tROIs[z].y, tROIs[z].width, tROIs[z].height);
+            QGraphicsRectItem *ROIrect = new QGraphicsRectItem(targetRect);
             ROIrect->setPen(penROIprocessed);
             ROIrect->setZValue(90);
 
             graphicsScene->addItem(ROIrect);
             geBufferROI.push_back(ROIrect);
+
+
+//            // Also draw some sort of dotted rectangle in the color of the unprocessed overlay rectangle
+//            // to inform the user in color code regarding which pupil is which
+//            QPen dottedPen = penROIunprocessed1;
+//            if(usingDoubleROI && z == 1) {
+//                dottedPen = penROIunprocessed2;
+//            }
+//            QVector<qreal> dashes = {20, 20};
+//            dottedPen.setStyle(Qt::CustomDashLine);
+//            dottedPen.setDashPattern(dashes);
+////            dottedPen.setStyle(Qt::DashDotDotLine);
+//            QGraphicsRectItem *ROIdottedRect = new QGraphicsRectItem(targetRect);
+//            ROIdottedRect->setPen(dottedPen);
+//            ROIdottedRect->setZValue(90);
+//
+//            graphicsScene->addItem(ROIdottedRect);
+//            geBufferROI.push_back(ROIdottedRect);
+
         }
         if(tPupils[z].valid(-2.0)) {
             QGraphicsEllipseItem *pupil = new QGraphicsEllipseItem(tPupils[z].center.x-tPupils[z].size.width/2, tPupils[z].center.y-tPupils[z].size.height/2, tPupils[z].size.width, tPupils[z].size.height);
@@ -528,17 +552,9 @@ void VideoView::updateViewInternal(const cv::Mat &img) {
         cv::cvtColor(img, bgrFrame, cv::COLOR_GRAY2BGR);
     QImage qImg = SupportFunctions::cvMatToQImage(bgrFrame);
 
-    // added by Gabor Benyei (kheki4) on 2022.11.07, 
-    // Reason: when camera binning is changed, the Pylon library sends a request to the camera to send new images considering the newly set binning value
-    // however, there is no guarantee at all, that the next acquired image will come with the newly set binning. 
-    // Then, GUI will show a strangely small or large image, not fitted. 
-    // This can only be effectively worked around, if we always check image size, and  fit it, if differs from the previous one
     if(currentImage->boundingRect() != qImg.rect()) {
         initialFit = false;
-        //std::cout << "OLD IMAGE BOUNDING RECT: width = " << currentImage->boundingRect().width() << " ; height = " << currentImage->boundingRect().height() << std::endl;
-        //std::cout << "NEW IMAGE BOUNDING RECT: width = " << qImg.rect().width() << " ; height = " << qImg.rect().height() << std::endl;
     }
-    // end of add by Gabor Benyei (kheki4)
 
     graphicsScene->removeItem(currentImage);
     delete currentImage;

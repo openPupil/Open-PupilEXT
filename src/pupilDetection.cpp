@@ -387,11 +387,22 @@ void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
         return;
     }
 
+    cv::Mat bwFrameA;
+    cv::Mat bwFrameB;
+
+    // Undistorting the whole image is rather slow (~4ms on our test system), use contour point undistort instead (>~1ms)
+    if(!usePupilUndistort && useImageUndistort) {
+        //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+        bwFrameA = singleCalibration->undistortImage(cimg.img);
+        //qDebug()<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 ;
+    } else {
+        bwFrameA = cimg.img;
+    }
+    bwFrameB = bwFrameA;
+
     // BG: NOTE: by default we only use the left and right halves of the input image
     cv::Rect roiA = cv::Rect(0, 0, (int)std::floor(cimg.img.cols/2)-1, cimg.img.rows);
     cv::Rect roiB = cv::Rect((int)std::ceil(cimg.img.cols/2)+1, 0, cimg.img.cols, cimg.img.rows);
-    cv::Mat bwFrameA = cimg.img;
-    cv::Mat bwFrameB = cimg.img;
 
     if(useROIPreProcessing && !ROIsingleImageTwoPupilA.empty() && roiA != ROIsingleImageTwoPupilA && ROIsingleImageTwoPupilA.width<=bwFrameA.cols && ROIsingleImageTwoPupilA.height<=bwFrameA.rows) {
         roiA = ROIsingleImageTwoPupilA;
@@ -547,10 +558,10 @@ void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
         return;
     }
 
-    cv::Rect roi = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
-    cv::Rect roiSecondary = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
     cv::Mat bwFrame = simg.img;
     cv::Mat bwFrameSecondary = simg.imgSecondary;
+    cv::Rect roi = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Rect roiSecondary = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
 
     // GB: like this the global ROI variables can inform performAutoParam() about ROI sizes
     if(useROIPreProcessing && !ROIstereoImageOnePupil1.empty() && roi != ROIstereoImageOnePupil1 && ROIstereoImageOnePupil1.width<=bwFrame.cols && ROIstereoImageOnePupil1.height<=bwFrame.rows) {
@@ -726,14 +737,14 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
         return;
     }
 
-    cv::Rect roiA1 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
-    cv::Rect roiA2 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
-    cv::Rect roiB1 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
-    cv::Rect roiB2 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
     cv::Mat bwFrameA1 = simg.img;
     cv::Mat bwFrameA2 = simg.imgSecondary;
     cv::Mat bwFrameB1 = simg.img;
     cv::Mat bwFrameB2 = simg.imgSecondary;
+    cv::Rect roiA1 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Rect roiA2 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Rect roiB1 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Rect roiB2 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
 
     if(useROIPreProcessing && !ROIstereoImageTwoPupilA1.empty() && roiA1 != ROIstereoImageTwoPupilA1 && ROIstereoImageTwoPupilA1.width<=bwFrameA1.cols && ROIstereoImageTwoPupilA1.height<=bwFrameA1.rows) {
         roiA1 = ROIstereoImageTwoPupilA1;
@@ -764,10 +775,12 @@ void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
         autoParamScheduled = false;
     }
 
-    if (simg.img.channels() > 1) {
+    if (bwFrameA1.channels() > 1) {
         cv::cvtColor(bwFrameA1, bwFrameA1, cv::COLOR_BGR2GRAY);
-        cv::cvtColor(bwFrameA2, bwFrameA2, cv::COLOR_BGR2GRAY);
         cv::cvtColor(bwFrameB1, bwFrameB1, cv::COLOR_BGR2GRAY);
+    }
+    if (bwFrameA2.channels() > 1) {
+        cv::cvtColor(bwFrameA2, bwFrameA2, cv::COLOR_BGR2GRAY);
         cv::cvtColor(bwFrameB2, bwFrameB2, cv::COLOR_BGR2GRAY);
     }
 
@@ -1261,9 +1274,9 @@ void PupilDetection::configureCameraConnection(bool connectOrDisconnect) {
         return;
 
     if(!connectOrDisconnect) {
-        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
+        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage)));
         disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
-        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage))); // Gabor Benyei (kheki4) on 2022.11.02, NOTE: refactored
+        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage)));
         disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
 //        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
     } else {

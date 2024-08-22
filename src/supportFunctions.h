@@ -72,7 +72,16 @@ public:
         // [^a-zA-Z\d\s:]
         // [^a-zA-Z0-9_:]
         // [-`~!@#$%^&*()—+=|:;<>«»,.?/{}'"\[\]\]
-        str2.replace(QRegExp(QString::fromUtf8("[^a-zA-Z0-9_:]")), "_");
+//        str2.replace(QRegExp(QString::fromUtf8("[^a-zA-Z0-9_:]")), "_");
+        str2.replace(QRegExp(QString::fromUtf8("[^a-zA-Z0-9_ :]")), "_");
+        // NOTE: we leave whitespaces as well. this may be changed later,
+        // but if we would like to change whitespaces in path, that is probably a lot of work, as
+        // e.g. the user name on the computer can contain a whitespace, thus all the user wants to save will be
+        // created in a parallelly created folder structure, under a similar but whitespace-eliminated path similar
+        // to the one they wanted to use in the first place.
+        // TODO: The proper way would be to inform the user in GUI
+        // whenever a whitespace-containing path is encountered for writing or planned for writing later.
+
         str2 = str2.mid(0, qMin(str.size(), 240));
         if(str2!=str) {
             changed = true;
@@ -80,10 +89,11 @@ public:
         return str2;
     };
 
-    static bool preparePath(const QString &target, bool &changedAnything, QString &changedPath)
+    // IMPORTANT: This function is supposed to be only ever called for a PATH and never an exact file name
+    static bool preparePath(const QString &target, bool &changedAnything, QString &changedPath, bool &newNodeCreated)
     {
-
-        if (QFileInfo(target).absoluteDir().exists() == true)
+        // TODO: is this always safe to solely rely on?
+        if (QFileInfo(target).absoluteDir().exists() && QFileInfo(target).isWritable())
             return true;
 
         // std::cout << "Specified path does not point to an existing folder. Now we try to create the path iteratively: folder, sub-folder sub-sub-folder, ..." << std::endl;
@@ -96,24 +106,30 @@ public:
         // Problem can be diagnosed if desiredPath variable contains the .exe path and the target path combined.
         // I think it is some kind of memory problem in the background
         // Qt 5.15.2, MSVC 2019 v86_amd64
-        QString desiredPath;
-        if (target[target.length() - 1] == '/')
-        { // if "target" is a path itself
-            // std::cout << "DESIRED PATH VAR = target "<< std::endl;
-            desiredPath = target;
+//        QString desiredPath;
+////        if (target[target.length() - 1] == '/')
+//        if (QFileInfo(target).completeSuffix().isEmpty()) { // if "target" is a path itself
+//            desiredPath = target;
+//        }
+//        else { // if "target" is pointing to a file, not a folder/dir
+//            desiredPath = QFileInfo(target).absolutePath();
+////            int idx = target.lastIndexOf("/");
+////            desiredPath = target.mid(0, idx);
+//        }
+        QString desiredPath = target;
+
+        changedPath = desiredPath;
+        QString tempPath = simplifyPathName(desiredPath);
+        if(tempPath != target) {
+            changedAnything = true;
+            desiredPath = tempPath;
         }
-        else
-        { // if "target" is pointing to a file, not a folder/dir
-            // std::cout << "DESIRED PATH VAR = QFileInfo(target).absolutePath()"<< std::endl;
-            // desiredPath = QFileInfo(target).absolutePath();
-            int idx = target.lastIndexOf("/");
-            desiredPath = target.mid(0, idx);
-        }
+
         // std::cout << "desiredPath = " << desiredPath.toStdString() << std::endl;
         QStringList subStrings = desiredPath.split('/');
         bool candidateExists = false;
         bool changedExists = false;
-        bool newNodeCreated = false;
+//        bool newNodeCreated = false;
         bool changedNodeName = false;
 
         // std::cout << "subStrings 0-th elem = " << subStrings[0].toStdString() << std::endl;
@@ -133,7 +149,7 @@ public:
                 newNodeName = simplifyNewPathNodeName(subStrings[h], changedNodeName);
                 cumulatedPath = cumulatedPath + newNodeName + "/";
 
-                newNodeCreated = QDir().mkdir(QFileInfo(cumulatedPath).absolutePath());
+                newNodeCreated = QDir().mkpath(QFileInfo(cumulatedPath).absolutePath());
                 changedExists = QFileInfo(cumulatedPath).absoluteDir().exists();
                 if (!newNodeCreated && !changedExists)
                     break;
@@ -148,10 +164,11 @@ public:
             }
         }
 
-        if(changedAnything)
+        if(changedAnything) {
             changedPath = cumulatedPath;
+        }
 
-        if (newNodeCreated)
+        if (QFileInfo(changedPath).absoluteDir().exists() && QFileInfo(changedPath).isWritable())
             return true;
         else
             return false;
@@ -159,9 +176,9 @@ public:
 
     static QString stripIfInventedName(QString fileBaseName) {
         QString workCopy = fileBaseName;
-        while(workCopy.length()>0 && workCopy[workCopy.length()-1].isDigit()) {
-            workCopy.chop(1);
-        }
+//        while(workCopy.length()>0 && workCopy[workCopy.length()-1].isDigit()) {
+//            workCopy.chop(1);
+//        }
         if(workCopy.length()==0) {
             return fileBaseName;
         }
@@ -174,9 +191,23 @@ public:
     static QString prepareOutputDirForImageWriter(QString directory, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
         QString imageWriterDataRule = applicationSettings->value("imageWriterDataRule", "ask").toString();
 
-        //bool changedGiven = false;
+        if(directory.isEmpty()) {
+            return QString();
+        }
+
+        if(directory[directory.length()-1] == '/') {
+            directory.chop(1);
+        }
+
+        // bool changedGiven = false;
         QString changedPath;
-        bool pathWriteable = SupportFunctions::preparePath(directory, changedGiven, changedPath);
+        bool newNodeCreated = false;
+        bool pathWriteable = SupportFunctions::preparePath(directory, changedGiven, changedPath, newNodeCreated);
+        if(!pathWriteable) {
+            // TODO: Throw exception?
+            changedGiven = true;
+            return QString();
+        }
         if(changedGiven) {
             QMessageBox *msgBox = new QMessageBox(parent);
             msgBox->setWindowTitle("Path name changed");
@@ -188,16 +219,19 @@ public:
             directory = changedPath;
         }
 
-        QDir outputDirectory = QDir(directory);
-        bool exists = outputDirectory.exists();
-        bool hasContent = !outputDirectory.isEmpty();
+        // QDir outputDirectory = QDir(directory);
+        bool exists = QDir(directory).exists();
+        bool hasContent = !QDir(directory).isEmpty();
 
         // TODO: what if there is e.g. a single recording already, the user says "append" but the current setup is for stereo camera...? Incongruent recording can result
         if(!exists) {
-            outputDirectory.mkdir(".");
+// mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
+//            outputDirectory.mkdir(".");
+            QDir().mkpath(directory);
         } else if(hasContent && imageWriterDataRule == "ask") {
             OutputDataRuleDialog *dialog = new OutputDataRuleDialog("Image output folder already exists", parent);
             dialog->setModal(true);
+            // dialog->raise();
             if(dialog->exec() == QDialog::Accepted)
             {
                 auto resp = dialog->getResponse();
@@ -205,7 +239,7 @@ public:
 
                 if(resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND) {
                     imageWriterDataRule = "append";
-                } else if(resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW) {
+                } else /*if(resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW)*/ {
                     imageWriterDataRule = "new";
                 }
 
@@ -215,7 +249,7 @@ public:
             }
         }
 
-        if(imageWriterDataRule == "new") {
+        if(exists && hasContent && imageWriterDataRule == "new") {
             bool nameInvented = false;
             int nameIter = 1;
             QString tryBase = directory;
@@ -223,15 +257,20 @@ public:
             // TODO: proper exception handling
             while(!nameInvented) {
                 nameIter++;
-                outputDirectory = QDir(tryBase + "_Run" + QString::number(nameIter));
-                nameInvented = !outputDirectory.exists();
+//                outputDirectory = QDir(tryBase + "_RunI" + QString::number(nameIter));
+                directory = tryBase + "_RunI" + QString::number(nameIter);
+//                nameInvented = !outputDirectory.exists();
+                nameInvented = !QDir(directory).exists();
                 if(nameIter >=65000)
-                    outputDirectory = QDir(tryBase + "_TooManyRuns");
+                    directory = tryBase + "_TooManyRunsI";
             }
-            outputDirectory.mkdir(".");
+            // mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
+//            outputDirectory.mkdir(".");
+            QDir().mkpath(directory);
         }
         //std::cout << outputDirectory.absolutePath().toStdString() << std::endl;
-        return outputDirectory.absolutePath();
+//        return outputDirectory.absolutePath();
+        return directory;
     };
 
     static QString prepareOutputFileForDataWriter(QString fileName, QSettings* applicationSettings, bool &changedGiven, QWidget* parent) {
@@ -239,12 +278,18 @@ public:
 
         //bool changedGiven = false;
         QString changedPath;
+        bool newNodeCreated = false;
         // TODO: false case and exception handling
-        bool pathWriteable = SupportFunctions::preparePath(fileName, changedGiven, changedPath);
+        bool pathWriteable = SupportFunctions::preparePath(QFileInfo(fileName).absolutePath(), changedGiven, changedPath, newNodeCreated);
+        if(!pathWriteable) {
+            // TODO: Throw exception?
+            changedGiven = true;
+            return QString();
+        }
         if(changedGiven) {
         //    QMessageBox::warning(parent, "Path name changed",
         //                         "The given path/name contained nonstandard characters,\nwhich were changed automatically for the following: a-z, A-Z, 0-9, _");
-            fileName = changedPath;
+            fileName = changedPath + QFileInfo(fileName).completeBaseName() + '.' + QFileInfo(fileName).completeSuffix();
         }
 
         QFileInfo dataFile(fileName);
@@ -254,6 +299,7 @@ public:
         if(exists && hasContent && dataWriterDataRule == "ask") {
             OutputDataRuleDialog *dialog = new OutputDataRuleDialog("Data recording output file already exists", parent);
             dialog->setModal(true);
+            // dialog->raise();
             if(dialog->exec() == QDialog::Accepted)
             {
                 auto resp = dialog->getResponse();
@@ -261,7 +307,7 @@ public:
 
                 if(resp == OutputDataRuleDialog::OutputDataRuleResponse::APPEND) {
                     dataWriterDataRule = "append";
-                } else if(resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW) {
+                } else /*if(resp == OutputDataRuleDialog::OutputDataRuleResponse::KEEP_AND_SAVE_NEW)*/ {
                     dataWriterDataRule = "new";
                 }
 
@@ -271,7 +317,7 @@ public:
             }
         }
 
-        if(dataWriterDataRule == "new") {
+        if(exists && hasContent && dataWriterDataRule == "new") {
             QFileInfo fileCandidate;
             QString fileNameCandidate;
             bool nameInvented = false;
@@ -281,13 +327,14 @@ public:
             // TODO: proper exception handling
             while(!nameInvented) {
                 nameIter++;
-                fileNameCandidate = (tryBase + "_Run" + QString::number(nameIter) + '.' + dataFile.completeSuffix());
+                fileNameCandidate = (tryBase + "_RunD" + QString::number(nameIter) + '.' + dataFile.completeSuffix());
                 if(nameIter >=65000)
-                    fileNameCandidate = (tryBase + "_TooManyRuns" + '.' + dataFile.completeSuffix());
+                    fileNameCandidate = (tryBase + "_TooManyRunsD" + '.' + dataFile.completeSuffix());
                 //std::cout << fileNameCandidate.toStdString() << std::endl;
                 fileCandidate = QFileInfo(fileNameCandidate);
                 nameInvented = !fileCandidate.exists();
             }
+            // mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
             //outputDirectory.mkdir(".");
             dataFile = fileCandidate;
         }
@@ -409,9 +456,17 @@ public:
 
     static QColor changeColors(QColor color, bool doLighten, bool isEnabled) {
 
+        if(color == Qt::darkRed) {
+            qDebug() << "valami";
+            qDebug() << color.valueF();
+        }
+
         // invert only the HSV "value"/intensity value (mirror it to 0.5 on a 0.0-1.0 range)
-        if(doLighten && color.valueF() <= 0.5f) {
-            color = QColor::fromHsvF(color.hsvHueF(), color.hsvSaturationF(), 1.0f-color.valueF());
+        if(doLighten && color.valueF() <= 0.52f) {
+            color = QColor::fromHsvF(color.hsvHueF(), color.hsvSaturationF(), 1.0f-(color.valueF()/2.0));
+        }
+
+        if(doLighten) {
             if(!isEnabled) {
                 color = QColor::fromHsvF(color.hsvHueF(), 0.8, 0.5);
             }
@@ -505,5 +560,12 @@ public:
             return true;
         else
             return false;
+    }
+
+    static void setSmallerLabelFontSize(QLabel *label) {
+        QFont actualFont = label->font();
+        int newFontSize = (int)(actualFont.pointSizeF()*0.85F);
+        actualFont.setPointSize(newFontSize);
+        label->setFont(actualFont);
     }
 };

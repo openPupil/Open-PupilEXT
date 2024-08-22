@@ -14,14 +14,18 @@ IPCtrl::IPCtrl(QWidget *parent) : QFrame(parent)
     {
         if ( i != 0 )
         {
-            QLabel* pDot = new QLabel( ".", this );
-            pDot->setStyleSheet( "background: white" );
+            QLabel* pDot = new QLabel( ".");
+//            pDot->setStyleSheet( "background: " + QWidget::palette().color(QWidget::backgroundRole()).name() + "" );
+//            pDot->setBackgroundRole(QPalette::Window);
+            pDot->setStyleSheet( "background: transparent;" );
             pLayout->addWidget( pDot );
             pLayout->setStretch( pLayout->count(), 0 );
         }
 
-        m_pLineEdit[i] = new QLineEdit( this );
+        m_pLineEdit[i] = new QLineEdit();
         QLineEdit* pEdit = m_pLineEdit[i];
+//        pEdit->setBackgroundRole(QPalette::Window);
+        pEdit->setStyleSheet( "background: transparent;" );
         pEdit->installEventFilter( this );
 
         pLayout->addWidget( pEdit );
@@ -40,6 +44,13 @@ IPCtrl::IPCtrl(QWidget *parent) : QFrame(parent)
         pEdit->setValidator( validator );
 
     }
+
+    // Workaround, because Qt apparently does not provide a color role for the basic background of a lineedit
+    // (that basic white on windows, although it has other colors on mac or linux)
+    QLineEdit* specimen = new QLineEdit(this);
+    setStyleSheet( "QFrame:enabled {background: " + QWidget::palette().color(QPalette::Active, specimen->backgroundRole()).name() + ";}" +
+                    "QFrame:disabled {background: " + QWidget::palette().color(QPalette::Disabled, specimen->backgroundRole()).name() + ";}" );
+    delete specimen;
 
     setMaximumWidth( 30 * QTUTL_IP_SIZE +10);
 

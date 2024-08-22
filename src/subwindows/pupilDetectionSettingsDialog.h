@@ -65,6 +65,8 @@ private:
     QLabel *procModeInfoLabel;
     QComboBox *procModeBox;
 
+    ProcMode lastKnownProcMode = ProcMode::UNDETERMINED;
+
     void createForm();
     void updateForm();
     void loadSettings();

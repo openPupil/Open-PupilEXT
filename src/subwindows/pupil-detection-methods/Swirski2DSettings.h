@@ -42,9 +42,8 @@ public:
         }
 
         QVBoxLayout *infoLayout = new QVBoxLayout(infoBox);
-
+        QHBoxLayout *infoLayoutRow1 = new QHBoxLayout();
         QPushButton *iLabelFakeButton = new QPushButton();
-        iLabelFakeButton = new QPushButton();
         iLabelFakeButton->setFlat(true);
         iLabelFakeButton->setAttribute(Qt::WA_NoSystemBackground, true);
         iLabelFakeButton->setAttribute(Qt::WA_TranslucentBackground, true);
@@ -52,29 +51,35 @@ public:
         iLabelFakeButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings));
         iLabelFakeButton->setFixedSize(QSize(32,32));
         iLabelFakeButton->setIconSize(QSize(32,32));
-        infoLayout->addWidget(iLabelFakeButton);
+        infoLayoutRow1->addWidget(iLabelFakeButton);
 
         QLabel *pLabel = new QLabel();
         pLabel->setWordWrap(true);
         pLabel->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
         pLabel->setOpenExternalLinks(true);
+        SupportFunctions::setSmallerLabelFontSize(pLabel);
         pLabel->setText("Lech Swirski, Andreas Bulling, Neil A. Dodgson, \"Robust real-time pupil tracking in highly off-axis images\", 2012 <a href=\"http://www.cl.cam.ac.uk/research/rainbow/projects/pupiltracking\">Website</a><br/>License: <a href=\"https://opensource.org/licenses/MIT\">MIT</a>");
-        infoLayout->addWidget(pLabel);
+        infoLayoutRow1->addWidget(pLabel);
+
+        infoLayout->addLayout(infoLayoutRow1);
 
         QLabel *confLabel;
         if(p_swirski->hasConfidence())
             confLabel = new QLabel("Info: This method does provide its own confidence.");
         else
             confLabel = new QLabel("Info: This method does not provide its own confidence, use the outline confidence.");
+        SupportFunctions::setSmallerLabelFontSize(confLabel);
         confLabel->setWordWrap(true);
         infoLayout->addWidget(confLabel);
 
         QLabel *infoLabel = new QLabel("CAUTION: Processing using this algorithm may be very slow, reduce the camera acquiring fps accordingly.");
+        SupportFunctions::setSmallerLabelFontSize(infoLabel);
         infoLabel->setWordWrap(true);
         infoLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
         infoLayout->addWidget(infoLabel);
 #if _DEBUG
         QLabel *warnLabel = new QLabel("CAUTION: Debug build may perform very slow. Use release build or adjust processing speed to not risk memory overflow.");
+        SupportFunctions::setSmallerLabelFontSize(warnLabel);
         warnLabel->setWordWrap(true);
         warnLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
         infoLayout->addWidget(warnLabel);
@@ -279,9 +284,8 @@ private:
 
         QHBoxLayout *configsNoteLayout = new QHBoxLayout();
         QLabel* configsNoteLabel = new QLabel(tr("Note: Configurations marked with an asterisk (*) are recommended for Basler\nacA2040-120um (1/1.8\" sensor format) camera(s) equipped with f=50 mm 2/3\"\nnominal sensor format lens, using 4:3 aspect ratio pupil detection ROI(s)."));
-        //configsNoteLabel->setFixedWidth((int)this->size().width()/2);
-        configsNoteLabel->setFixedWidth(420);
-        configsNoteLabel->setFixedHeight(45);
+        SupportFunctions::setSmallerLabelFontSize(configsNoteLabel);
+        configsNoteLabel->setFixedHeight(60);
         configsNoteLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
         configsNoteLayout->addWidget(configsNoteLabel);
         mainLayout->addLayout(configsNoteLayout);
@@ -299,13 +303,13 @@ private:
         minRadiusBox = new QSpinBox();
         minRadiusBox->setMaximum(5000);
         minRadiusBox->setValue(Radius_Min);
-        minRadiusBox->setFixedWidth(50);
+        minRadiusBox->setFixedWidth(80);
 
         QLabel *maxRadiusLabel = new QLabel(tr("Max. Radius [px]:"));
         maxRadiusBox = new QSpinBox();
         maxRadiusBox->setMaximum(5000);
         maxRadiusBox->setValue(Radius_Max);
-        maxRadiusBox->setFixedWidth(50);
+        maxRadiusBox->setFixedWidth(80);
 
         QHBoxLayout *layoutRow1 = new QHBoxLayout;
         layoutRow1->addWidget(minRadiusBox);
@@ -320,18 +324,18 @@ private:
         QLabel *cannyBlurLabel = new QLabel(tr("Canny Blur:"));
         cannyBlurBox = new QDoubleSpinBox();
         cannyBlurBox->setValue(CannyBlur);
-        cannyBlurBox->setFixedWidth(50);
+        cannyBlurBox->setFixedWidth(80);
         ellipseLayout->addRow(cannyBlurLabel, cannyBlurBox);
 
         QLabel *cannyThreshold1Label = new QLabel(tr("Canny Threshold 1:"));
         cannyThreshold1Box = new QDoubleSpinBox();
         cannyThreshold1Box->setValue(CannyThreshold1);
-        cannyThreshold1Box->setFixedWidth(50);
+        cannyThreshold1Box->setFixedWidth(80);
 
         QLabel *cannyThreshold2Label = new QLabel(tr("Canny Threshold 2:"));
         cannyThreshold2Box = new QDoubleSpinBox();
         cannyThreshold2Box->setValue(CannyThreshold2);
-        cannyThreshold2Box->setFixedWidth(50);
+        cannyThreshold2Box->setFixedWidth(80);
 
         QHBoxLayout *layoutRow2 = new QHBoxLayout;
         layoutRow2->addWidget(cannyThreshold1Box);
@@ -346,18 +350,18 @@ private:
         QLabel *starburstPointsLabel = new QLabel(tr("Starburst Points:"));
         starburstPointsBox = new QSpinBox();
         starburstPointsBox->setValue(StarburstPoints);
-        starburstPointsBox->setFixedWidth(50);
+        starburstPointsBox->setFixedWidth(80);
         ellipseLayout->addRow(starburstPointsLabel, starburstPointsBox);
 
         QLabel *percInlierLabel = new QLabel(tr("Perc. Inliers:"));
         percInlierBox = new QSpinBox();
         percInlierBox->setValue(PercentageInliers);
-        percInlierBox->setFixedWidth(50);
+        percInlierBox->setFixedWidth(80);
 
         QLabel *iterInlierLabel = new QLabel(tr("Inlier Iterations:"));
         iterInlierBox = new QSpinBox();
         iterInlierBox->setValue(InlierIterations);
-        iterInlierBox->setFixedWidth(50);
+        iterInlierBox->setFixedWidth(80);
 
         QHBoxLayout *layoutRow3 = new QHBoxLayout;
         layoutRow3->addWidget(percInlierBox);
@@ -376,7 +380,7 @@ private:
         QLabel *termPercLabel = new QLabel(tr("Early Termination Perc.:"));
         termPercBox = new QSpinBox();
         termPercBox->setValue(EarlyTerminationPercentage);
-        termPercBox->setFixedWidth(50);
+        termPercBox->setFixedWidth(80);
         optionsLayout->addRow(termPercLabel, termPercBox);
 
         QLabel *imageAwareLabel = new QLabel(tr("Image Aware RANSAC:"));

@@ -236,14 +236,10 @@ class PupilEXT(object):
     def disconnectMicrocontroller(self):
         if not self.Enabled : return
         self.__sendRaw('CMD')
-
-    def switchToHardwareTriggeringMode(self):
-        if not self.Enabled : return
-        self.__sendRaw('IT H')
     
-    def switchToSoftwareTriggeringMode(self):
+    def setAcquisitionTriggeringMode(self, triggeringModeName):
         if not self.Enabled : return
-        self.__sendRaw('IT S')
+        self.__sendRaw('IT ' + triggeringModeName)
     
     def startHardwareTriggering(self):
         if not self.Enabled : return

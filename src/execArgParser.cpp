@@ -16,7 +16,7 @@ ExecArgParser::ExecArgParser(int argc, char *argv[]) {
         "-setPDComputeOutlineConf",
         "1",
         "-startTracking",
-        "-setDelimiter",
+        "-setDataOutputDelimiter",
         "comma",
         "-setImageOutputPath",
         "C:/_PupilEXT test image output path",
@@ -114,7 +114,13 @@ void ExecArgParser::iterThroughDuties() {
     for(size_t i=0; i<execArgs.size(); i++) {
     
         //qDebug() << "Now doing argID: " << execArgs[i].argID;
-    
+
+        if(execArgs[i].argID == getArgIdx(CONNECT_MICROCONTROLLER_UDP) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGconnectMicrocontrollerUDP(execArgs[i].argVals[0].toLower());
+        }
+        if(execArgs[i].argID == getArgIdx(CONNECT_MICROCONTROLLER_COM) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGconnectMicrocontrollerCOM(execArgs[i].argVals[0].toLower());
+        }
         if(execArgs[i].argID == getArgIdx(OPEN_SINGLE_CAMERA) && execArgs[i].argVals.size()>=1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGopenSingleCamera(execArgs[i].argVals[0].toLower());
         }
@@ -124,32 +130,36 @@ void ExecArgParser::iterThroughDuties() {
         if(execArgs[i].argID == getArgIdx(OPEN_SINGLE_WEBCAM) && execArgs[i].argVals.size()>=1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGopenSingleWebcam(execArgs[i].argVals[0].toInt());
         }
-        if(execArgs[i].argID == getArgIdx(START_TRACKING)) {
-            w->PRGtrackStart();
+        if(execArgs[i].argID == getArgIdx(SET_EXPOSURE_TIME_MICROSEC) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGsetExposure(execArgs[i].argVals[0].toInt());
         }
-        if(execArgs[i].argID == getArgIdx(START_RECORDING)) {
-            w->PRGrecordStart();
+        if(execArgs[i].argID == getArgIdx(SET_ACQUISITION_TRIGGERING_MODE) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            if(execArgs[i].argVals[0].toLower() == "1" || execArgs[i].argVals[0].toLower() == "true")
+                w->PRGenableHWT(true);
+            else
+                w->PRGenableHWT(false);
         }
-        if(execArgs[i].argID == getArgIdx(START_STREAMING)) {
-            w->PRGstreamStart();
+        if(execArgs[i].argID == getArgIdx(SET_HARDWARE_TRIGGERING_LINE_SOURCE) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGsetHWTlineSource(execArgs[i].argVals[0].toInt());
         }
-        if(execArgs[i].argID == getArgIdx(START_IMAGE_RECORDING)) {
-            w->PRGrecordImageStart();
+        if(execArgs[i].argID == getArgIdx(SET_HARDWARE_TRIGGERING_RUNTIME_LENGTH) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGsetHWTruntime(execArgs[i].argVals[0].toFloat());
         }
-
-        if(execArgs[i].argID == getArgIdx(SET_IMAGE_OUTPUT_PATH) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
-            w->PRGsetOutPath(execArgs[i].argVals[0]);
+        if(execArgs[i].argID == getArgIdx(SET_HARDWARE_TRIGGERING_FRAMERATE) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGsetHWTframerate(execArgs[i].argVals[0].toInt());
         }
-        if(execArgs[i].argID == getArgIdx(SET_CSV_OUTPUT_PATH) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
-            w->PRGsetCsvPathAndName(execArgs[i].argVals[0]);
+        if(execArgs[i].argID == getArgIdx(START_HARDWARE_TRIGGERING)) {
+            w->PRGstartHWT();
         }
-        if(execArgs[i].argID == getArgIdx(SET_DELIMITER) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
-            w->PRGsetGlobalDelimiter(execArgs[i].argVals[0]);
+        if(execArgs[i].argID == getArgIdx(SET_SOFTWARE_TRIGGERING_FRAMERATE_LIMITING_ENABLED) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGenableSWTframerateLimiting(execArgs[i].argVals[0].toLower());
         }
-        if(execArgs[i].argID == getArgIdx(SET_IMAGE_OUTPUT_FORMAT) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
-            w->PRGsetImageOutputFormat(execArgs[i].argVals[0].toLower());
+        if(execArgs[i].argID == getArgIdx(SET_SOFTWARE_TRIGGERING_FRAMERATE_LIMIT) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGsetSWTframerate(execArgs[i].argVals[0].toInt());
         }
-
+        if(execArgs[i].argID == getArgIdx(SET_GAIN) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGsetGain(execArgs[i].argVals[0].toDouble());
+        }
         if(execArgs[i].argID == getArgIdx(SET_PD_ALGORITHM) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGsetPupilDetectionAlgorithm(execArgs[i].argVals[0].toLower());
         }
@@ -159,18 +169,41 @@ void ExecArgParser::iterThroughDuties() {
         if(execArgs[i].argID == getArgIdx(SET_PD_COMPUTE_OUTLINE_CONF) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGsetPupilDetectionCompOutlineConf(execArgs[i].argVals[0].toLower());
         }
-
-        if(execArgs[i].argID == getArgIdx(CONN_REMOTE_UDP) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
-            w->PRGconnectRemoteUDP(execArgs[i].argVals[0].toLower());
+        if(execArgs[i].argID == getArgIdx(START_TRACKING)) {
+            w->PRGtrackStart();
         }
-        if(execArgs[i].argID == getArgIdx(CONN_REMOTE_COM) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
-            w->PRGconnectRemoteCOM(execArgs[i].argVals[0].toLower());
+        if(execArgs[i].argID == getArgIdx(SET_IMAGE_OUTPUT_PATH) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGsetOutPath(execArgs[i].argVals[0]);
         }
-        if(execArgs[i].argID == getArgIdx(CONN_STREAM_UDP) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+        if(execArgs[i].argID == getArgIdx(SET_IMAGE_OUTPUT_FORMAT) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGsetImageOutputFormat(execArgs[i].argVals[0].toLower());
+        }
+        if(execArgs[i].argID == getArgIdx(START_IMAGE_RECORDING)) {
+            w->PRGrecordImageStart();
+        }
+        if(execArgs[i].argID == getArgIdx(SET_DATA_OUTPUT_PATH) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGsetCsvPathAndName(execArgs[i].argVals[0]);
+        }
+        if(execArgs[i].argID == getArgIdx(SET_DATA_OUTPUT_DELIMITER) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGsetGlobalDelimiter(execArgs[i].argVals[0]);
+        }
+        if(execArgs[i].argID == getArgIdx(START_DATA_RECORDING)) {
+            w->PRGrecordStart();
+        }
+        if(execArgs[i].argID == getArgIdx(CONNECT_STREAM_UDP) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGconnectStreamUDP(execArgs[i].argVals[0].toLower());
         }
-        if(execArgs[i].argID == getArgIdx(CONN_STREAM_COM) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+        if(execArgs[i].argID == getArgIdx(CONNECT_STREAM_COM) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGconnectStreamCOM(execArgs[i].argVals[0].toLower());
+        }
+        if(execArgs[i].argID == getArgIdx(START_STREAMING)) {
+            w->PRGstreamStart();
+        }
+        if(execArgs[i].argID == getArgIdx(CONNECT_REMOTE_UDP) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGconnectRemoteUDP(execArgs[i].argVals[0].toLower());
+        }
+        if(execArgs[i].argID == getArgIdx(CONNECT_REMOTE_COM) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGconnectRemoteCOM(execArgs[i].argVals[0].toLower());
         }
 
     } 

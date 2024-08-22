@@ -1,7 +1,7 @@
 
 #include "eyeDataSerializer.h"
 
-void EyeDataSerializer::populatePupilNodeXML(quint64 &timestamp, QDomElement &dObj, int idx, const std::vector<Pupil> &Pupils, const QString &filename, uint &trialNum, double temperature, const QString& message) {
+void EyeDataSerializer::populatePupilNodeXML(quint64 &timestamp, QDomElement &dObj, int idx, const std::vector<Pupil> &Pupils, const QString &filename, uint &trialNum, const QString& message, double temperature) {
     dObj.setAttribute("filename", filename); 
     dObj.setAttribute("timestamp_ms", QString::number(timestamp)); 
     dObj.setAttribute("algorithm", QString::fromStdString(Pupils[idx].algorithmName)); 
@@ -18,11 +18,11 @@ void EyeDataSerializer::populatePupilNodeXML(quint64 &timestamp, QDomElement &dO
     dObj.setAttribute("confidence", QString::number(Pupils[idx].confidence)); 
     dObj.setAttribute("outlineConfidence", QString::number(Pupils[idx].outline_confidence)); 
     dObj.setAttribute("trial", QString::number(trialNum));
-    dObj.setAttribute("temperature_c", QString::number(temperature));
     dObj.setAttribute("message", message);
+    dObj.setAttribute("temperature_c", QString::number(temperature));
 }
 
-QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, const std::vector<double> &temperatures, const QString& message) {
+QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, const QString& message, const std::vector<double> &temperatures) {
     
     QString filename = "-1";
     if(!filepath.isEmpty())
@@ -44,7 +44,7 @@ QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std
             pupilObjA = document.createElement("A");
             root.appendChild(pupilObjA);
             viewObjAMain = document.createElement("Main");
-            populatePupilNodeXML(timestamp, viewObjAMain, SINGLE_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, temperatures[0], message);
+            populatePupilNodeXML(timestamp, viewObjAMain, SINGLE_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
             pupilObjA.appendChild(viewObjAMain);
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
@@ -54,8 +54,8 @@ QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std
             root.appendChild(pupilObjB);
             viewObjAMain = document.createElement("Main");
             viewObjBMain = document.createElement("Main");
-            populatePupilNodeXML(timestamp, viewObjAMain, SINGLE_IMAGE_TWO_PUPIL_A, Pupils, filename, trialNum, temperatures[0], message);
-            populatePupilNodeXML(timestamp, viewObjBMain, SINGLE_IMAGE_TWO_PUPIL_B, Pupils, filename, trialNum, temperatures[0], message);
+            populatePupilNodeXML(timestamp, viewObjAMain, SINGLE_IMAGE_TWO_PUPIL_A, Pupils, filename, trialNum, message, temperatures[0]);
+            populatePupilNodeXML(timestamp, viewObjBMain, SINGLE_IMAGE_TWO_PUPIL_B, Pupils, filename, trialNum, message, temperatures[0]);
             pupilObjA.appendChild(viewObjAMain);
             pupilObjB.appendChild(viewObjBMain);
             break;
@@ -64,8 +64,8 @@ QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std
             root.appendChild(pupilObjA);
             viewObjAMain = document.createElement("Main");
             viewObjASec = document.createElement("Sec");
-            populatePupilNodeXML(timestamp, viewObjAMain, STEREO_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, temperatures[0], message);
-            populatePupilNodeXML(timestamp, viewObjASec, STEREO_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, temperatures[1], message);
+            populatePupilNodeXML(timestamp, viewObjAMain, STEREO_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
+            populatePupilNodeXML(timestamp, viewObjASec, STEREO_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, message, temperatures[1]);
             pupilObjA.appendChild(viewObjAMain);
             pupilObjA.appendChild(viewObjASec);
             break;
@@ -78,10 +78,10 @@ QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std
             viewObjASec = document.createElement("Sec");
             viewObjBMain = document.createElement("Main");
             viewObjBSec = document.createElement("Sec");
-            populatePupilNodeXML(timestamp, viewObjAMain, STEREO_IMAGE_TWO_PUPIL_A_MAIN, Pupils, filename, trialNum, temperatures[0], message);
-            populatePupilNodeXML(timestamp, viewObjASec, STEREO_IMAGE_TWO_PUPIL_A_SEC, Pupils, filename, trialNum, temperatures[1], message);
-            populatePupilNodeXML(timestamp, viewObjBMain, STEREO_IMAGE_TWO_PUPIL_B_MAIN, Pupils, filename, trialNum, temperatures[0], message);
-            populatePupilNodeXML(timestamp, viewObjBSec, STEREO_IMAGE_TWO_PUPIL_B_SEC, Pupils, filename, trialNum, temperatures[1], message);
+            populatePupilNodeXML(timestamp, viewObjAMain, STEREO_IMAGE_TWO_PUPIL_A_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
+            populatePupilNodeXML(timestamp, viewObjASec, STEREO_IMAGE_TWO_PUPIL_A_SEC, Pupils, filename, trialNum, message, temperatures[1]);
+            populatePupilNodeXML(timestamp, viewObjBMain, STEREO_IMAGE_TWO_PUPIL_B_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
+            populatePupilNodeXML(timestamp, viewObjBSec, STEREO_IMAGE_TWO_PUPIL_B_SEC, Pupils, filename, trialNum, message, temperatures[1]);
             pupilObjA.appendChild(viewObjAMain);
             pupilObjA.appendChild(viewObjASec);
             pupilObjB.appendChild(viewObjBMain);
@@ -106,7 +106,7 @@ QString EyeDataSerializer::pupilToXML(quint64 timestamp, int procMode, const std
 }
 
 
-void EyeDataSerializer::populatePupilNodeJSON(quint64 &timestamp, QJsonObject &dObj, int idx, const std::vector<Pupil> &Pupils, const QString &filename, uint &trialNum, double temperature, const QString& message) {
+void EyeDataSerializer::populatePupilNodeJSON(quint64 &timestamp, QJsonObject &dObj, int idx, const std::vector<Pupil> &Pupils, const QString &filename, uint &trialNum, const QString& message, double temperature) {
     dObj["filename"] = filename; 
     dObj["timestamp_ms"] = QString::number(timestamp); 
     dObj["algorithm"] = QString::fromStdString(Pupils[idx].algorithmName); 
@@ -123,11 +123,11 @@ void EyeDataSerializer::populatePupilNodeJSON(quint64 &timestamp, QJsonObject &d
     dObj["confidence"] = QString::number(Pupils[idx].confidence); 
     dObj["outlineConfidence"] = QString::number(Pupils[idx].outline_confidence); 
     dObj["trial"] = QString::number(trialNum);
-    dObj["temperature_c"] = QString::number(temperature);
     dObj["message"] = message;
+    dObj["temperature_c"] = QString::number(temperature);
 }
 
-QString EyeDataSerializer::pupilToJSON(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, const std::vector<double> &temperatures, const QString& message) {
+QString EyeDataSerializer::pupilToJSON(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, const QString& message, const std::vector<double> &temperatures) {
     
     QString filename = "-1";
     if(!filepath.isEmpty())
@@ -144,30 +144,30 @@ QString EyeDataSerializer::pupilToJSON(quint64 timestamp, int procMode, const st
 
     switch((ProcMode)procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            populatePupilNodeJSON(timestamp, viewObjAMain, SINGLE_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, temperatures[0], message);
+            populatePupilNodeJSON(timestamp, viewObjAMain, SINGLE_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
             pupilObjA["Main"] = viewObjAMain;
             root["A"] = pupilObjA;
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-            populatePupilNodeJSON(timestamp, viewObjAMain, SINGLE_IMAGE_TWO_PUPIL_A, Pupils, filename, trialNum, temperatures[0], message);
-            populatePupilNodeJSON(timestamp, viewObjBMain, SINGLE_IMAGE_TWO_PUPIL_B, Pupils, filename, trialNum, temperatures[0], message);
+            populatePupilNodeJSON(timestamp, viewObjAMain, SINGLE_IMAGE_TWO_PUPIL_A, Pupils, filename, trialNum, message, temperatures[0]);
+            populatePupilNodeJSON(timestamp, viewObjBMain, SINGLE_IMAGE_TWO_PUPIL_B, Pupils, filename, trialNum, message, temperatures[0]);
             pupilObjA["Main"] = viewObjAMain;
             root["A"] = pupilObjA;
             pupilObjB["Main"] = viewObjBMain;
             root["B"] = pupilObjB;
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
-            populatePupilNodeJSON(timestamp, viewObjAMain, STEREO_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, temperatures[0], message);
-            populatePupilNodeJSON(timestamp, viewObjASec, STEREO_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, temperatures[1], message);
+            populatePupilNodeJSON(timestamp, viewObjAMain, STEREO_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
+            populatePupilNodeJSON(timestamp, viewObjASec, STEREO_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, message, temperatures[1]);
             pupilObjA["Main"] = viewObjAMain;
             pupilObjA["Sec"] = viewObjASec;
             root["A"] = pupilObjA;
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            populatePupilNodeJSON(timestamp, viewObjAMain, STEREO_IMAGE_TWO_PUPIL_A_MAIN, Pupils, filename, trialNum, temperatures[0], message);
-            populatePupilNodeJSON(timestamp, viewObjASec, STEREO_IMAGE_TWO_PUPIL_A_SEC, Pupils, filename, trialNum, temperatures[1], message);
-            populatePupilNodeJSON(timestamp, viewObjBMain, STEREO_IMAGE_TWO_PUPIL_B_MAIN, Pupils, filename, trialNum, temperatures[0], message);
-            populatePupilNodeJSON(timestamp, viewObjBSec, STEREO_IMAGE_TWO_PUPIL_B_SEC, Pupils, filename, trialNum, temperatures[1], message);
+            populatePupilNodeJSON(timestamp, viewObjAMain, STEREO_IMAGE_TWO_PUPIL_A_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
+            populatePupilNodeJSON(timestamp, viewObjASec, STEREO_IMAGE_TWO_PUPIL_A_SEC, Pupils, filename, trialNum, message, temperatures[1]);
+            populatePupilNodeJSON(timestamp, viewObjBMain, STEREO_IMAGE_TWO_PUPIL_B_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
+            populatePupilNodeJSON(timestamp, viewObjBSec, STEREO_IMAGE_TWO_PUPIL_B_SEC, Pupils, filename, trialNum, message, temperatures[1]);
             pupilObjA["Main"] = viewObjAMain;
             pupilObjA["Sec"] = viewObjASec;
             root["A"] = pupilObjA;
@@ -219,8 +219,8 @@ QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim, DataWriterDat
             result = result % "outlineConfidence";
             if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
                 result = result % delim % "trial" % delim;
+                result = result % "message" % delim;
                 result = result % "temperature_c";
-                result = result % "message";
             }
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
@@ -255,8 +255,8 @@ QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim, DataWriterDat
             result = result % "outlineConfidenceB";
             if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
                 result = result % delim % "trial" % delim;
+                result = result % "message" % delim;
                 result = result % "temperature_c";
-                result = result % "message";
             }
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
@@ -290,9 +290,9 @@ QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim, DataWriterDat
             result = result % "outlineConfidenceSec";
             if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
                 result = result % delim % "trial" % delim;
+                result = result % "message" % delim;
                 result = result % "temperatureMain_c" % delim;
                 result = result % "temperatureSec_c";
-                result = result % "message";
             }
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
@@ -349,9 +349,9 @@ QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim, DataWriterDat
             result = result % "outlineConfidenceBSec"; //
             if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
                 result = result % delim % "trial" % delim; //
+                result = result % "message" % delim;
                 result = result % "temperatureMain_c" % delim;
                 result = result % "temperatureSec_c";
-                result = result % "message";
             }
             break;
         
@@ -367,7 +367,7 @@ QString EyeDataSerializer::getHeaderCSV(int procMode, QChar delim, DataWriterDat
 
 // Converts a pupil detection to a string row that is written to file
 // CAUTION: This must exactly reproduce the format defined by the header fields
-QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, QChar delim, DataWriterDataStyle dataStyle, const std::vector<double> &temperatures, const QString& message) {
+QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, QChar delim, DataWriterDataStyle dataStyle, const QString& message, const std::vector<double> &temperatures) {
 
     QString filename = "-1";
     if(!filepath.isEmpty())
@@ -396,8 +396,8 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
             result = result % QString::number(Pupils[SINGLE_IMAGE_ONE_PUPIL_MAIN].outline_confidence);
             if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
                 result = result %  delim % QString::number(trialNum) % delim;
+                result = result % message % delim;
                 result = result % QString::number(temperatures[0]);
-                result = result % message;
             }
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
@@ -432,8 +432,8 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
             result = result % QString::number(Pupils[SINGLE_IMAGE_TWO_PUPIL_B].outline_confidence);
             if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
                 result = result % delim % QString::number(trialNum) % delim;
+                result = result % message % delim;
                 result = result % QString::number(temperatures[0]);
-                result = result % message;
             }
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
@@ -467,9 +467,9 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
             result = result % QString::number(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC].outline_confidence);
             if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
                 result = result % delim % QString::number(trialNum) % delim;
+                result = result % message % delim;
                 result = result % QString::number(temperatures[0]) % delim;
                 result = result % QString::number(temperatures[1]);
-                result = result % message;
             }
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
@@ -526,9 +526,9 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
             result = result % QString::number(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC].outline_confidence); //
             if(dataStyle == DataWriterDataStyle::PUPILEXT_V0_1_2) {
                 result = result % delim % QString::number(trialNum) % delim;
+                result = result % message % delim;
                 result = result % QString::number(temperatures[0]) % delim;
                 result = result % QString::number(temperatures[1]);
-                result = result % message;
             }
             break;
         
@@ -573,7 +573,7 @@ QString EyeDataSerializer::pupilToRowCSV(quint64 timestamp, int procMode, const 
 }
 
 
-QString EyeDataSerializer::pupilToYAML(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, const std::vector<double> &temperatures, const QString& message) {
+QString EyeDataSerializer::pupilToYAML(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filepath, uint trialNum, const QString& message, const std::vector<double> &temperatures) {
     
 
     QString filename = "-1";
@@ -589,41 +589,41 @@ QString EyeDataSerializer::pupilToYAML(quint64 timestamp, int procMode, const st
 
             addRowYAML(obj, "A", "", 1, false);
             addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, temperatures[0], message);
+            populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
 
             addRowYAML(obj, "A", "", 1, false);
             addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_TWO_PUPIL_A, Pupils, filename, trialNum, temperatures[0], message);
+            populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_TWO_PUPIL_A, Pupils, filename, trialNum, message, temperatures[0]);
             addRowYAML(obj, "B", "", 1, false);
             addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_TWO_PUPIL_B, Pupils, filename, trialNum, temperatures[0], message);
+            populatePupilNodeYAML(timestamp, obj, 3, SINGLE_IMAGE_TWO_PUPIL_B, Pupils, filename, trialNum, message, temperatures[0]);
             break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
 
             addRowYAML(obj, "A", "", 1, false);
             addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, temperatures[0], message);
+            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_ONE_PUPIL_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
             addRowYAML(obj, "A", "", 1, false);
             addRowYAML(obj, "Sec", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, temperatures[1], message);
+            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_ONE_PUPIL_SEC, Pupils, filename, trialNum, message, temperatures[1]);
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
 
             addRowYAML(obj, "A", "", 1, false);
             addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_A_MAIN, Pupils, filename, trialNum, temperatures[0], message);
+            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_A_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
             addRowYAML(obj, "A", "", 1, false);
             addRowYAML(obj, "Sec", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_A_SEC, Pupils, filename, trialNum, temperatures[1], message);
+            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_A_SEC, Pupils, filename, trialNum, message, temperatures[1]);
 
             addRowYAML(obj, "B", "", 1, false);
             addRowYAML(obj, "Main", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_B_MAIN, Pupils, filename, trialNum, temperatures[0], message);
+            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_B_MAIN, Pupils, filename, trialNum, message, temperatures[0]);
             addRowYAML(obj, "B", "", 1, false);
             addRowYAML(obj, "Sec", "", 2, false);
-            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_B_SEC, Pupils, filename, trialNum, temperatures[1], message);
+            populatePupilNodeYAML(timestamp, obj, 3, STEREO_IMAGE_TWO_PUPIL_B_SEC, Pupils, filename, trialNum, message, temperatures[1]);
             break;
             
         // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
@@ -643,7 +643,7 @@ QString EyeDataSerializer::pupilToYAML(quint64 timestamp, int procMode, const st
     return obj;
 }
 
-void EyeDataSerializer::populatePupilNodeYAML(quint64 &timestamp, QString &obj, ushort depth, int idx, const std::vector<Pupil> &Pupils, const QString &filename, uint &trialNum, double temperature, const QString& message) {
+void EyeDataSerializer::populatePupilNodeYAML(quint64 &timestamp, QString &obj, ushort depth, int idx, const std::vector<Pupil> &Pupils, const QString &filename, uint &trialNum, const QString& message, double temperature) {
 
     depth+=1;
     addRowYAML(obj, "filename", filename, depth, true);
@@ -662,8 +662,8 @@ void EyeDataSerializer::populatePupilNodeYAML(quint64 &timestamp, QString &obj, 
     addRowYAML(obj, "confidence", QString::number(Pupils[idx].confidence), depth, true);
     addRowYAML(obj, "outlineConfidence", QString::number(Pupils[idx].outline_confidence), depth, true);
     addRowYAML(obj, "trial", QString::number(trialNum), depth, true);
-    addRowYAML(obj, "temperature_c", QString::number(temperature), depth, true);
     addRowYAML(obj, "message", message, depth, true);
+    addRowYAML(obj, "temperature_c", QString::number(temperature), depth, true);
 }
 
 void EyeDataSerializer::addRowYAML(QString &obj, QString key, QString value, ushort depth, bool isLeaf) {

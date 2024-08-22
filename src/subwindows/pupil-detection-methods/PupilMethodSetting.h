@@ -141,7 +141,8 @@ public slots:
 
         }
         else{
-            configIndex = Settings::DEFAULT;
+//            configIndex = Settings::DEFAULT;
+            configIndex = Settings::AUTOMATIC_PARAMETRIZATION;
         }
     }
 

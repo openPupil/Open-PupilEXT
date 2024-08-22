@@ -26,11 +26,19 @@ GraphPlot::GraphPlot(DataTypes::DataType _plotDataKey, ProcMode procMode, bool l
     // TODO any chance to get the opengl qcustomplot scaling to work?
     //customPlot->setOpenGl(true);
 
+    // We need this outer layout to be able to make a padding on the left side to let the y label fit correctly,
+    // and at the same time also fill the background with dark-mode sensitive background color
+    QVBoxLayout* outerLayout = new QVBoxLayout(this);
+    outerLayout->setContentsMargins(0,0,0,0);
+    QFrame *outerFrame = new QFrame();
+    outerLayout->addWidget(outerFrame);
+
     QVBoxLayout* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(0,0,0,0);
+    layout->setContentsMargins(10,0,0,0);
     layout->addWidget(customPlot);
 
-    setLayout(layout);
+    outerFrame->setLayout(layout);
+    setLayout(outerLayout);
 
     loadYaxisSettings();
 
@@ -42,16 +50,17 @@ GraphPlot::GraphPlot(DataTypes::DataType _plotDataKey, ProcMode procMode, bool l
         customPlot->graph(1)->setPen(penSec);
     }
     */
-    QPen pen1 = QPen(Qt::blue, 0, Qt::SolidLine);
+    QPen pen1 = QPen(QColor("#04a0de"), 0, Qt::SolidLine); // lighter blue
     QPen pen2 = QPen(Qt::green, 0, Qt::SolidLine);
-    QPen pen3 = QPen(Qt::cyan, 0, Qt::SolidLine);
-    QPen pen4 = QPen(Qt::yellow, 0, Qt::SolidLine);
-    std::size_t numCols=1;
+    QPen pen3 = QPen(QColor("#9e0ff7"), 0, Qt::SolidLine); // lighter purple
+//    QPen pen4 = QPen(QColor("#d4c239"), 0, Qt::SolidLine); // yellow
+    QPen pen4 = QPen(QColor(214, 140, 49,255), 0, Qt::SolidLine); // orange
+    numGraphs=1;
     switch(currentProcMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
             customPlot->addGraph();
             customPlot->graph(0)->setPen(pen1);
-            //numCols=1;
+            //numGraphs=1;
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
         // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
@@ -60,7 +69,7 @@ GraphPlot::GraphPlot(DataTypes::DataType _plotDataKey, ProcMode procMode, bool l
             customPlot->addGraph();
             customPlot->graph(0)->setPen(pen1);
             customPlot->graph(1)->setPen(pen2);
-            numCols=2;
+            numGraphs=2;
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
             customPlot->addGraph();
@@ -71,19 +80,47 @@ GraphPlot::GraphPlot(DataTypes::DataType _plotDataKey, ProcMode procMode, bool l
             customPlot->graph(1)->setPen(pen2);
             customPlot->graph(2)->setPen(pen3);
             customPlot->graph(3)->setPen(pen4);
-            numCols=4;
+            numGraphs=4;
             break;
     }
 
 //    enableInteractions();
 //    enableYAxisInteraction();
 
+    QColor color1;
+    QColor color2;
     bool darkMode = applicationSettings->value("GUIDarkAdaptMode", "0") == "1" || (applicationSettings->value("GUIDarkMode", "0") == "2");
     if(darkMode) {
-        customPlot->setBackground(QBrush("#242424"));
+        color1 = QColor("#242424");
+        color2 = QColor("#d9d9d9");
     } else {
-        customPlot->setBackground(QBrush("white"));
+        color1 = Qt::white;
+        color2 = Qt::black;
+//        color1 = QColor("#c7c7c7");
+//        color2 = QColor("#1e1f1e");
     }
+    outerFrame->setStyleSheet("QFrame {background: " + color1.name() + ";}");
+    customPlot->setBackground(QBrush(color1));
+    customPlot->xAxis->setTickLabelColor(color2);
+    customPlot->xAxis->setBasePen(QPen(color2));
+    customPlot->xAxis->setLabelColor(color2);
+    customPlot->xAxis->setTickPen(QPen(color2));
+    customPlot->xAxis->setSubTickPen(QPen(color2));
+    customPlot->yAxis->setTickLabelColor(color2);
+    customPlot->yAxis->setBasePen(QPen(color2));
+    customPlot->yAxis->setLabelColor(color2);
+    customPlot->yAxis->setTickPen(QPen(color2));
+    customPlot->yAxis->setSubTickPen(QPen(color2));
+    customPlot->xAxis2->setTickLabelColor(color2);
+    customPlot->xAxis2->setBasePen(QPen(color2));
+    customPlot->xAxis2->setLabelColor(color2);
+    customPlot->xAxis2->setTickPen(QPen(color2));
+    customPlot->xAxis2->setSubTickPen(QPen(color2));
+    customPlot->yAxis2->setTickLabelColor(color2);
+    customPlot->yAxis2->setBasePen(QPen(color2));
+    customPlot->yAxis2->setLabelColor(color2);
+    customPlot->yAxis2->setTickPen(QPen(color2));
+    customPlot->yAxis2->setSubTickPen(QPen(color2));
 
     customPlot->legend->setVisible(legend);
 
@@ -143,6 +180,7 @@ void GraphPlot::reset() {
             customPlot->graph(3)->data()->clear();
             break;
     }
+    resetScheduled = false;
     customPlot->update();
     // customPlot->replot(); // yet it is good to see the plot when playback just stopped, until we restart it
 }
@@ -153,7 +191,7 @@ void GraphPlot::contextMenuRequest(QPoint pos) {
     QMenu *menu = new QMenu(this);
     menu->setAttribute(Qt::WA_DeleteOnClose);
 
-    menu->addAction("Clear", this, SLOT(reset()));
+    menu->addAction("Clear", this, SLOT(clearClick()));
     menu->addSeparator();
 
     QAction *autoScaleAct = menu->addAction("Auto scroll X, auto scale Y");
@@ -336,6 +374,11 @@ void GraphPlot::appendData(const double &fps) {
     incrementedTimestamp += 1000;
     uint64 m_timestamp = incrementedTimestamp;
 
+    // If the looping playback has restarted in case of fileCamera
+    if((lastTimestamp != 0 && lastTimestamp > m_timestamp) || resetScheduled)
+        reset();
+    lastTimestamp = m_timestamp;
+
     // Note: we currently only plot it for the main camera main view, as all their FPS's are equal
     if(plotDataKey == DataTypes::DataType::CAMERA_FPS || plotDataKey == DataTypes::DataType::PUPIL_FPS) {
         customPlot->graph(0)->addData(m_timestamp/1000.0, fps);
@@ -370,6 +413,11 @@ void GraphPlot::appendData(const int &framecount) {
     incrementedTimestamp += 1000;
     uint64 m_timestamp = incrementedTimestamp;
 
+    // If the looping playback has restarted in case of fileCamera
+    if((lastTimestamp != 0 && lastTimestamp > m_timestamp) || resetScheduled)
+        reset();
+    lastTimestamp = m_timestamp;
+
     // add data
     if(plotDataKey == DataTypes::DataType::FRAME_NUMBER) {
         customPlot->graph(0)->addData(m_timestamp/1000.0, framecount);
@@ -396,6 +444,40 @@ void GraphPlot::appendData(const int &framecount) {
     customPlot->replot();
 }
 
+void GraphPlot::setPupilData(const Pupil &pupil, int graphID, quint64 timestamp) {
+    double dataPointToAdd = -1.0;
+    if(plotDataKey == DataTypes::DataType::PUPIL_CENTER_X) {
+        dataPointToAdd = pupil.center.x;
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_CENTER_Y) {
+        dataPointToAdd = pupil.center.y;
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_MAJOR) {
+        dataPointToAdd = pupil.majorAxis();
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_MINOR) {
+        dataPointToAdd = pupil.minorAxis();
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_WIDTH) {
+        dataPointToAdd = pupil.width();
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_HEIGHT) {
+        dataPointToAdd = pupil.height();
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_CONFIDENCE) {
+        dataPointToAdd = pupil.confidence;
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_OUTLINE_CONFIDENCE) {
+        dataPointToAdd = pupil.outline_confidence;
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_CIRCUMFERENCE) {
+        dataPointToAdd = pupil.circumference();
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_RATIO) {
+        dataPointToAdd = (double)pupil.majorAxis() / pupil.minorAxis();
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_DIAMETER) {
+        dataPointToAdd = pupil.diameter();
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_UNDIST_DIAMETER) {
+        dataPointToAdd = pupil.undistortedDiameter;
+    } else if(plotDataKey == DataTypes::DataType::PUPIL_PHYSICAL_DIAMETER) {
+        dataPointToAdd = pupil.physicalDiameter;
+    }
+    if(dataPointToAdd == -1.0)
+        dataPointToAdd = std::numeric_limits<double>::quiet_NaN();
+
+    customPlot->graph(graphID)->addData(timestamp/1000.0, dataPointToAdd);
+}
 
 // Slot that is called upon receiving a new stereo pupil detection
 // Updates the table columns with current pupil data i.e. all meta information of both pupil detections
@@ -415,57 +497,34 @@ void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pu
     uint64 m_timestamp = timestamp - sharedTimestamp;
 
     // If the looping playback has restarted in case of fileCamera
-    if(lastTimestamp != 0 && lastTimestamp > m_timestamp)
+    if((lastTimestamp != 0 && lastTimestamp > m_timestamp) || resetScheduled)
         reset();
-
     lastTimestamp = m_timestamp;
 
-    std::size_t numCols=1;
-    switch(currentProcMode) {
+    switch((ProcMode)procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            //numCols=1;
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN], 0, m_timestamp);
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
-        // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
+            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_A], 0, m_timestamp);
+            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_B], 1, m_timestamp);
+            break;
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
-            numCols=2;
+            setPupilData(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN], 0, m_timestamp);
+            setPupilData(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC], 1, m_timestamp);
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            numCols=4;
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN], 0, m_timestamp);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN], 1, m_timestamp);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC], 2, m_timestamp);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC], 3, m_timestamp);
             break;
     }
-
-    // add data
-    // GB: TODO: physical diameter is the same for two views, but is added as two different curves now..
-    for(int i=0; i<numCols; i++) {
-        if(plotDataKey == DataTypes::DataType::PUPIL_CENTER_X) {
-            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].center.x);
-        } else if(plotDataKey == DataTypes::DataType::PUPIL_CENTER_Y) {
-            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].center.y);
-        } else if(plotDataKey == DataTypes::DataType::PUPIL_MAJOR) {
-            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].majorAxis());
-        } else if(plotDataKey == DataTypes::DataType::PUPIL_MINOR) {
-            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].minorAxis());
-        } else if(plotDataKey == DataTypes::DataType::PUPIL_WIDTH) {
-            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].width());
-        } else if(plotDataKey == DataTypes::DataType::PUPIL_HEIGHT) {
-            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].height());
-        } else if(plotDataKey == DataTypes::DataType::PUPIL_CONFIDENCE) {
-            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].confidence);
-        } else if(plotDataKey == DataTypes::DataType::PUPIL_OUTLINE_CONFIDENCE) {
-            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].outline_confidence);
-        } else if(plotDataKey == DataTypes::DataType::PUPIL_CIRCUMFERENCE) {
-            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].circumference());
-        } else if(plotDataKey == DataTypes::DataType::PUPIL_RATIO) {
-            customPlot->graph(i)->addData(m_timestamp/1000.0, (double)Pupils[i].majorAxis() / Pupils[i].minorAxis());
-        } else if(plotDataKey == DataTypes::DataType::PUPIL_DIAMETER) {
-            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].diameter());
-        } else if(plotDataKey == DataTypes::DataType::PUPIL_UNDIST_DIAMETER) {
-            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].undistortedDiameter);
-        } else if(plotDataKey == DataTypes::DataType::PUPIL_PHYSICAL_DIAMETER) {
-            customPlot->graph(i)->addData(m_timestamp/1000.0, Pupils[i].physicalDiameter);
-        }
-    }
+//    // add data
+//    // GB: TODO: physical diameter is the same for two views, but is added as two different curves now..
+//    for(int i=0; i < numGraphs; i++) {
+//        ppppp
+//    }
 
     if(currentInteractionMode != InteractionMode::MANUAL_SCALE_SCROLL_X_Y) {
 
@@ -481,9 +540,9 @@ void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pu
             std::set<double> possibleMaxima;
             bool ok;
             QCPRange possibleRange;
-            for (int i = 0; i < numCols; i++) {
+            for (int i = 0; i < numGraphs; i++) {
                 ok = false;
-                possibleRange = customPlot->graph(0)->data()->valueRange(ok);
+                possibleRange = customPlot->graph(i)->data()->valueRange(ok);
                 if (ok) {
                     possibleMinima.insert(possibleRange.lower);
                     possibleMaxima.insert(possibleRange.upper);
@@ -497,7 +556,7 @@ void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pu
 
             customPlot->yAxis->setRange(commonRange);
 
-//                for(int i=0; i<numCols; i++) {
+//                for(int i=0; i<numGraphs; i++) {
 //                    customPlot->graph(i)->rescaleValueAxis(false, true);
 //                }
         }
@@ -511,7 +570,7 @@ void GraphPlot::appendData(quint64 timestamp, int procMode, const std::vector<Pu
     if((m_timestamp/1000.0) - customPlot->graph(0)->dataMainKey (0) > 240) {
 //            customPlot->graph(0)->data()->removeBefore((m_timestamp/1000.0)-120);
 //            customPlot->graph(1)->data()->removeBefore((m_timestamp/1000.0)-120);
-        for (int i = 0; i < numCols; i++) {
+        for (int i = 0; i < numGraphs; i++) {
             customPlot->graph(i)->data()->removeBefore((m_timestamp / 1000.0) - 120);
         }
     }
@@ -523,16 +582,18 @@ void GraphPlot::updateYaxisRange() {
     customPlot->yAxis->setRange(yAxisLimitLow,yAxisLimitHigh);
 }
 
-void GraphPlot::onPlaybackSafelyStopped() {
-    reset();
-}
-
-void GraphPlot::onPlaybackSafelyStarted() {
-    reset();
+void GraphPlot::scheduleReset() {
+    resetScheduled = true;
+//    qDebug() << "GraphPlot reset called";
 }
 
 void GraphPlot::setKnownTimeZero(uint64_t timestamp) {
     sharedTimestamp = timestamp;
+}
+
+void GraphPlot::clearClick() {
+    reset(); // clear data
+    customPlot->replot(); // and redraw to make the plot actually empty on screen
 }
 
 

@@ -49,10 +49,13 @@ class SVGIconEngine : public QIconEngine {
             // qDebug() << "---------------------------------------";
 
             // invert only the HSV "value"/intensity value (mirror it to 0.5 on a 0.0-1.0 range)
-            if(doLighten && actualColor.valueF() <= 0.5f) {
-                actualColor = QColor::fromHsvF(actualColor.hsvHueF(), actualColor.hsvSaturationF(), 1.0f-actualColor.valueF());
+            if(doLighten && actualColor.valueF() <= 0.52f) {
+                actualColor = QColor::fromHsvF(actualColor.hsvHueF(), actualColor.hsvSaturationF(), 1.0f-(actualColor.valueF()/2.0));
+            }
+
+            if(doLighten) {
                 if(mode == QIcon::Mode::Disabled) {
-                    actualColor = QColor::fromHsvF(actualColor.hsvHueF(), 0.8, 0.5);
+                    actualColor = QColor::fromHsvF(actualColor.hsvHueF(), 0.1, 0.5);
                 }
             } else {
                 if(mode == QIcon::Mode::Disabled) {

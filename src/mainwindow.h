@@ -44,6 +44,7 @@
 #include "playbackSynchroniser.h"
 #include "dataTypes.h"
 #include "subwindows/sceneImageView.h"
+#include "subwindows/gettingStartedWizard.h"
 //#include <QtMultimedia/QCameraInfo>
 
 
@@ -58,6 +59,8 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
+
+    static int const EXIT_CODE_REBOOT;
 
     MainWindow();
     ~MainWindow() override;
@@ -77,14 +80,6 @@ private:
 
     QSettings *applicationSettings;
     QDir settingsDirectory;
-
-    MCUSettingsDialog *MCUSettingsDialogInst;
-    PupilDetectionSettingsDialog *pupilDetectionSettingsDialog;
-    GeneralSettingsDialog *generalSettingsDialog;
-    SubjectSelectionDialog *subjectSelectionDialog;
-
-    SingleCameraSettingsDialog *singleCameraSettingsDialog;
-    StereoCameraSettingsDialog *stereoCameraSettingsDialog;
 
     QString pupilDetectionDataFile;
     QString outputDirectory;
@@ -183,15 +178,26 @@ private:
 
     bool streamOn = false;
 
+    // TODO: These are all dialogs that get opened DIRECTLY as a child of main window (not inside an MDI subwindow).
+    //  Currently, on MacOS, they can be erroneously occluded by the main window once they lose focus.
+    //  This is probably a Qt bug.
+    // TODO: Also, always only one of them can exist at once, so it could be good to rethink their
+    //  instantiation and memory management.
+    MCUSettingsDialog *MCUSettingsDialogInst;
+    PupilDetectionSettingsDialog *pupilDetectionSettingsDialog;
+    GeneralSettingsDialog *generalSettingsDialog;
+    SubjectSelectionDialog *subjectSelectionDialog;
+    SingleCameraSettingsDialog *singleCameraSettingsDialog;
+    StereoCameraSettingsDialog *stereoCameraSettingsDialog;
     RemoteCCDialog *remoteCCDialog;
     StreamingSettingsDialog *streamingSettingsDialog;
+    SingleWebcamSettingsDialog *singleWebcamSettingsDialog;
+
     ImagePlaybackControlDialog *imagePlaybackControlDialog;
 
     // made these two global to be able to pass singlecameraview instance pointer to ...CameraSettingsDialog constructors:
     SingleCameraView *singleCameraChildWidget; 
     StereoCameraView *stereoCameraChildWidget;
-    
-    SingleWebcamSettingsDialog *singleWebcamSettingsDialog;
 
     //QThread *tempMonitorThread;
     CamTempMonitor *camTempMonitor;
@@ -214,9 +220,15 @@ private:
 
     QWidget *trialWidget;
     QLabel *currentTrialLabel;
+    QFrame* trialWidgetLayoutSep;
     QWidget *messageWidget;
     QLabel *currentMessageLabel;
+    QFrame* messageWidgetLayoutSep;
     QLabel *remoteStatusIcon;
+
+    GettingStartedWizard* aboutWizard = nullptr;
+    GettingStartedWizard* aboutAndUserGuideWizard = nullptr;
+    GettingStartedWizard* userGuideWizard = nullptr;
 
     DataStreamer *dataStreamer;
     QMutex *imageMutex;
@@ -300,6 +312,7 @@ private slots:
 //    void updateOpenCVCamerasMenu();
     void updateWindowMenu();
     void about();
+    void userGuide();
     void openSourceDialog();
     void resetGeometry();
 //    void closeActiveSubWindow();
@@ -308,7 +321,10 @@ private slots:
     void onSubjectsSettingsChange(QString subject);
     void onSharpnessClick();
 
-    void onGettingsStartedWizardFinish();
+    void offerResetApplicationSettings();
+    void offerRestartApplication();
+
+//    void onGettingsStartedWizardFinish();
 
     void singleWebcamSelected(QAction *action);
     void onSingleWebcamSettingsClick();
@@ -316,9 +332,9 @@ private slots:
     void onStreamClick();
     void onStreamingSettingsClick();
 
-    void onPlaybackSafelyStarted();
-    void onPlaybackSafelyPaused();
-    void onPlaybackSafelyStopped();
+    void onPlaybackStartInitiated();
+    void onPlaybackPauseInitiated();
+    void onPlaybackStopInitiated();
 
     void onRemoteConnStateChanged();
     //void onStreamingConnStateChanged();
@@ -417,5 +433,9 @@ signals:
     void commitMessageRegisterReset(quint64 timestamp);
 
     void cameraPlaybackChanged();
+
+    void playbackStartApproved();
+    void playbackPauseApproved();
+    void playbackStopApproved();
 
 };

@@ -22,10 +22,14 @@ ImagePlaybackControlDialog::ImagePlaybackControlDialog(FileCamera *fileCamera, P
  
 
     //this->setMinimumSize(500, 400); 
-    this->setMinimumSize(650, 240);
+    this->setMinimumSize(750, 280);
     this->setWindowTitle("Image Playback Control");
 
     readSettings();
+
+    // These lines are very important here, DO NOT REMOVE
+    tempSyncRecordCsv = syncRecordCsv;
+    tempSyncStream = syncStream;
 
     createForm();
 
@@ -51,7 +55,10 @@ void ImagePlaybackControlDialog::createForm() {
     QFormLayout *infoLayout = new QFormLayout();
     infoGroup = new QGroupBox("Playback info");
 
+    QHBoxLayout *timestampRowLayout = new QHBoxLayout();
+    timestampRowLayout->setContentsMargins(0,0,0,0);
     QLabel *timestampLabel = new QLabel(tr("Timestamp [ms]:"));
+    timestampLabel->setFixedWidth(120);
     //timestampVal = new QLineEdit();
     timestampVal = new TimestampSpinBox(fileCamera);
     timestampVal->setReadOnly(false);
@@ -60,10 +67,14 @@ void ImagePlaybackControlDialog::createForm() {
     uint64_t timestampMax = fileCamera->getTimestampForFrameNumber(fileCamera->getNumImagesTotal()-1);
     timestampVal->setMaximum(timestampMax);
     timestampVal->setWrapping(true);
-    infoLayout->addRow(timestampLabel, timestampVal);
+    timestampRowLayout->addWidget(timestampLabel);
+    timestampRowLayout->addWidget(timestampVal);
+    timestampRowLayout->addSpacerItem(new QSpacerItem(10, 20, QSizePolicy::Expanding));
+    infoLayout->addRow(timestampRowLayout);
 
     QHBoxLayout *selectedFrameRowLayout = new QHBoxLayout();
     QLabel *frameLabel = new QLabel(tr("Frame:"));
+    frameLabel->setFixedWidth(120);
     selectedFrameBox = new QSpinBox();
     selectedFrameBox->setReadOnly(false);
     selectedFrameBox->setMaximumWidth(70);
@@ -124,7 +135,6 @@ void ImagePlaybackControlDialog::createForm() {
     slider->setOrientation(Qt::Horizontal);
     slider->setFocusPolicy(Qt::StrongFocus);
     slider->setTickPosition(QSlider::TicksAbove);
-    //slider->setFixedWidth(300); // 100 px width
     slider->setMinimumWidth(200);
     slider->setTickInterval(10); //max value is 100, and every 10th value gets a visual mark
     slider->setSingleStep(1);
@@ -137,7 +147,10 @@ void ImagePlaybackControlDialog::createForm() {
     connect(dial, SIGNAL(incremented()), this, SLOT(onDialForward()));
     connect(dial, SIGNAL(decremented()), this, SLOT(onDialBackward()));
     connect(slider, SIGNAL(valueChanged(int)), this, SLOT(onSliderValueChanged(int)));
-    //connect(dial, SIGNAL(valueChanged(int)), this, SLOT(on(int)));
+
+    connect(dial, SIGNAL(incremented()), this, SIGNAL(cameraPlaybackPositionChanged()));
+    connect(dial, SIGNAL(decremented()), this, SIGNAL(cameraPlaybackPositionChanged()));
+    connect(slider, SIGNAL(valueChanged(int)), this, SIGNAL(cameraPlaybackPositionChanged()));
     
     controlLayout->addWidget(slider, 0, 0, 1, 3);
     controlLayout->addWidget(dial, 1, 2, 6, 1);
@@ -332,7 +345,8 @@ void ImagePlaybackControlDialog::updateInfo(quint64 timestamp, int frameNumber) 
 //    }
 
     if (finished || paused){
-        resetState();
+//        resetState();
+        emit onPlaybackStopInitiated();
     }
 }
 
@@ -344,9 +358,10 @@ void ImagePlaybackControlDialog::onStopButtonClick() {
 //    qDebug()<<"Stopping FileCamera Click";
     fileCamera->stop();
 
-    if (paused)
+    if(paused)
         finished = true;
-    resetState();
+//    resetState();
+    emit onPlaybackStopInitiated();
 }
 
 void ImagePlaybackControlDialog::onEndReached() {
@@ -448,9 +463,9 @@ void ImagePlaybackControlDialog::setPlaybackLoop(bool m_state) {
     if (!m_state){
         syncRecordCsv = tempSyncRecordCsv;
         syncStream = tempSyncStream;
-        syncRecordCsvBox->setEnabled(true);
+        syncRecordCsvBox->setEnabled(!playImagesOn);
         syncRecordCsvBox->setChecked(syncRecordCsv);
-        syncStreamBox->setEnabled(true);
+        syncStreamBox->setEnabled(!playImagesOn);
         syncStreamBox->setChecked(syncStream);
     }
     playbackLoop = m_state;
@@ -494,43 +509,49 @@ void ImagePlaybackControlDialog::setSyncStream(bool m_state) {
     // TODO
 }
 
-void ImagePlaybackControlDialog::onCameraPlaybackChanged()
-{
+void ImagePlaybackControlDialog::onCameraPlaybackChanged() {
     if(!paused) {
+        emit onPlaybackPauseInitiated();
+    } else {
+        emit onPlaybackStartInitiated();
+    }
+}
+
+void ImagePlaybackControlDialog::onPlaybackPauseApproved() {
+    emit onPlaybackSafelyPaused();
+
 //        qDebug()<<"Pausing FileCamera Click";
-        fileCamera->pause();
+    fileCamera->pause();
 
-        const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
-        startPauseButton->setIcon(icon);
+    const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
+    startPauseButton->setIcon(icon);
 
-        startPauseButton->setEnabled(true);
-        stopButton->setEnabled(true);
-        enableWidgets();
-        paused = true;
-        playImagesOn = false;
-        //playImagesOn = false;
+    startPauseButton->setEnabled(true);
+    stopButton->setEnabled(true);
+    enableWidgets();
+    paused = true;
+    playImagesOn = false;
+    //playImagesOn = false;
 
 //        qDebug() << "Playback paused";
-    } else {
 
-        // GB: dial can be buggy when touched during playing is on, so disabled it if play is on. 
-        // Can be operated separately, when paused
-        dial->setEnabled(false);
+    this->update();
+}
 
-        emit onPlaybackSafelyStarted();
+void ImagePlaybackControlDialog::onPlaybackStartApproved() {
+    emit onPlaybackSafelyStarted();
 
 //        qDebug()<<"Starting FileCamera Click";
-        fileCamera->start();
+    fileCamera->start();
 
-        const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-pause.svg"), applicationSettings);
-        startPauseButton->setIcon(icon);
-        playImagesOn = true;
-        finished = false;
-        paused = false;
-        disableWidgets();
-    }
+    const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-pause.svg"), applicationSettings);
+    startPauseButton->setIcon(icon);
+    playImagesOn = true;
+    finished = false;
+    paused = false;
+    disableWidgets();
 
-    this->update(); // invalidate 
+    this->update();
 }
 
 void ImagePlaybackControlDialog::onFrameSelected(int frameNumber){
@@ -558,6 +579,9 @@ void ImagePlaybackControlDialog::enableWidgets(){
     dial->setDisabled(false);
     slider->setDisabled(false);
     infoGroup->setDisabled(false);
+    loopBox->setDisabled(false);
+    syncRecordCsvBox->setDisabled(playbackLoop);
+    syncStreamBox->setDisabled(playbackLoop);
 }
 
 void ImagePlaybackControlDialog::disableWidgets(){
@@ -568,6 +592,9 @@ void ImagePlaybackControlDialog::disableWidgets(){
     dial->setDisabled(true);
     slider->setDisabled(true);
     infoGroup->setDisabled(true);
+    loopBox->setDisabled(syncRecordCsv || syncStream);
+    syncRecordCsvBox->setDisabled(true);
+    syncStreamBox->setDisabled(true);
 }
 
 void ImagePlaybackControlDialog::onTimestampSelected(double frameNumber){
@@ -576,7 +603,7 @@ void ImagePlaybackControlDialog::onTimestampSelected(double frameNumber){
         }
 }
 
-void ImagePlaybackControlDialog::resetState() {
+void ImagePlaybackControlDialog::onPlaybackStopApproved() {
 
     if (finished && endReached && fileCamera->getNumImagesTotal() == selectedFrameVal){
         const QIcon icon = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/actions/22/media-playback-start.svg"), applicationSettings);
@@ -617,11 +644,12 @@ void ImagePlaybackControlDialog::resetState() {
         emit onPlaybackSafelyStopped();
     }
 
-    this->update(); // invalidate
+    this->update();
 }
 
 void ImagePlaybackControlDialog::onFinished() {
     finished = true;
-    resetState();
+//    resetState();
+    emit onPlaybackStopInitiated();
 }
 

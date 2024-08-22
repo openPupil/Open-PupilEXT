@@ -38,7 +38,7 @@ set(QT_VERSION 5.15.2)
 
 # Provide the user name for your system, which is used to find the Qt5_DIR on mac
 # Windows users can ignore this line
-set(USER_NAME_MAC papillon)
+set(USER_NAME_MAC $ENV{USER})
 
 # ------------------------------------------------------------------------
 # ------------------------------------------------------------------------

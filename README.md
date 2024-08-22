@@ -45,18 +45,18 @@ We aimed to provide a professional open-source pupillometry measurement platform
 - [x]  Supporting stereo camera setups
 - [x]  Supporting single camera setups
 - [x]  Supporting Basler branded cameras for research-grade use. Tested with Basler acA2040-120um, acA1300-200um (see Zandi et al., 2021) and a2A1920-160um
-- [x]  Also supports any OpenCV-supported Universal Video Class (UVC) camera (e.g. webcam) for low-res pupillometry, suitable for basic educative use
+- [x]  Also supports any OpenCV-supported USB Video Class (UVC) camera (e.g. webcam) to be suitable for basic educative use as well
 - [x]  Offline pupillometry with externally recorded images. Equipped with an easy-to-use graphical user interface to control and visually inspect image recording playback and pupil detection performance frame-by-frame 
 - [x]  Cross-platform software: MacOS, Windows, Linux
 - [x]  Intgrates six leading open-source pupil detection algorithms: Starburst [[1\]](#1), Swirski2D [[2\]](#2), ExCuSe [[3\]](#3), ElSe [[4\]](#4), PuRe [[5\]](#5), and PuReST [[6\]](#6). Now also with automatic parametrization capability
-- [x]  Tracking and storing trial increment/"trigger" events and timestamped textual messages in recordings (image and data recordings too), for use in any psychophysiology pupillometry experiment
-- [x]  Remote control capability to let an Experiment computer to control PupilEXT on the Host computer (Ready-to-use PsychoPy and Matlab Psychtoolbox examples included), over Ethernet or Serial cable connection
-- [x]  Different image processing modes to support different physical arrangements of cameras and number of eyes (1 or 2 cameras, and for 1 or 2 pupils = 2x2 processing modes)
-- [x]  Stereo camera image acquisition triggering can now be controlled over ethernet to support long distances between the Experiment and Host computers
-- [x]  Live streaming pupil detection output, for interactive paradigms and human-computer interaction research
-- [x]  Ability to start the program using executable arguments (e.g. for scheduled automatic warmup start after computer boot-up)
-- [x]  Device temperature monitoring and logging, with camera-warmup indication, to minimize warmup system drift artefacts
-- [x]  Ability to precisely control low-level image acquisition settings of the industrial camera used (image acquisition ROI and binning as well)
+- [x]  Tracking and storing trial increment/"trigger" events and timestamped textual messages along with recordings
+- [x]  Remote control capability to let an experiment script to control PupilEXT on the host computer (Ready-to-use PsychoPy and Matlab Psychtoolbox examples included)
+- [x]  Different image processing modes to support different physical arrangements of cameras and number of eyes (1/2 cameras x 1/2 eyes)
+- [x]  Stereo camera image acquisition triggering can now be controlled over ethernet to support more cable length
+- [x]  Live streaming pupil detection output
+- [x]  Ability to start the program using executable arguments (e.g. for scheduled automatic warmup, and auto-config)
+- [x]  Device temperature monitoring and logging
+- [x]  Ability to precisely control even advanced-level image acquisition settings of the camera
 
 
 For initial testing, we recommend using the provided demo datasets. See section 2.4 in this repository. Pay attention to the image playback speed setting, if you are on a laptop with low computational power.
@@ -78,7 +78,7 @@ Attila Boncsér (sasfog): aboncser@edu.bme.hu
 If you have new ideas, questions or want to discuss some extended topics, please use our discussion forum:
 https://github.com/openPupil/Open-PupilEXT/discussions
 
-**!! NEW 08/2024 !!: Release v0.1.2. based on the Experimental-Community-Version branch**
+**!! NEW 08/2024 !!: Release v0.1.2 based on the Experimental-Community-Version branch**
 
 A new branch called Experimental-Community-Version has been created to support community additions. Its maintainers are Gábor Bényei and Attila Boncsér. For further information check out the community [README](Community/README.md).
 
@@ -123,15 +123,15 @@ Depending on which setup configuration is used, additional hardware components m
 - *1 x STM32 Nucleo F767ZI or similar (Optional)*
 - 1 x IR-illumination (Recommended)
 
-\*Note: If you wish to defer from the setup Zandi et al., 2021 used in their debut paper about PupilEXT (v0.1.1), you can also use different hardware, however they also tested their system with acA1300-200um cameras, and note that the system should work with Basler dart series, though they did not test them. You can opt for any other global shutter monochrome Basler camera matching your FPS needs, and a suitable lens matching with sensor size recommendation of the manufacturer. Starting from PupilEXT release v0.1.2 you can also use an Arduino Uno now, and also an ethernet connection between PupilEXT and the microcontroller to use hardware-triggered image acquisition. The developers of the Experimental-Community-Version branch also tested a2A1920-160um and used it with success. GigE and CoaXpress interface should also work, though not yet tested. For optical filter, any 720nm IR-pass element is suitable. Also, we do not recommend using UVC cameras ("webcams") for research-grade use, only for educative purposes. 
+\*Note: If you wish to defer from the setup Zandi et al., 2021 used in their debut paper about PupilEXT (v0.1.1), you can also use different hardware. Anyway they also tested their system with acA1300-200um cameras, and note that the system should work with Basler dart series, though they did not test the latter. Virtually, you can opt for any other global shutter monochrome Basler camera matching your FPS needs, and a suitable lens matching with sensor size recommendation of the manufacturer. Starting from PupilEXT release v0.1.2 you can also use an Arduino Uno now, and also an ethernet connection between PupilEXT and the microcontroller to use hardware-triggered image acquisition. The developers of the Experimental-Community-Version branch also tested a2A1920-160um and used it with success. GigE and CoaXpress interface should also work, though not yet tested. For optical filter, any 720nm IR-pass element is suitable. Also, we do not recommend using UVC cameras ("webcams") for research-grade use, only for educative purposes. 
 
 Please use our discussion forum to share your ideas, setup and experience with PupilEXT with other community members:
 
 https://github.com/openPupil/Open-PupilEXT/discussions
 
 ## 2. Getting started: The easy way
-### 2.1. Installation on MacOS (macOS 10.15 or later)
-The direct installation requires that you have macOS 10.15 or later installed on your machine. If this is not the case, you need to build PupilEXT from source, as the provided pre-build binaries in this section will only work on macOS 10.15 or later.
+### 2.1. Installation on MacOS (MacOS 12.6.7 or later)
+The direct installation requires that you have MacOS 12.6.7 or later installed on your machine. If this is not the case, you likely need to build PupilEXT from source, as the provided pre-build binaries in this section will only work on MacOS 12.6.7 or later. You can try on an earlier version of MacOS, but you are not quaranteed to succeed.
 
 **Step 1: Download and install the Pylon Camera Softwware**
 
@@ -139,19 +139,19 @@ Download the Pylon Camera Software Suite (*.dmg) from the Basler Website:
 
 https://www.baslerweb.com/de/vertrieb-support/downloads/downloads-software/
 
-We tested PupilEXT with **Pylon 6.2.0.** (on Windows only **Pylon 6.2.0.** works, see the Win instructions below). If the Pylon installation does not start because of a security warning from Apple: Open the system preferences from macOS, click on "security & privacy" and press "Open Anyway" under the "General" tab. During the Pylon installation, ensure that a complete installation is carried out with the C++ binaries (Important!). For this, you need to choose the "custom" profile and activate all checkboxes under "Pylon runtime" and "SDKs". The Pylon library is necessary for PupilEXT to control and communicate with Basler branded cameras. The installation is also needed if no camera is connected, as the Basler drivers are part of the software.
+We tested PupilEXT with **Pylon 6.2.0.** (on Windows only **Pylon 6.2.0.** works, see the Win instructions below). If the Pylon installation does not start because of a security warning from Apple: Open the system preferences from MacOS, click on "security & privacy" and press "Open Anyway" under the "General" tab. During the Pylon installation, ensure that a complete installation is carried out with the C++ binaries (Important!). For this, you need to choose the "custom" profile and activate all checkboxes under "Pylon runtime" and "SDKs". The Pylon library is necessary for PupilEXT to control and communicate with Basler branded cameras. The installation is also needed if no camera is connected, as the Basler drivers are part of the software.
 
 Please test your Baslers camera(s) with the installed Pylon Viewer from Basler (see [Basler-Documentation: Pylon Viewer](https://docs.baslerweb.com/overview-of-the-pylon-viewer)) before driving the camera(s) with PupilEXT.
 
 **Step 2: Download and run PupilEXT**
 
-We have built and deployed PupilEXT for macOS 10.15 or later. You only need to download PupilEXT and open it. If you run into security warnings from Apple, you need to open the system preferences, click on "security & privacy" and then press "Open Anyway" under the "General" tab.
+We have built and deployed PupilEXT for MacOS 12.7.6 or later. You only need to download PupilEXT and open it. If you run into security warnings from Apple, you need to open the system preferences, click on "security & privacy" and then press "Open Anyway" under the "General" tab.
 
-Download PupilEXT Version 0.1.2 Beta (MAC) from the release page of the project's GitHub repository:
+Download PupilEXT Version 0.1.2 Beta (MacOS) from the release page of the project's GitHub repository:
 
 https://github.com/openPupil/Open-PupilEXT/releases/tag/v0.1.2-beta
 
-After you have downloaded the software, you can open the dmg file and run PupilEXT (see animation). We tested the program on a Mac Mini with macOS Monterey (Version 12.7). If you run into issues, you need to build PupilEXT from source.
+After you have downloaded the software, you can open the dmg file and run PupilEXT (see animation). We built and tested the program on a Mac Mini 2014 Late (Intel) with MacOS Monterey (Version 12.7.6). If you run into issues, you need to build PupilEXT from source.
 
 <p align="center">
   <img src="Misc/img/PupilEXT_Start_Mac.gif">
@@ -348,7 +348,7 @@ Once the microcontroller's correct operation has been checked, the cameras can b
 ### 2.4. Demo dataset for offline analysis
 We provide three different recorded datasets containing eye images that can be analysed using PupilEXT. This should give users the possibility to work directly with the software PupilEXT. The first two data sets were recorded using a single camera. Data set number 3 was recorded with a stereo camera system and is used in the video tutorial of PupilEXT (see section 2.5). The images were acquired directly with PupilEXT, as we offer the feature to record images for later offline measurement of the pupil diameter without connected cameras. The data set is suitable for playing around with PupilEXT and getting a first impression. 
 
-IMPORTANT NOTE: These datasets were first created for PupilEXT release v0.1.1. and they do not yet contain the image-annotations for trial-numbering and recording-related messages, you can see these functionalities working only when you make event-related pupillometry recordings using our supplied PsychoPy and Matlab PsychToolbox example codes. In the future we will upload demo datasets for the release v0.1.2. as well.
+IMPORTANT NOTE: These datasets were first created for PupilEXT release v0.1.1. and they do not yet contain the image-annotations for trial-numbering and recording-related messages, you can see these functionalities working only when you make event-related pupillometry recordings using our supplied PsychoPy and Matlab PsychToolbox example codes. In the future we will upload demo datasets for the release v0.1.2 as well.
 
 We stored the demo data in the TUdatalib repository: https://tudatalib.ulb.tu-darmstadt.de/handle/tudatalib/2929
 
@@ -363,7 +363,7 @@ The data set is divided into three parts. Please download all three files first.
 
 **Synthesized test image sets for developer contributors**
 
-Starting from the v0.1.2. source code version on the Experimental-Community-Version branch, we also include Matlab scripts that can be used to synthesize artificial pupil image sets for testing pupil detection algorithms, and the Automatic Parametrization feature of PupilEXT. These can generate artificial pupillary response signals using the most common periodic signal waveforms (triangle, sinus, sawtooth, square), and generate a perfect temporal fidelity image set corresponding to the pupillary response signals. The scripts also generate image annotation data that can be read using PupilEXT release v0.1.2. and contain trial start annotations (psychopsysiological trigger timestamps) at each waveform repetition. The script was tested using Matlab R2020b, and can be found in the folder: [``Misc/Matlab_Test_Image_Set_Synthesizer/``](Misc/Matlab_Test_Image_Set_Synthesizer/)
+Starting from the v0.1.2 source code version on the Experimental-Community-Version branch, we also include Matlab scripts that can be used to synthesize artificial pupil image sets for testing pupil detection algorithms, and the Automatic Parametrization feature of PupilEXT. These can generate artificial pupillary response signals using the most common periodic signal waveforms (triangle, sinus, sawtooth, square), and generate a perfect temporal fidelity image set corresponding to the pupillary response signals. The scripts also generate image annotation data that can be read using PupilEXT release v0.1.2 and contain trial start annotations (psychopsysiological trigger timestamps) at each waveform repetition. The script was tested using Matlab R2020b, and can be found in the folder: [``Misc/Matlab_Test_Image_Set_Synthesizer/``](Misc/Matlab_Test_Image_Set_Synthesizer/)
 
 If you would like to use synthesized test image sets right now, you can just download pre-generated image sets made with the very same scripts with basic settings, here: [``https://drive.google.com/file/d/1l9mYBhGvpeID_vNuX0WdsBHlz-fNvrTD/view?usp=sharing``](https://drive.google.com/file/d/1l9mYBhGvpeID_vNuX0WdsBHlz-fNvrTD/view?usp=sharing)
 
@@ -379,25 +379,92 @@ You need to label the images with trailing zeros (e.g. 001.png), where the numbe
 
 ### 2.5 Notes about pupil detection accuracy
 
-The pupil detection can be determined in PupilEXT with one of the six open-source pupil detection methods Starburst [[1\]](#1), Swirski2D [[2\]](#2), ExCuSe [[3\]](#3), ElSe [[4\]](#4), PuRe [[5\]](#5), and PuReST [[6\]](#6). The respective algorithm can be selected directly within the pupillometry interface. A pupil measurement's accuracy depends on the applied detection algorithm if the image quality and composition are ideal. Each pupil detection algorithm has a certain number of parameters (constants) that the user must set.  For instance, at least the minimum or maximum possible pupil diameter must be adjusted, which can depend on the image's resolution, though beginning from PupilEXT release v0.1.2. you can also use the Automatic Parametrization feature to help with this. In PupilEXT, we offer the possibility to adjust the parameters of an applied detection algorithm, leading to more freedom in increasing the measurement accuracy. The original publications' standard parameters are usually not ideal for all measurement settings and should be adjusted if the detection rate is not good enough.
+The pupil detection can be determined in PupilEXT with one of the six open-source pupil detection methods Starburst [[1\]](#1), Swirski2D [[2\]](#2), ExCuSe [[3\]](#3), ElSe [[4\]](#4), PuRe [[5\]](#5), and PuReST [[6\]](#6). The respective algorithm can be selected directly within the pupillometry interface. A pupil measurement's accuracy depends on the applied detection algorithm if the image quality and composition are ideal. Each pupil detection algorithm has a certain number of parameters (constants) that the user must set.  For instance, at least the minimum or maximum possible pupil diameter must be adjusted, which can depend on the image's resolution, though beginning from PupilEXT release v0.1.2 you can also use the Automatic Parametrization feature to help with this. In PupilEXT, we offer the possibility to adjust the parameters of an applied detection algorithm, leading to more freedom in increasing the measurement accuracy. The original publications' standard parameters are usually not ideal for all measurement settings and should be adjusted if the detection rate is not good enough.
 
 The accuracy can also be increased by selecting a specific region of interest (ROI) in the image. In this way, the algorithm no longer needs to perform pupil detection over the entire image. A smaller ROI size also reduces the calculation time, allowing a higher framerate in real-time measurements. We provide different preset settings for the algorithms` parameters which are dependent on the used ROI size. However, we highly recommend using the PuRe or PuReST algorithm, as it needs only three parameters. Furthermore, these two pupil detection algorithms are considered both the fastest and accurate in the literature and are part of the amazing open-source eye-tracking software EyeRecToo [[7\]](#7). According to our preliminary investigations, the Swirski algorithm can provide better results, as it does not downscale the image before a pupil detection. The downside is that it needs a higher calculation time and has a higher number of parameters. There is the risk that the parameters do not match the image composition, leading to poor pupil detection accuracy.
 
 ### 2.5. How to use PupilEXT ?
-New tutorial videos introducing PupilEXT release v0.1.2. are on the way. We will upload them here in the future. For using the older version (v0.1.1.) you can find videos in the archived version of this readme file.
+New tutorial videos introducing PupilEXT release v0.1.2 are on the way. We will upload them here in the future. For using the older version (v0.1.1.) you can find videos in the archived version of this readme file.
 
-To use PupilEXT, you need to open a camera device using the camera icon in the left. You can use a single camera setup without an STM Nucleo or Arduino microcontroller for hardware-triggered image acquisition (though you can, is you choose to). For stereo camera setup, you need to use a microcontroller to carry out triggering. You need to follow the numbered steps in the camera settings dialogs, in order to successfully connect to a camera and start image acquisition. In case of stereo setups, where you have to use hardware-triggered acquisition, it follows as: 1: connecting to the microcontroller, 2: opening the camera pair, 3: setting image acquisition properties that will affect you maximum possible FPS rate (setting a smaller image acquisition ROI will enhance FPS, and so will switching to bigger binning and shorter exposition time), 4: set the desired FPS rate (that has to be lower or equal than the maximum achievable rate calculated in the previous step, to avoid overtriggering) and start image acquisition triggering. A live eye image will be visible in the camera view window, where you can monitor the state of pupil detection, set pupil detection ROI (software ROI, which does not affect achievable max. FPS) and set Automatic Parametrization expected min. and max. pupil size.
+#### Opening a single camera or stereo setup
 
-To start image recording, you need to set an image output directory in the left icon toolbar of the main window. We advise to save images to a local SATA disk with high write speed. Saved image recording size will depend on the image size you set in the camera settings dialog. If you choose large image size, recordings can eat up a very big space, so be cautious. Also pay attention to the warmup indicator in the status bar. If it is grey, there is no sufficient data yet (1 minute) to judge whether the camera(s) have warmed up, and it is red if the camera(s) is/are changing temperature, and it is green if the camera(s) reached a thermal equilibrium with their environment and is/are ready for proper recording. (Note that the actual warm-up time also depends on the illuminator you use. Right now, PupilEXT only supports checking the temperature of the camera(s), though in the future we plan to add illuminator temperature checking too. Usually an LED illuminator and its driver needs half an hour to warm up from room temperature to their operating temperature.)
+To open a camera device, use the camera icon in the left (camera list is updated automatically). You can use a single camera setup without an STM Nucleo or Arduino microcontroller for hardware-triggered image acquisition (though you can, is you choose to). For stereo camera setup, you need to use a microcontroller to carry out triggering. You need to follow the numbered steps in the camera settings dialogs, in order to successfully connect to a camera and start image acquisition.
 
-To open an image recording from the disk, you need to close any opened camera, and use the File menu/Open images directory option. You need to navigate into the directory you want to open, and press Open to open it. You can now playback the recording using the graphical interface.
 
-To activate pupil tracking, you need to click on the Pupil tracking icon in the toolbar on the left side of main window.
+In case of stereo setups, where you have to use hardware-triggered acquisition, it follows as:
+- 1: Connecting to the microcontroller (Can be done via Serial or Ethernet, based on your hardware setup)
+- 2: Opening the camera pair (Can be connected via USB3 or GigE, based on your hardware setup)
+- 3: Setting image acquisition properties that will affect you maximum possible FPS rate (smaller image acquisition ROI, larger binning, and shorter exposition time can be used to increase FPS)
+- 4: Set the desired FPS rate (lower or equal than the maximum achievable) and start image acquisition triggering. 
 
-To start .csv data file recording, you first need to set an output file path and name, using the icon toolbar on the left of the main window. You should wind back to the first frame in the image playback control dialog, if you are not there. Then you may click on the red Record button to start recording, and click on the Play button of the image playback control dialog to start recording the active pupil detection output to a .csv file. Note that yet we only recommend to record to .csv files offline, when the image set is recorded beforehand, and is analyzed for pupil detection at a later point in time. This is because the exact timing of trial increment trigger timestamps and messages received from the Experiment computer are ensired to be precise only in case of image recordings and later offline analysis. To stop the data recording, wait until the playback reaches end (be sure to untick "Loop playback" to let it finish), and click the Stop recording icon in the toolbar on the left side of main window.
+#### Opening an existing image recording
+
+To open an image recording from the disk, you need to close any opened camera, and use the File menu/Open images directory option. You need to navigate into the directory you want to open, and press Open to open it, or just drag-and-drop an image recording folder (or any of its files inside) into the main window. PupilEXT supports several image formats for reading, so you can even use recordings that were made by another program or script, however you need to make sure that all the image files are named with trailing zeros, and their name equals the timestamp of image acquisition per each frame, in milliseconds. 
+
+You can now play back the recording using the graphical interface, which supports frame-by-frame inspection and automated playback as well. You can also jump to selected frames manually, and see trial numbering and textual messages annotated for each frame.
+
+A live eye image will be visible in the camera view window, where you can monitor the state of pupil detection, set pupil detection ROI (software ROI, which does not affect achievable maximum FPS) and set Automatic Parametrization expected minimum and maximum pupil size (described later). 
+
+To help camera positioning you can turn on Camera Positioning Guide overlay in the Camera View window, in the Show menu, along with other useful overlays. The Positioning Guide is particularly helpful if you are using stereo cameras, that need to be pointed at the same eye or at a common target. This Positioning Guide has its center in the actual center of the camera sensor, where the lens distortion is the lowest.
+
+#### Making an image recording
+
+To start image recording, you need to set an image output directory in the left icon bar of the main window. We advise to save images to a local SATA disk with high write speed. Saved image recording size will depend on the image size you set in the camera settings dialog. If you choose large image size, recordings can eat up a very big space, so be cautious. 
+
+Also pay attention to the warmup indicator in the status bar. If it is grey, there is no sufficient data yet (1 minute) to judge whether the camera(s) have warmed up, it is red if the camera(s) is/are changing temperature, and it is green if the camera(s) reached a thermal equilibrium with their environment and is/are ready for proper recording. (Note that the actual warm-up time also depends on the illuminator you use. Right now, PupilEXT only supports checking the temperature of the camera(s), though in the future we plan to add illuminator temperature checking too. Usually an LED illuminator and its driver needs half an hour to warm up from room temperature to their operating temperature.) 
+
+In case a recording exists with the same name, you are asked whether wou would like PupilEXT to append to the existing recording, or make a new one that is automatically renamed, in a new folder. You can also set the default behaviour for these cases in Settings.
+
+#### Calibrating for camera image undistortion and px-mm mapping
+
+Calibration is an optional step that can be made to compensate for the camera lens distortion, and for proper pixel-to-millimeter mapping the measured pupil size. It is only needed when you are running PupilEXT to carry out pupil detection, writing data to e.g. a .csv file or streaming the data. For only image recording, calibration is not a must, though it should be made and saved in order to load it as an offline calibration later, when the image recording is to be processed in a calibrated manner. 
+
+Note that if you alter Image Acquisition ROI or the binning value in the Camera Settings dialog, you have to make a new calibration.
+
+To calibrate, use a correctly-sized calibration pattern, printed on a sheet of paper, and present it to the camera(s) on a strictly flat surface (e.g. sticker on a smooth cardboard), placed in the expected eye target distance to the camera(s). The appropriate calibration routine is accessible after opening the camera(s), with the Calibrate button in the icon bar of the main window.
+
+#### Setting up pupil detection
+
+Selecting a pupil detection algorithm is a necessary step, though a default is already set upon start. PuRe and PuReST usually perform well, and are efficient, while also provide a confidence output. PupilEXT supports several pupil detection algorithms, which can be parametrized in different ways. If you just would like to use them without much customization, we advise to select the Automatic Parametrization option in the Pupil Detection Settings dialog. This configuration setting can be set for every algorithm. 
+
+We also advise to use pupil detection ROI preprocessing, using the appropriate checkbox in the same dialog. If pupil detection ROI preprocessing is enabled, only a fraction of the recorded image is scanned for pupil(s), and we highly recommend you to use this option for better performance. You can set pupil detection ROI in the Camera View window, when a camera (or image recording) is opened in the Pupil Detection menu. Please note that Image Acquisition ROI is a completely different setting, having to do with which part of the camera sensor you are reading image content from (a smaller im. acq. ROI can improve FPS). 
+
+If you have previously calibrated your camera, and it is loaded, you can opt for undistorting the pupil size on each frame inside the selected pupil  detection ROI. You can also opt for undistorting the whole image, though not recommended. The easiest is to use Automatic Parametrization (recommended, and can be enabled in Pupil Detection Settings dialog). With that, you  can specify the expected pupil diameter for the algorithm, using Pupil Detection menu in the Camera View window.
+
+#### Using pupil tracking
+
+To activate pupil tracking, you need to click on the Pupil tracking icon in the toolbar on the left side of main window. This function has two main use cases: 
+- 1, If you want to perform live pupil detection to write output to e.g. a .csv file or stream it on the spot 
+- 2, If you want to run analysis on previously made image recordings. 
+
+Yet, as of PupilEXT version v0.1.2 the latter is recommended, to ensure precise trial and message triggering. Now we advise to first acquire images and run pupil detection on the recordings later, to produce data files.
+
+#### Making data recordings
+
+To start .csv data file recording, you first need to set an output file path and name, using the icon toolbar on the left of the main window. It is also automatically set to a default output file name upon opening an image recording, to a .csv file located in the parent folder of the image recording folder. 
+
+In case you have been previously looking around in the recording already, now you should wind back to the first frame using the image playback control dialog. Then you may click on the red Record button to start recording, and click on the Play button of the image playback control dialog to start producing the active pupil detection output to a .csv file. 
+
+Note that yet we only recommend to record to .csv files offline, when the image set is recorded beforehand, and is analyzed for pupil detection at a later point in time. This is because the exact timing of trial increment trigger timestamps and messages received from the Experiment computer are ensured to be precise only in case of image recordings and later offline analysis. 
+
+To stop the data recording, wait until the playback reaches end (be sure to untick "Loop playback" to let it finish), and click the Stop recording icon in the toolbar on the left side of main window.
+
+#### Streaming data
+
+To stream pupil detection output, you need to first set up the streaming target, and the interface through which you would like to stream the data. The program currently supports streaming via a Serial (COM) connection and/or an Ethernet connection using UDP. 
+
+The data can be encapsulated into CSV-rows, as well as XML, JSON or YAML structures. You can stream to the same target where a Remote Control Connection is already set up from, and streaming can happen on Serial and over UDP at the same time, but only to one-one target(s). 
+
+It is highly recommended to only use streaming in case low-FPS image acquisition. You can stream pupil detection output from live camera input, but also from image recording playback, for e.g. testing purposes.
+
+#### A note on reproducibility
+
+As any scientific measurement system, PupilEXT software is built with special attention paid to research reproducibility needs. Also, as it is an open-source system, and can be used with varied hardware, it is the responsibility of the researcher mostly to minimise any between-subjects differences in data acquisition circumstances, while the software does its best to also minimise undesired within-subject variations, and offers functionalities to help the researcher with the former. 
+
+The software currently automatically saves many of its settings in a structured format alongside with image and ".csv." data recordings in an arbitrary, human-readable format: in an \".xml\" file, named with a "_meta" postfix. Also, it supports storing and re-loading ALL the application settings for different subjects, using the Subjects dialog, accessible with the Subjects icon in the icon bar: in an ".ini" file, which upon loading,would reset all settings, including remote control connection, streaming, etc. The purpose of the meta files is to provide a way to manually, visually inspect any application setting related to image acquisition and pupil detection, when needed by the user at a later point in time, while the purpose of subject configurations is to provide a way to set the application to a previous state when an image or data acquisition was carried out.At the moment, these two functionalities are partly overlapping, and will be merged into one in a next release of the PupilEXT software.
 
 ### 2.6. Integrating PupilEXT into a cognitive science experiment
-It is very easy! Starting from Pupilext release v0.1.2. you can now easily integrate PupilEXT with a PsychoPy experiment program (Builder or Coder as well) or with Matlab using Psychtoolbox. You can either use serial data cable or ethernet cable for connecting the Experiment computer (running the PsychoPy or Matlab code) and the Host computer (running PupilEXT, connected to the camera(s)). 
+It is very easy! Starting from Pupilext release v0.1.2 you can now easily integrate PupilEXT with a PsychoPy experiment program (Builder or Coder as well) or with Matlab using Psychtoolbox. You can either use serial data cable or ethernet cable for connecting the Experiment computer (running the PsychoPy or Matlab code) and the Host computer (running PupilEXT, connected to the camera(s)). 
 
 Ready-to-use examples are included under: [``Misc/Experiment_Integration_Examples/``](Misc/Experiment_Integration_Examples/). 
 
@@ -406,7 +473,7 @@ Ready-to-use examples are included under: [``Misc/Experiment_Integration_Example
 For developers: If you are interested about what is happening under the hood (how exactly our Python and Matlab integration codes communicate with PupilEXT), you can read more about the underlying protocol in: [``Misc/Remote_control_commands.md``](Misc/Remote_control_commands.md). You can also remote control PupilEXT from the same physical computer for development or for special use cases, via localhost.
 
 ### 2.7. Starting PupilEXT with executable arguments
-Starting from PupilEXT release v0.1.2., for easier usage with runtime configurations set upon executable start, you can use executable arguments. These are textual "commands" that you can specify in your icon on your desktop starting PupilEXT or in your shell script (or batch .bat file on Windows) written after the name of the executable, and upon startup, PupilEXT will use these arguments to perform actions and configure itself for which otherwise you would have to interact manually in the program. This way, PupilEXT can be started upon system power up, using an automatically run shell command, to e.g. automatically schedule system warmup half an hour before the start of an experimental session, for even more precise pupillary measurements, free from warmup system drift artefacts. Using executable arguments, you can connect to cameras right upon opening the application, and set unique settings at once, start listening to an Experiment computer connected to the Host computer, and perform many more useful actions. To read about possibilities, please see: [``Misc/Executable_arguments.md``](Misc/Executable_arguments.md).
+Starting from PupilEXT release v0.1.2, for easier usage with runtime configurations set upon executable start, you can use executable arguments. These are textual "commands" that you can specify in your icon on your desktop starting PupilEXT or in your shell script (or batch .bat file on Windows) written after the name of the executable, and upon startup, PupilEXT will use these arguments to perform actions and configure itself for which otherwise you would have to interact manually in the program. This way, PupilEXT can be started upon system power up, using an automatically run shell command, to e.g. automatically schedule system warmup half an hour before the start of an experimental session, for even more precise pupillary measurements, free from warmup system drift artefacts. Using executable arguments, you can connect to cameras right upon opening the application, and set unique settings at once, start listening to an Experiment computer connected to the Host computer, and perform many more useful actions. To read about possibilities, please see: [``Misc/Executable_arguments.md``](Misc/Executable_arguments.md).
 
 ## 3. Build PupilEXT from source: The advanced way
 
@@ -450,11 +517,10 @@ git clone --recurse-submodules https://github.com/openPupil/Open-PupilEXT.git
 
 The ``--recurse-submodules`` option is important, as vcpkg is a submodule. Without this option, the 3rdparty folder will not contain vcpkg packet manager. 
 
-Open the ``CMakeLists.tx`` file in the PupilEXT root and change the following line, according to your installed QT and user name
+Open the ``CMakeLists.tx`` file in the PupilEXT root and change the following line, according to your installed QT
 
 ```Cmake
 set(QT_VERSION 5.15.2) # Change the version according to your installation
-set(USER_NAME_MAC papillon) # Only necessary for macOS users, skip if you are on WIN
 ```
 
 **Step 4: Decide which Editor to use**
@@ -541,9 +607,9 @@ https://www.qt.io/download-open-source?hsCtaTracking=9f6a2170-a938-42df-a8e2-a9f
 
 **Step 3: Install the package manager homebrew**
 
-Homebrew is a package manager for macOS with which C++ libraries can be installed relatively easily via the terminal. Instructions on how to install Homebrew can be found here: https://brew.sh
+Homebrew is a package manager for MacOS with which C++ libraries can be installed relatively easily via the terminal. Instructions on how to install Homebrew can be found here: https://brew.sh
 
-To install homebrew , you can enter the following command in the macOS terminal.
+To install homebrew , you can enter the following command in the MacOS terminal.
 
 ```shell
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -674,7 +740,7 @@ Make sure that all folder paths in the ``CMakelist.txt`` are adapted to your sys
 
 ----
 
-The described changes to the Pylon library in this section can be skipped, as we included in the updated CMakelists.txt the following code for macOS:
+The described changes to the Pylon library in this section can be skipped, as we included in the updated CMakelists.txt the following code for MacOS:
 
 ```cmake
 set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/Library/Frameworks/pylon.framework/Headers")
@@ -909,7 +975,7 @@ PupilEXT integrates several open source libraries. This document provides a list
 
 ### List of Software Libraries
 
-<a id="QT" href="https://www.qt.io/"><b>QT</b></a>  is an open-source widget toolkit for creating graphical user interfaces as well as cross-platform applications that run on various software and hardware platforms such as Linux, Windows, macOS, Android or embedded systems. (License: GPL 3.0)
+<a id="QT" href="https://www.qt.io/"><b>QT</b></a>  is an open-source widget toolkit for creating graphical user interfaces as well as cross-platform applications that run on various software and hardware platforms such as Linux, Windows, MacOS, Android or embedded systems. (License: GPL 3.0)
 
 <a id="QCustomPlot" href="https://www.qcustomplot.com/"><b>QCustomPlot</b></a> is a Qt C++ widget for plotting and data visualization. It has no further dependencies and is well documented. (License: GPL 3.0)
 

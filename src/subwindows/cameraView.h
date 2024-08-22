@@ -91,7 +91,7 @@ public slots:
     void updateAlgorithmLabel();
 
     virtual void onFitClick() = 0;
-    //void onAcqImageROIchanged(); //added by kheki4 on 2022.10.24, NOTE: to properly re-fit view when image acquisition ROI is changed
+    //void onAcqImageROIchanged();
     virtual void on100pClick() = 0;
     virtual void onZoomPlusClick() = 0;
     virtual void onZoomMinusClick() = 0;

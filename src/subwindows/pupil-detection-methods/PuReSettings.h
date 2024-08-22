@@ -12,6 +12,7 @@
 #include "../../SVGIconColorAdjuster.h"
 
 #include "json.h"
+#include "../../supportFunctions.h"
 #include <fstream>
 // for convenience
 using json = nlohmann::json;
@@ -44,9 +45,8 @@ public:
         }
 
         QVBoxLayout *infoLayout = new QVBoxLayout(infoBox);
-
+        QHBoxLayout *infoLayoutRow1 = new QHBoxLayout();
         QPushButton *iLabelFakeButton = new QPushButton();
-        iLabelFakeButton = new QPushButton();
         iLabelFakeButton->setFlat(true);
         iLabelFakeButton->setAttribute(Qt::WA_NoSystemBackground, true);
         iLabelFakeButton->setAttribute(Qt::WA_TranslucentBackground, true);
@@ -54,25 +54,30 @@ public:
         iLabelFakeButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings));
         iLabelFakeButton->setFixedSize(QSize(32,32));
         iLabelFakeButton->setIconSize(QSize(32,32));
-        infoLayout->addWidget(iLabelFakeButton);
+        infoLayoutRow1->addWidget(iLabelFakeButton);
 
         QLabel *pLabel = new QLabel();
         pLabel->setWordWrap(true);
         pLabel->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
         pLabel->setOpenExternalLinks(true);
+        SupportFunctions::setSmallerLabelFontSize(pLabel);
         pLabel->setText("Thiago Santini, Wolfgang Fuhl, Enkelejda Kasneci, \"PuRe: Robust pupil detection for real-time pervasive eye tracking.\", 2018<br/>Part of the <a href=\"https://www-ti.informatik.uni-tuebingen.de/santini/EyeRecToo\">EyeRecToo</a> software. Copyright (c) 2018, Thiago Santini");
-        infoLayout->addWidget(pLabel);
+        infoLayoutRow1->addWidget(pLabel);
+
+        infoLayout->addLayout(infoLayoutRow1);
 
         QLabel *confLabel;
         if(pure->hasConfidence())
             confLabel = new QLabel("Info: This method does provide its own confidence.");
         else
             confLabel = new QLabel("Info: This method does not provide its own confidence, use the outline confidence.");
+        SupportFunctions::setSmallerLabelFontSize(confLabel);
         confLabel->setWordWrap(true);
         infoLayout->addWidget(confLabel);
 
 #if _DEBUG
         QLabel *warnLabel = new QLabel("CAUTION: Debug build may perform very slow. Use release build or adjust processing speed to not risk memory overflow.");
+        SupportFunctions::setSmallerLabelFontSize(warnLabel);
         warnLabel->setWordWrap(true);
         warnLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
         infoLayout->addWidget(warnLabel);
@@ -237,9 +242,8 @@ private:
 
         QHBoxLayout *configsNoteLayout = new QHBoxLayout();
         QLabel* configsNoteLabel = new QLabel(tr("Note: Configurations marked with an asterisk (*) are recommended for Basler\nacA2040-120um (1/1.8\" sensor format) camera(s) equipped with f=50 mm 2/3\"\nnominal sensor format lens, using 4:3 aspect ratio pupil detection ROI(s)."));
-        //configsNoteLabel->setFixedWidth((int)this->size().width()/2);
-        configsNoteLabel->setFixedWidth(420);
-        configsNoteLabel->setFixedHeight(45);
+        SupportFunctions::setSmallerLabelFontSize(configsNoteLabel);
+        configsNoteLabel->setFixedHeight(60);
         configsNoteLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
         configsNoteLayout->addWidget(configsNoteLabel);
         mainLayout->addLayout(configsNoteLayout);
@@ -256,13 +260,13 @@ private:
         imageWidthBox = new QSpinBox();
         imageWidthBox->setMaximum(5000);
         imageWidthBox->setValue(baseWidth);
-        imageWidthBox->setFixedWidth(50);
+        imageWidthBox->setFixedWidth(80);
         
         QLabel *heightLabel = new QLabel(tr("Image height [px]:"));
         imageHeightBox = new QSpinBox();
         imageHeightBox->setMaximum(5000);
         imageHeightBox->setValue(baseHeight);
-        imageHeightBox->setFixedWidth(50);
+        imageHeightBox->setFixedWidth(80);
         
         QHBoxLayout *layoutRow1 = new QHBoxLayout;
         layoutRow1->addWidget(imageWidthBox);
@@ -280,18 +284,18 @@ private:
         QLabel *canthiDistanceLabel = new QLabel(tr("Mean Canthi Distance [mm]:"));
         canthiDistanceBox = new QDoubleSpinBox();
         canthiDistanceBox->setValue(meanCanthiDistanceMM);
-        canthiDistanceBox->setFixedWidth(50);
+        canthiDistanceBox->setFixedWidth(80);
         physLayout->addRow(canthiDistanceLabel, canthiDistanceBox);
 
         QLabel *maxPupilLabel = new QLabel(tr("Max. Pupil Size [mm]:"));
         maxPupilBox = new QDoubleSpinBox();
         maxPupilBox->setValue(maxPupilDiameterMM);
-        maxPupilBox->setFixedWidth(50);
+        maxPupilBox->setFixedWidth(80);
 
         QLabel *minPupilLabel = new QLabel(tr("Min. Pupil Size [mm]:"));
         minPupilBox = new QDoubleSpinBox();
         minPupilBox->setValue(minPupilDiameterMM);
-        minPupilBox->setFixedWidth(50);
+        minPupilBox->setFixedWidth(80);
 
         QHBoxLayout *layoutRow2 = new QHBoxLayout;
         layoutRow2->addWidget(maxPupilBox);

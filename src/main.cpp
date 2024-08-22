@@ -57,33 +57,39 @@ QDataStream &operator>>(QDataStream &stream, QMap<QString, QList<float>> &map)
 int main(int argc, char *argv[])
 {
     try {
-        QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
-        QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
-        QApplication a(argc, argv);
+        int result = 0;
+        do {
+            QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+            QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
-        // Changing this may change the settings path thus not loading old application settings!
-        QCoreApplication::setOrganizationName("FGLT");
-        QCoreApplication::setApplicationName("PupilEXT");
-        QCoreApplication::setApplicationVersion("0.1.2 Beta");
+            QApplication a(argc, argv);
 
-        qRegisterMetaTypeStreamOperators<QMap<QString, QList<float>>>("QMap<QString,QList<float>>");
-        qRegisterMetaTypeStreamOperators<QList<QPair<QString, QString>>>("QList<QPair<QString, QString>>");
+            // Changing this may change the settings path thus not loading old application settings!
+            QCoreApplication::setOrganizationName("FGLT");
+            QCoreApplication::setApplicationName("PupilEXT");
+            QCoreApplication::setApplicationVersion("0.1.2 Beta");
 
-        Pylon::PylonAutoInitTerm autoInitTerm;  // PylonInitialize() will be called here
+            qRegisterMetaTypeStreamOperators<QMap<QString, QList<float>>>("QMap<QString,QList<float>>");
+            qRegisterMetaTypeStreamOperators<QList<QPair<QString, QString>>>("QList<QPair<QString, QString>>");
 
-        // To be able to interpret start arguments (supplied through command line startup, via e.g. .lnk icons in windows OS with arguments, or batch file exe call)
-        // useful e.g. in case of automatic exec on scheduled PC startup for warming up camera device before experimental session
-        ExecArgParser* execArgParser = new ExecArgParser(argc, argv);
+            Pylon::PylonAutoInitTerm autoInitTerm;  // PylonInitialize() will be called here
 
-        MainWindow w;
-        w.setWindowIcon(QIcon(":/icon.svg"));
-        w.show();
+            // To be able to interpret start arguments (supplied through command line startup, via e.g. .lnk icons in windows OS with arguments, or batch file exe call)
+            // useful e.g. in case of automatic exec on scheduled PC startup for warming up camera device before experimental session
+            ExecArgParser* execArgParser = new ExecArgParser(argc, argv);
 
-        execArgParser->connectMainWindow(&w);
-        execArgParser->iterThroughDuties();
+            MainWindow w;
+            w.setWindowIcon(QIcon(":/icon.svg"));
+            w.show();
 
-        return a.exec();
+            execArgParser->connectMainWindow(&w);
+            execArgParser->iterThroughDuties();
+
+            result = a.exec();
+        } while( result == MainWindow::EXIT_CODE_REBOOT );
+        return result;
+
     } catch (const std::exception &e) {
         std::cout << e.what() << std::endl;
         throw;

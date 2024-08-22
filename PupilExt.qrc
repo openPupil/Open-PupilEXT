@@ -68,5 +68,14 @@
         <file>icons/crosshairs-gaze-calibration.svg</file>
         <file>icons/crosshairs-gaze-validation.svg</file>
 
+        <file>icons/PupilEXT-Logo.png</file>
+        <file>icons/Qt_logo_2016.svg</file>
+        <file>icons/OpenCV_Logo_with_text_svg_version.svg</file>
+
+        <file>icons/Breeze/actions/22/question.svg</file>
+        <file>icons/Breeze/actions/16/license.svg</file>
+        <file>icons/Breeze/actions/16/help-about.svg</file>
+        <file>icons/Breeze/actions/16/edit-clear-history.svg</file>
+
     </qresource>
 </RCC>

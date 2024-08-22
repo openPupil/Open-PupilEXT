@@ -1,5 +1,5 @@
 
-#include "./DataTypes.h"
+#include "./dataTypes.h"
 
 QMap<DataTypes::DataType, QString> DataTypes::map = {
     {DataType::TIME_RAW_TIMESTAMP,       "Timestamp"},

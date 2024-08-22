@@ -22,7 +22,7 @@ PupilDetectionSettingsDialog::PupilDetectionSettingsDialog(PupilDetection *pupil
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     //this->setMinimumSize(800, 500);
-    this->setMinimumSize(860, 560);
+    this->setMinimumSize(980, 600);
     this->setWindowTitle("Pupil Detection Settings");
 
     createForm();
@@ -47,7 +47,18 @@ PupilDetectionSettingsDialog::~PupilDetectionSettingsDialog() {
 
 void PupilDetectionSettingsDialog::createForm() {
 
-    QGridLayout *mainLayout = new QGridLayout(this);
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    mainLayout->setMargin(10);
+    mainLayout->setContentsMargins(10,10,10,10);
+    QHBoxLayout *mainLayoutInner = new QHBoxLayout();
+    mainLayoutInner->setMargin(0);
+    mainLayoutInner->setContentsMargins(0,0,0,0);
+    QVBoxLayout *mainLayoutInnerCol1 = new QVBoxLayout();
+    mainLayoutInnerCol1->setMargin(0);
+    mainLayoutInnerCol1->setContentsMargins(0,5,0,5);
+    QVBoxLayout *mainLayoutInnerCol2 = new QVBoxLayout();
+    mainLayoutInnerCol2->setMargin(0);
+    mainLayoutInnerCol2->setContentsMargins(0,5,0,5);
 
     procModeGroup = new QGroupBox("Pupil detection via image processing");
     QGroupBox *algorithmGroup = new QGroupBox("Algorithm");
@@ -67,19 +78,13 @@ void PupilDetectionSettingsDialog::createForm() {
     procModeBox->addItem(QString::fromStdString("Stereo camera images for two pupils (stereoscopic)"));
     // procModeBox->addItem(QString::fromStdString("Mirrored single camera image for one pupil"));
     // TODO: add monoscopic processing of stereo camera
+    // TODO: add mirrored stereo and make it work
     
     procModeBox->setCurrentIndex(pupilDetection->getCurrentProcMode());
     //procModeBox->setCurrentIndex(0);
 
     procModeBoxLayout->addWidget(procModeLabel);
     procModeBoxLayout->addWidget(procModeBox);
-
-    // procModePixmap_undetermined = QIcon(":/icons/Breeze/status/22/dialog-information.svg").pixmap(QSize(50, 50));
-    // procModePixmap_1cam1pup = QIcon(":/icons/1cam1pup.png").pixmap(QSize(50, 50));
-    // procModePixmap_1cam2pup = QIcon(":/icons/1cam2pup.png").pixmap(QSize(50, 50));
-    // procModePixmap_1Mcam1pup = QIcon(":/icons/1Mcam1pup.png").pixmap(QSize(50, 50));
-    // procModePixmap_2cam1pup = QIcon(":/icons/2cam1pup.png").pixmap(QSize(50, 50));
-    // procModePixmap_2cam2pup = QIcon(":/icons/2cam2pup.png").pixmap(QSize(50, 50));
 
     procModeIcon_undetermined = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings);
     procModeIcon_1cam1pup = SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/1cam1pup.svg"), applicationSettings);
@@ -93,6 +98,7 @@ void PupilDetectionSettingsDialog::createForm() {
     // from the svg resource and rendered to pixmap, then set for the labels pixmaps. This is better now)
     iLabelFakeButton = new QPushButton();
     iLabelFakeButton->setFlat(true);
+    iLabelFakeButton->setContentsMargins(0,0,0,0);
     iLabelFakeButton->setAttribute(Qt::WA_NoSystemBackground, true);
     iLabelFakeButton->setAttribute(Qt::WA_TranslucentBackground, true);
     iLabelFakeButton->setStyleSheet("QPushButton { background-color: transparent; border: 0px }");
@@ -112,7 +118,7 @@ void PupilDetectionSettingsDialog::createForm() {
 
 
     procModeGroup->setLayout(procModeBoxLayout);
-    mainLayout->addWidget(procModeGroup);
+    mainLayoutInnerCol1->addWidget(procModeGroup);
 
     QLabel *algorithmLabel = new QLabel(tr("Algorithm:"));
     algorithmBox = new QComboBox();
@@ -128,11 +134,7 @@ void PupilDetectionSettingsDialog::createForm() {
     algorithmLayout->addLayout(algoBoxLayout);
 
     algorithmGroup->setLayout(algorithmLayout);
-    mainLayout->addWidget(algorithmGroup);
-
-    mainLayout->setRowStretch(0, 4);
-    mainLayout->setRowStretch(1, 12);
-    mainLayout->setRowStretch(2, 5);
+    mainLayoutInnerCol1->addWidget(algorithmGroup);
 
     QFormLayout *optionsLayout = new QFormLayout();
 
@@ -160,7 +162,7 @@ void PupilDetectionSettingsDialog::createForm() {
     connect(pupilUndistortionBox, SIGNAL(stateChanged(int)), this, SLOT(onPupilUndistortionClick(int)));
 
 
-    QLabel *imageUndistortionLabel = new QLabel(tr("Undistort complete image (slow) [<a href=\"http://mock.link\">?</a>]:"));
+    QLabel *imageUndistortionLabel = new QLabel(tr("Undistort complete image (slow) (single camera only) [<a href=\"http://mock.link\">?</a>]:"));
     connect(imageUndistortionLabel, SIGNAL(linkActivated(QString)), this, SLOT(onShowHelpDialog()));
 
     imageUndistortionBox = new QCheckBox();
@@ -170,109 +172,64 @@ void PupilDetectionSettingsDialog::createForm() {
     connect(imageUndistortionBox, SIGNAL(stateChanged(int)), this, SLOT(onImageUndistortionClick(int)));
 
     optionsGroup->setLayout(optionsLayout);
-    mainLayout->addWidget(optionsGroup);
+    mainLayoutInnerCol1->addWidget(optionsGroup);
+
+    // TODO: make code fit in 1/6th of the actual line count...
 
     // For each algorithm, a special widget is implemented that contains all algorithm specific parameters
     for(PupilDetectionMethod *pm: pupilDetection->getMethods()) {
+        PupilMethodSetting *settings;
         if(pm->title() == "PuRe") {
-            PuReSettings *settings = new PuReSettings(pupilDetection, dynamic_cast<PuRe*>(pm));
+            settings = new PuReSettings(pupilDetection, dynamic_cast<PuRe*>(pm));
             // If the current pupil detection is stereo, two algorithm instances exist, which should be confiured the same way
-            settings->add2(dynamic_cast<PuRe*>(pupilDetection->getMethod2("PuRe")));
-            settings->add3(dynamic_cast<PuRe*>(pupilDetection->getMethod3("PuRe")));
-            settings->add4(dynamic_cast<PuRe*>(pupilDetection->getMethod4("PuRe")));
-            connect(settings, SIGNAL(onConfigChange(QString)), pupilDetection, SLOT(setConfigLabel(QString)));
-
-            // We add all algorithm specific widget to the same point in the layout and hide them, only the current selected algorithm is shown
-            mainLayout->addWidget(settings, 0, 1, 2, 1);
-            settings->hide();
-            pupilMethodSettings.push_back(settings);
-
-            settings->infoBox->hide();
-            algorithmLayout->addWidget(settings->infoBox);
+            dynamic_cast<PuReSettings*>(settings)->add2(dynamic_cast<PuRe*>(pupilDetection->getMethod2("PuRe")));
+            dynamic_cast<PuReSettings*>(settings)->add3(dynamic_cast<PuRe*>(pupilDetection->getMethod3("PuRe")));
+            dynamic_cast<PuReSettings*>(settings)->add4(dynamic_cast<PuRe*>(pupilDetection->getMethod4("PuRe")));
         } else if(pm->title() == "PuReST") {
-            PuReSTSettings *settings = new PuReSTSettings(pupilDetection, dynamic_cast<PuReST*>(pm));
-            settings->add2(dynamic_cast<PuReST*>(pupilDetection->getMethod2("PuReST")));
-            settings->add3(dynamic_cast<PuReST*>(pupilDetection->getMethod3("PuReST")));
-            settings->add4(dynamic_cast<PuReST*>(pupilDetection->getMethod4("PuReST")));
-            connect(settings, SIGNAL(onConfigChange(QString)), pupilDetection, SLOT(setConfigLabel(QString)));
-
-            mainLayout->addWidget(settings, 0, 1, 2, 1);
-            settings->hide();
-            pupilMethodSettings.push_back(settings);
-
-            settings->infoBox->hide();
-            algorithmLayout->addWidget(settings->infoBox);
+            settings = new PuReSTSettings(pupilDetection, dynamic_cast<PuReST*>(pm));
+            dynamic_cast<PuReSTSettings*>(settings)->add2(dynamic_cast<PuReST*>(pupilDetection->getMethod2("PuReST")));
+            dynamic_cast<PuReSTSettings*>(settings)->add3(dynamic_cast<PuReST*>(pupilDetection->getMethod3("PuReST")));
+            dynamic_cast<PuReSTSettings*>(settings)->add4(dynamic_cast<PuReST*>(pupilDetection->getMethod4("PuReST")));
         } else if(pm->title() == "ElSe") {
-            ElSeSettings *settings = new ElSeSettings(pupilDetection, dynamic_cast<ElSe*>(pm));
-            settings->add2(dynamic_cast<ElSe*>(pupilDetection->getMethod2("ElSe")));
-            settings->add3(dynamic_cast<ElSe*>(pupilDetection->getMethod3("ElSe")));
-            settings->add4(dynamic_cast<ElSe*>(pupilDetection->getMethod4("ElSe")));
-            connect(settings, SIGNAL(onConfigChange(QString)), pupilDetection, SLOT(setConfigLabel(QString)));
-
-            mainLayout->addWidget(settings, 0, 1, 2, 1);
-            settings->hide();
-            pupilMethodSettings.push_back(settings);
-
-            settings->infoBox->hide();
-            algorithmLayout->addWidget(settings->infoBox);
+            settings = new ElSeSettings(pupilDetection, dynamic_cast<ElSe*>(pm));
+            dynamic_cast<ElSeSettings*>(settings)->add2(dynamic_cast<ElSe*>(pupilDetection->getMethod2("ElSe")));
+            dynamic_cast<ElSeSettings*>(settings)->add3(dynamic_cast<ElSe*>(pupilDetection->getMethod3("ElSe")));
+            dynamic_cast<ElSeSettings*>(settings)->add4(dynamic_cast<ElSe*>(pupilDetection->getMethod4("ElSe")));
         } else if(pm->title() == "ExCuSe") {
-            ExCuSeSettings *settings = new ExCuSeSettings(pupilDetection, dynamic_cast<ExCuSe*>(pm));
-            settings->add2(dynamic_cast<ExCuSe*>(pupilDetection->getMethod2("ExCuSe")));
-            settings->add3(dynamic_cast<ExCuSe*>(pupilDetection->getMethod3("ExCuSe")));
-            settings->add4(dynamic_cast<ExCuSe*>(pupilDetection->getMethod4("ExCuSe")));
-            connect(settings, SIGNAL(onConfigChange(QString)), pupilDetection, SLOT(setConfigLabel(QString)));
-
-            mainLayout->addWidget(settings, 0, 1, 2, 1);
-            settings->hide();
-            pupilMethodSettings.push_back(settings);
-
-            settings->infoBox->hide();
-            algorithmLayout->addWidget(settings->infoBox);
+            settings = new ExCuSeSettings(pupilDetection, dynamic_cast<ExCuSe*>(pm));
+            dynamic_cast<ExCuSeSettings*>(settings)->add2(dynamic_cast<ExCuSe*>(pupilDetection->getMethod2("ExCuSe")));
+            dynamic_cast<ExCuSeSettings*>(settings)->add3(dynamic_cast<ExCuSe*>(pupilDetection->getMethod3("ExCuSe")));
+            dynamic_cast<ExCuSeSettings*>(settings)->add4(dynamic_cast<ExCuSe*>(pupilDetection->getMethod4("ExCuSe")));
         } else if(pm->title() == "Starburst") {
-            StarburstSettings *settings = new StarburstSettings(pupilDetection, dynamic_cast<Starburst*>(pm));
-            settings->add2(dynamic_cast<Starburst*>(pupilDetection->getMethod2("Starburst")));
-            settings->add3(dynamic_cast<Starburst*>(pupilDetection->getMethod3("Starburst")));
-            settings->add4(dynamic_cast<Starburst*>(pupilDetection->getMethod4("Starburst")));
-            connect(settings, SIGNAL(onConfigChange(QString)), pupilDetection, SLOT(setConfigLabel(QString)));
-
-            mainLayout->addWidget(settings, 0, 1, 2, 1);
-            settings->hide();
-            pupilMethodSettings.push_back(settings);
-
-            settings->infoBox->hide();
-            algorithmLayout->addWidget(settings->infoBox);
+            settings = new StarburstSettings(pupilDetection, dynamic_cast<Starburst*>(pm));
+            dynamic_cast<StarburstSettings*>(settings)->add2(dynamic_cast<Starburst*>(pupilDetection->getMethod2("Starburst")));
+            dynamic_cast<StarburstSettings*>(settings)->add3(dynamic_cast<Starburst*>(pupilDetection->getMethod3("Starburst")));
+            dynamic_cast<StarburstSettings*>(settings)->add4(dynamic_cast<Starburst*>(pupilDetection->getMethod4("Starburst")));
         } else if(pm->title() == "Swirski2D") {
-            Swirski2DSettings *settings = new Swirski2DSettings(pupilDetection, dynamic_cast<Swirski2D*>(pm));
-            settings->add2(dynamic_cast<Swirski2D*>(pupilDetection->getMethod2("Swirski2D")));
-            settings->add3(dynamic_cast<Swirski2D*>(pupilDetection->getMethod3("Swirski2D")));
-            settings->add4(dynamic_cast<Swirski2D*>(pupilDetection->getMethod4("Swirski2D")));
-            connect(settings, SIGNAL(onConfigChange(QString)), pupilDetection, SLOT(setConfigLabel(QString)));
-
-            mainLayout->addWidget(settings, 0, 1, 2, 1);
-            settings->hide();
-            pupilMethodSettings.push_back(settings);
-
-            settings->infoBox->hide();
-            algorithmLayout->addWidget(settings->infoBox);
+            settings = new Swirski2DSettings(pupilDetection, dynamic_cast<Swirski2D*>(pm));
+            dynamic_cast<Swirski2DSettings*>(settings)->add2(dynamic_cast<Swirski2D*>(pupilDetection->getMethod2("Swirski2D")));
+            dynamic_cast<Swirski2DSettings*>(settings)->add3(dynamic_cast<Swirski2D*>(pupilDetection->getMethod3("Swirski2D")));
+            dynamic_cast<Swirski2DSettings*>(settings)->add4(dynamic_cast<Swirski2D*>(pupilDetection->getMethod4("Swirski2D")));
         } else {
-            PupilMethodSetting *tmp = new PupilMethodSetting();
-            mainLayout->addWidget(tmp, 0, 1, 2, 1);
-
-            pupilMethodSettings.push_back(tmp);
-
-            tmp->infoBox->hide();
-            algorithmLayout->addWidget(tmp->infoBox);
+            // TODO: why is this here anyway?
+            settings = new PupilMethodSetting();
         }
 //        else if(pm->title() == "APPD") {
 //            APPDSettings *settings = new APPDSettings(dynamic_cast<APPD*>(pm));
 //            settings->addSecondary(dynamic_cast<APPD*>(pupilDetection->getSecondaryMethod("APPD")));
-//            mainLayout->addWidget(settings, 0, 1, 2, 1);
+//            mainLayoutInnerCol2->addWidget(settings);
 //            settings->hide();
 //            pupilMethodSettings.push_back(settings);
 //
 //            settings->infoBox->hide();
 //            algorithmLayout->addWidget(settings->infoBox, 1, 0);
 //        }
+        connect(settings, SIGNAL(onConfigChange(QString)), pupilDetection, SLOT(setConfigLabel(QString)));
+        mainLayoutInnerCol2->addWidget(settings);
+        settings->hide();
+        pupilMethodSettings.push_back(settings);
+        settings->infoBox->hide();
+        algorithmLayout->addWidget(settings->infoBox);
         
     }
 
@@ -287,7 +244,10 @@ void PupilDetectionSettingsDialog::createForm() {
     buttonsLayout->addWidget(applyCloseButton);
     buttonsLayout->addWidget(cancelButton);
 
-    mainLayout->addLayout(buttonsLayout, 3, 0, 1, 2);
+    mainLayoutInner->addLayout(mainLayoutInnerCol1);
+    mainLayoutInner->addLayout(mainLayoutInnerCol2);
+    mainLayout->addLayout(mainLayoutInner);
+    mainLayout->addLayout(buttonsLayout);
 
     setLayout(mainLayout);
 
@@ -341,12 +301,16 @@ void PupilDetectionSettingsDialog::loadSettings() {
     }
 
     pupilDetection->setAlgorithm(applicationSettings->value("PupilDetectionSettingsDialog.algorithm", algorithmBox->currentText()).toString());
-    pupilDetection->enableOutlineConfidence(applicationSettings->value("PupilDetectionSettingsDialog.outlineConfidence", outlineConfidenceBox->isChecked()).toBool());
-    pupilDetection->enableROIPreProcessing(applicationSettings->value("PupilDetectionSettingsDialog.processROI", roiPreprocessingBox->isChecked()).toBool());
+//    pupilDetection->enableOutlineConfidence(applicationSettings->value("PupilDetectionSettingsDialog.outlineConfidence", outlineConfidenceBox->isChecked()).toBool());
+//    pupilDetection->enableROIPreProcessing(applicationSettings->value("PupilDetectionSettingsDialog.processROI", roiPreprocessingBox->isChecked()).toBool());
+    pupilDetection->enableOutlineConfidence(applicationSettings->value("PupilDetectionSettingsDialog.outlineConfidence", true).toBool());
+    pupilDetection->enableROIPreProcessing(applicationSettings->value("PupilDetectionSettingsDialog.processROI", true).toBool());
     pupilDetection->enablePupilUndistortion(applicationSettings->value("PupilDetectionSettingsDialog.undistortPupilSize", pupilUndistortionBox->isChecked()).toBool());
     pupilDetection->enableImageUndistortion(applicationSettings->value("PupilDetectionSettingsDialog.undistortImage", imageUndistortionBox->isChecked()).toBool());
 
     pupilMethodSettings[algorithmBox->currentIndex()]->loadSettings();
+
+    lastKnownProcMode = pupilDetection->getCurrentProcMode();
 
     updateForm();
 }
@@ -407,12 +371,17 @@ void PupilDetectionSettingsDialog::onAlgorithmSelection(int idx) {
         }
         i++;
     }
+//    this->update();
 }
 
 // Apply the settings to the pupil detection process and save them to the application settings
 void PupilDetectionSettingsDialog::applyButtonClick() {
-    if(pupilDetection->hasOpenCamera() && !pupilDetection->isTrackingOn()) {
-        // NOTE: so the combobox change itself does not change procMode, but we need to hit Apply too
+
+    bool procModeChanged = (lastKnownProcMode != procModeBox->currentIndex());
+
+    if(pupilDetection->hasOpenCamera() && !pupilDetection->isTrackingOn() && procModeChanged) {
+        pupilDetection->setCurrentProcMode(procModeBox->currentIndex());
+        lastKnownProcMode = (ProcMode)procModeBox->currentIndex();
         emit pupilDetectionProcModeChanged(procModeBox->currentIndex());
     } else {
         procModeBox->setCurrentIndex(pupilDetection->getCurrentProcMode());

@@ -15,6 +15,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
         displayPupilView(false),
         plotPupilCenter(false),
         plotROIContour(true),
+        showAutoParamOverlay(false),
         initPupilViewSize(false),
         playbackFrozen(playbackFrozen),
         //pupilViewSize(0, 0),
@@ -79,7 +80,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
 //    showAutoParamAct = plotMenu->addAction(QChar(0x21D2) +' '+ tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct = plotMenu->addAction(tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct->setCheckable(true);
-    showAutoParamAct->setChecked(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    showAutoParamAct->setChecked(showAutoParamOverlay && pupilDetection->isAutoParamSettingsEnabled());
     showAutoParamAct->setEnabled(pupilDetection->isAutoParamSettingsEnabled());
     showAutoParamAct->setStatusTip(tr("Display expected pupil size maximum and minimum values as currently set for Automatic Parametrization."));
     plotMenu->addAction(showAutoParamAct);
@@ -107,7 +108,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     pupilColorFillLayout->setContentsMargins(8,0,8,0); 
 
     QLabel *pupilColorFillLabel = new QLabel("Coloring:");
-    pupilColorFillLabel->setFixedWidth(80);
+    pupilColorFillLabel->setFixedWidth(90);
 
     QComboBox *pupilColorFillBox = new QComboBox();
     pupilColorFillBox->addItem(QString("No fill"), QString("NO_FILL"));
@@ -130,7 +131,7 @@ SingleCameraView::SingleCameraView(Camera *camera, PupilDetection *pupilDetectio
     pupilColorFillThresholdLayout->setContentsMargins(8,0,8,0); 
 
     QLabel *pupilColorFillThresholdLabel = new QLabel("Low threshold:");
-    pupilColorFillThresholdLabel->setFixedWidth(80);
+    pupilColorFillThresholdLabel->setFixedWidth(90);
 
     QDoubleSpinBox *pupilColorFillThresholdBox = new QDoubleSpinBox();
     pupilColorFillThresholdBox->setMinimum(0.1);
@@ -374,7 +375,7 @@ void SingleCameraView::loadSettings() {
     onPlotPupilCenterClick(plotPupilCenter);
     plotCenterAct->setChecked(plotPupilCenter);
 
-    plotROIContour = SupportFunctions::readBoolFromQSettings("SingleCameraView.plotROIContour", false, applicationSettings);
+    plotROIContour = SupportFunctions::readBoolFromQSettings("SingleCameraView.plotROIContour", true, applicationSettings);
     plotROIAct->setChecked(plotROIContour);
     onPlotROIClick(plotROIContour);
 
@@ -419,6 +420,10 @@ void SingleCameraView::loadSettings() {
 
     videoView->setROI1SelectionR(roi1);
     videoView->setROI2SelectionR(roi2);
+
+    // these are needed in order to save the ROI even if QSettings is reset and the default roi value is set
+    videoView->saveROI1Selection();
+    videoView->saveROI2Selection();
 }
 
 // Opens a contextmenu on the toolbar for settings the viewport options
@@ -527,8 +532,8 @@ void SingleCameraView::onPupilDetectionConfigChanged(QString config) {
     roiMenu->setEnabled(pupilDetection->isROIPreProcessingEnabled());
     showAutoParamAct->setEnabled(pupilDetection->isAutoParamSettingsEnabled());
     plotROIAct->setEnabled(pupilDetection->isROIPreProcessingEnabled());
-    emit onChangeShowAutoParamOverlay(showAutoParamOverlay & pupilDetection->isAutoParamSettingsEnabled());
-    emit onShowROI(plotROIContour & pupilDetection->isROIPreProcessingEnabled());
+    emit onChangeShowAutoParamOverlay(showAutoParamOverlay && pupilDetection->isAutoParamSettingsEnabled());
+    emit onShowROI(plotROIContour && pupilDetection->isROIPreProcessingEnabled());
 }
 
 // Updates the position and size of the small pupil view based on the latest pupil detection
@@ -564,16 +569,6 @@ void SingleCameraView::updatePupilView(const CameraImage &cimg, const int &procM
 void SingleCameraView::onFitClick() {
     videoView->fitView();
 }
-
-// begin edit of kheki4 on 2022.10.24, NOTE: to properly re-fit view when image acquisition ROI is changed
-/*
-void SingleCameraView::onAcqImageROIchanged() {
-    videoView->resetInitialFit();
-    //videoView->fitView();
-    //videoView->drawBlank();
-}
-*/
-// end of edit by kheki4
 
 // Shows the camera view in the original resolution, no scaling
 void SingleCameraView::on100pClick() {
@@ -617,7 +612,17 @@ void SingleCameraView::onSetROIClick(float roiSize) {
         toolBar->addAction(saveROI);
 
         videoView->showROISelection(true);
+
+        smallROIAct->setEnabled(false);
+        middleROIAct->setEnabled(false);
+        customROIAct->setEnabled(false);
+    } else {
+        videoView->saveROI1Selection();
+        if(videoView->getDoubleROI()) {
+            videoView->saveROI2Selection();
+        }
     }
+    this->update();
 }
 
 void SingleCameraView::onSaveROIClick() {
@@ -634,6 +639,12 @@ void SingleCameraView::onSaveROIClick() {
         toolBar->removeAction(saveROI);
         toolBar->removeAction(discardROISelection);
     }
+
+    smallROIAct->setEnabled(true);
+    middleROIAct->setEnabled(true);
+    customROIAct->setEnabled(true);
+
+    videoView->drawOverlay();
 
     emit doingPupilDetectionROIediting(false);
 }
@@ -672,8 +683,8 @@ void SingleCameraView::onPlotROIClick(bool value) {
     plotROIContour = value;
     applicationSettings->setValue("SingleCameraView.plotROIContour", plotROIContour);
     showAutoParamAct->setEnabled(pupilDetection->isAutoParamSettingsEnabled());
-    emit onShowAutoParamOverlay(showAutoParamOverlay & pupilDetection->isAutoParamSettingsEnabled());
-    emit onShowROI(plotROIContour & pupilDetection->isROIPreProcessingEnabled());
+    emit onShowAutoParamOverlay(showAutoParamOverlay && pupilDetection->isAutoParamSettingsEnabled());
+    emit onShowROI(plotROIContour && pupilDetection->isROIPreProcessingEnabled());
 }
 
 void SingleCameraView::saveROI1Selection(QRectF roiR) { 
@@ -815,12 +826,12 @@ void SingleCameraView::updateForPupilDetectionProcMode() {
 void SingleCameraView::onShowAutoParamOverlay(bool state) {
     showAutoParamOverlay = state;
     applicationSettings->setValue("SingleCameraView.showAutoParamOverlay", showAutoParamOverlay);
-    emit onChangeShowAutoParamOverlay(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    emit onChangeShowAutoParamOverlay(showAutoParamOverlay && pupilDetection->isAutoParamSettingsEnabled());
 }
 
 void SingleCameraView::onShowPositioningGuide(bool state) {
     showPositioningGuide = state;
-    applicationSettings->setValue("SingleCameraView.showPositioningGuide", showAutoParamOverlay);
+    applicationSettings->setValue("SingleCameraView.showPositioningGuide", showPositioningGuide);
     emit onChangeShowPositioningGuide(showPositioningGuide);
 }
 

@@ -53,9 +53,12 @@ DataWriter::DataWriter(
         //std::cout << "Recording failure. Could not open: " << fileName.toStdString() << std::endl;
         delete dataFile;
         dataFile = nullptr;
+        /*
         QMessageBox MsgBox;
         MsgBox.setText(QString::fromStdString("Recording failure. Could not open: " + fileName.toStdString()));
         MsgBox.exec();
+        */
+        return;
     }
 
     textStream = new QTextStream(dataFile);
@@ -107,7 +110,7 @@ void DataWriter::newPupilData(quint64 timestamp, int procMode, const std::vector
             _message = recEventTracker->getMessage(timestamp).messageString;
             _d = recEventTracker->getTemperatureCheck(timestamp).temperatures;
         }
-        *textStream << EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, _trialNumber, delim, dataStyle, _d, _message) << Qt::endl;
+        *textStream << EyeDataSerializer::pupilToRowCSV(timestamp, procMode, Pupils, filename, _trialNumber, delim, dataStyle, _message, _d) << Qt::endl;
     }
 }
 
@@ -131,7 +134,7 @@ void DataWriter::writePupilData(std::vector<quint64> timestamps, int procMode, c
                 message = recEventTracker->getMessage(timestamps[i]).messageString;
                 d = recEventTracker->getTemperatureCheck(timestamps[i]).temperatures;
             }
-            *textStream << EyeDataSerializer::pupilToRowCSV(static_cast<quint64>(framePos), procMode, pupilData[i], "", trialNumber, delim, dataStyle, d, message) << Qt::endl;
+            *textStream << EyeDataSerializer::pupilToRowCSV(static_cast<quint64>(framePos), procMode, pupilData[i], "", trialNumber, delim, dataStyle, message, d) << Qt::endl;
         }
         ++framePos;
     }

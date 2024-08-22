@@ -111,5 +111,6 @@ public slots:
 
 signals:
     void onSettingsChange();
+    void onSettingsChangeNeedingRestart();
 
 };

@@ -11,7 +11,7 @@ class DataTypes : public QObject {
     Q_OBJECT
 
 public:
-    static enum class DataType {
+    enum struct DataType {
         TIME_RAW_TIMESTAMP,
         TIME,
         FRAME_NUMBER,

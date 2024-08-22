@@ -108,7 +108,7 @@ private:
     void createForm();
     void enableWidgets();
     void disableWidgets();
-    void resetState();
+//    void resetState();
  //   void saveUniversalSettings();
  //   void updateForm();
 
@@ -126,6 +126,10 @@ public slots:
     void onFrameSelected(int frameNumber);
     void onTimestampSelected(double frameNumber);
     void onCameraPlaybackChanged();
+
+    void onPlaybackStartApproved();
+    void onPlaybackPauseApproved();
+    void onPlaybackStopApproved();
 
 private slots:
     void onStartPauseButtonClick();
@@ -156,11 +160,16 @@ private slots:
 signals:
     void stillImageChange(int frameNumber);
 
+    void onPlaybackStartInitiated();
+    void onPlaybackPauseInitiated();
+    void onPlaybackStopInitiated();
+
     void onPlaybackSafelyStarted();
     void onPlaybackSafelyPaused();
     void onPlaybackSafelyStopped();
 
     void cameraPlaybackChanged();
+    void cameraPlaybackPositionChanged();
 
 };
 

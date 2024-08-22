@@ -15,18 +15,29 @@ Using startup arguments can ease everyday use of PupilEXT by automatically execu
 
 First all provided arguments are sorted to fit in a predefined order, which then can be properly processed argumentwise. The order is the following:
 ```
+-connectMicrocontrollerUDP
+-connectMicrocontrollerCOM
 -openSingleCamera
 -openStereoCamera
 -openSingleWebcam
+-setExposureTimeMicrosec
+-setAcquisitionTriggeringMode
+-setHWTLineSource
+-setHWTRuntimeLength
+-setHWTFramerate
+-startHardwareTriggering
+-setSoftwareTriggeringFramerateLimitingEnabled
+-setSoftwareTriggeringFramerateLimit
+-setGain
 -setPDAlgorithm
 -setPDUsingROI
 -setPDComputeOutlineConf
 -startTracking
--setDelimiter
 -setImageOutputPath
 -setImageOutputFormat
 -startImageRecording
 -setDataOutputPath
+-setDataOutputDelimiter
 -startDataRecording
 -connectStreamUDP
 -connectStreamCOM
@@ -65,8 +76,6 @@ If there are no quotation marks around a needed value for an argument, e.g. the 
 
 `-startTracking` - Start pupil tracking. A camera needs to be opened beforehand.
 
-`-setDelimiter "<delimiter>"` - Set global delimiter character. Accepted characters are a comma, a semicolon or tab character.
-
 `-setImageOutputPath "<path>"` - Set image recording output path. Make sure you do not use special characters as they may be restricted for use by the operating system in folder names.
 
 `-setImageOutputFormat "<format>"` - Set image recording output format. Format name should be provided: `tiff` or `png` or `bmp` or `jpeg` or `webp` or `pgm`. Cannot be altered while an image recording is going on.
@@ -74,6 +83,8 @@ If there are no quotation marks around a needed value for an argument, e.g. the 
 `-startImageRecording` - Start image recording. Image recording path and name should be set beforehand.
 
 `-setDataOutputPath "<path and name>"` - Set data ("csv") recording path and name. Make sure you do not use special characters as they may be restricted for use by the operating system in folder/file names. Cannot be altered while a data ("csv") recording is going on.
+
+`-setDataOutputDelimiter "<delimiter>"` - Set global delimiter character. Accepted characters are a comma, a semicolon or tab character.
 
 `-startDataRecording` - Start data ("csv") recording. Data recording path and name should be set beforehand.
 
@@ -87,3 +98,26 @@ If there are no quotation marks around a needed value for an argument, e.g. the 
 
 `-connectRemoteCOM "<port>;<baud>"` - Establish connection (start listening) for remote control using a COM/serial port.
 
+`-connectMicrocontrollerUDP "<IP>;<port>"` - Establish connection to the microcontroller unit using a UDP port.
+
+`-connectMicrocontrollerCOM "<port>;<baud>"` - Establish connection to the microcontroller unit using a COM/serial port.
+
+`-setAcquisitionTriggeringMode "<mode>"` - Set Image Acquisition triggering mode. Valid inputs are: `H` for hardware-based and: `S` for software-based image acquisition triggering
+
+`-startHardwareTriggering` - Start hardware triggering
+
+`-stopHardwareTriggering` - Stop hardware triggering
+
+`-setHardwareTriggeringLineSource "<value>"` - Set hardware triggering line source, valid values are: `1`, `2`, `3`, `4`
+
+`-setHardwareTriggeringRuntimeLength "<value>"` - Set hardware triggering runtime length in minutes, any positive floating point number is accepted. Value `0` can be used to set infinite triggering
+
+`-setHardwareTriggeringFramerate "<value>"` - Set hardware triggering framerate, any >=1 positive integer number is accepted
+
+`-setSoftwareTriggeringFramerateLimitingEnabled "<value>"` - Enable framerate limiting for software triggering. Either `true` or `false`
+
+`-setSoftwareTriggeringFramerateLimit "<value>"` - Set software triggering framerate limit, any >=1 positive integer number is accepted
+
+`-setExposureTimeMicrosec "<value>"` - Set exposure in microseconds, any positive floating point number is accepted
+
+`-setGain "<value>"` - Set gain, any floating point number is accepted, minimum `0.0`

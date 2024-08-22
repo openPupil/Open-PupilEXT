@@ -493,8 +493,16 @@ void MainWindow::PRGconnectMicrocontrollerUDP(QString conf) {
     p.ipAddress = QHostAddress(ip);
     p.portNumber = port;
 
+
+
     MCUSettingsDialogInst->selectConnectionMethod(MCUSettingsDialog::ConnectionMethod::UDP);
-    MCUSettingsDialogInst->connectUDP(p);
+//    MCUSettingsDialogInst->connectUDP(p);
+    if(stereoCameraSettingsDialog) {
+        singleCameraSettingsDialog->connectMCU();
+    }
+    if(stereoCameraSettingsDialog) {
+        stereoCameraSettingsDialog->connectMCU();
+    }
 }
 void MainWindow::PRGconnectMicrocontrollerCOM(QString conf) {
     if(MCUSettingsDialogInst->isConnected())
@@ -563,7 +571,13 @@ void MainWindow::PRGconnectMicrocontrollerCOM(QString conf) {
     p.localEchoEnabled = true; // always on now
 
     MCUSettingsDialogInst->selectConnectionMethod(MCUSettingsDialog::ConnectionMethod::COM);
-    MCUSettingsDialogInst->connectCOM(p);
+//    MCUSettingsDialogInst->connectCOM(p);
+    if(stereoCameraSettingsDialog) {
+        singleCameraSettingsDialog->connectMCU();
+    }
+    if(stereoCameraSettingsDialog) {
+        stereoCameraSettingsDialog->connectMCU();
+    }
 }
 void MainWindow::PRGdisconnectRemoteUDP() {
     if(remoteCCDialog->isUDPConnected())

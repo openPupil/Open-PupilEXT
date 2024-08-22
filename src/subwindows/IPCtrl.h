@@ -44,8 +44,8 @@ signals:
 private:
     enum
     {
-        QTUTL_IP_SIZE   = 4,// число октетов IP адресе
-        MAX_DIGITS      = 3 // число символов в LineEdit
+        QTUTL_IP_SIZE   = 4,
+        MAX_DIGITS      = 3
     };
 
     QLineEdit *(m_pLineEdit[QTUTL_IP_SIZE]);

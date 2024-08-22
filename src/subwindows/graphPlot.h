@@ -31,6 +31,8 @@ public:
         AUTO_SCROLL_X_FIXED_SCALE_Y = 4,
     };
 
+    int numGraphs;
+
     static uint64 sharedTimestamp; // timestamp that shares every graph so the times match
     uint64 lastTimestamp = 0;
 
@@ -57,8 +59,9 @@ public slots:
     void appendData(const double &fps);
     void appendData(const int &framecount);
 
-    void onPlaybackSafelyStopped();
-    void onPlaybackSafelyStarted();
+//    void onPlaybackSafelyStopped();
+//    void onPlaybackSafelyStarted();
+    void scheduleReset();
 
     void setKnownTimeZero(uint64_t timestamp);
 
@@ -81,6 +84,10 @@ private:
 
     uint64 incrementedTimestamp;
 
+    bool resetScheduled = false;
+
+    void setPupilData(const Pupil &pupil, int graphID, quint64 timestamp);
+
 //    bool interaction;
 //    bool yinteraction;
 
@@ -90,4 +97,5 @@ private:
 private slots:
     void setInteractionMode(InteractionMode m);
     void updateYaxisRange();
+    void clearClick();
 };

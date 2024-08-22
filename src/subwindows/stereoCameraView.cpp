@@ -17,6 +17,7 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
         displayPupilView(false),
         plotPupilCenter(false),
         plotROIContour(true),
+        showAutoParamOverlay(false),
         initPupilViewSize(false),
         playbackFrozen(playbackFrozen),
         //pupilViewSize(0, 0),
@@ -75,7 +76,7 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
 //    showAutoParamAct = plotMenu->addAction(QChar(0x21D2) +' '+ tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct = plotMenu->addAction(tr("Show Automatic Parametrization Overlay"));
     showAutoParamAct->setCheckable(true);
-    showAutoParamAct->setChecked(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    showAutoParamAct->setChecked(showAutoParamOverlay && pupilDetection->isAutoParamSettingsEnabled());
     showAutoParamAct->setEnabled(pupilDetection->isAutoParamSettingsEnabled());
     showAutoParamAct->setStatusTip(tr("Display expected pupil size maximum and minimum values as currently set for Automatic Parametrization."));
     plotMenu->addAction(showAutoParamAct);
@@ -103,7 +104,7 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     pupilColorFillLayout->setContentsMargins(8,0,8,0); 
 
     QLabel *pupilColorFillLabel = new QLabel("Coloring:");
-    pupilColorFillLabel->setFixedWidth(80);
+    pupilColorFillLabel->setFixedWidth(90);
 
     QComboBox *pupilColorFillBox = new QComboBox();
     pupilColorFillBox->addItem(QString("No fill"), QString("NO_FILL"));
@@ -126,7 +127,7 @@ StereoCameraView::StereoCameraView(Camera *camera, PupilDetection *pupilDetectio
     pupilColorFillThresholdLayout->setContentsMargins(8,0,8,0); 
 
     QLabel *pupilColorFillThresholdLabel = new QLabel("Low threshold:");
-    pupilColorFillThresholdLabel->setFixedWidth(80);
+    pupilColorFillThresholdLabel->setFixedWidth(90);
 
     QDoubleSpinBox *pupilColorFillThresholdBox = new QDoubleSpinBox();
     pupilColorFillThresholdBox->setMinimum(0.1);
@@ -380,7 +381,7 @@ void StereoCameraView::loadSettings() {
     onPlotPupilCenterClick(plotPupilCenter);
     plotCenterAct->setChecked(plotPupilCenter);
 
-    plotROIContour = SupportFunctions::readBoolFromQSettings("StereoCameraView.plotROIContour", false, applicationSettings);
+    plotROIContour = SupportFunctions::readBoolFromQSettings("StereoCameraView.plotROIContour", true, applicationSettings);
     plotROIAct->setChecked(plotROIContour);
     onPlotROIClick(plotROIContour);
 
@@ -430,6 +431,12 @@ void StereoCameraView::loadSettings() {
     mainVideoView->setROI2SelectionR(roiMain2R);
     secondaryVideoView->setROI1SelectionR(roiSecondary1R);
     secondaryVideoView->setROI2SelectionR(roiSecondary2R);
+
+    // these are needed in order to save the ROI even if QSettings is reset and the default roi value is set
+    mainVideoView->saveROI1Selection();
+    mainVideoView->saveROI2Selection();
+    secondaryVideoView->saveROI1Selection();
+    secondaryVideoView->saveROI2Selection();
 
 //    videoView->setAutoParamPupSize(applicationSettings->value("autoParamPupSizePercent", 50).toInt());
 }
@@ -679,7 +686,21 @@ void StereoCameraView::onSetROIClick(float roiSize) {
 
         mainVideoView->showROISelection(true);
         secondaryVideoView->showROISelection(true);
+
+        smallROIAct->setEnabled(false);
+        middleROIAct->setEnabled(false);
+        customROIAct->setEnabled(false);
+    } else {
+        mainVideoView->saveROI1Selection();
+        secondaryVideoView->saveROI1Selection();
+        if(mainVideoView->getDoubleROI()){
+            mainVideoView->saveROI2Selection();
+        }
+        if(secondaryVideoView->getDoubleROI()){
+            secondaryVideoView->saveROI2Selection();
+        }
     }
+    this->update();
 }
 
 // Saves the current ROI selection
@@ -701,6 +722,10 @@ void StereoCameraView::onSaveROIClick() {
         toolBar->removeAction(saveROI);
         toolBar->removeAction(discardROISelection);
     }
+
+    smallROIAct->setEnabled(true);
+    middleROIAct->setEnabled(true);
+    customROIAct->setEnabled(true);
 
     mainVideoView->drawOverlay();
     secondaryVideoView->drawOverlay();
@@ -745,8 +770,8 @@ void StereoCameraView::onPlotROIClick(bool value) {
     plotROIContour = value;
     applicationSettings->setValue("StereoCameraView.plotROIContour", plotROIContour);
     showAutoParamAct->setEnabled(pupilDetection->isAutoParamSettingsEnabled());
-    emit onShowAutoParamOverlay(showAutoParamOverlay & pupilDetection->isAutoParamSettingsEnabled());
-    emit onShowROI(plotROIContour & pupilDetection->isROIPreProcessingEnabled());
+    emit onShowAutoParamOverlay(showAutoParamOverlay && pupilDetection->isAutoParamSettingsEnabled());
+    emit onShowROI(plotROIContour && pupilDetection->isROIPreProcessingEnabled());
 }
 
 
@@ -824,8 +849,8 @@ void StereoCameraView::onPupilDetectionConfigChanged(QString config) {
     roiMenu->setEnabled(pupilDetection->isROIPreProcessingEnabled());
     showAutoParamAct->setEnabled(pupilDetection->isAutoParamSettingsEnabled());
     plotROIAct->setEnabled(pupilDetection->isROIPreProcessingEnabled());
-    emit onChangeShowAutoParamOverlay(showAutoParamOverlay & pupilDetection->isAutoParamSettingsEnabled());
-    emit onShowROI(plotROIContour & pupilDetection->isROIPreProcessingEnabled());
+    emit onChangeShowAutoParamOverlay(showAutoParamOverlay && pupilDetection->isAutoParamSettingsEnabled());
+    emit onShowROI(plotROIContour && pupilDetection->isROIPreProcessingEnabled());
 }
 
 
@@ -942,12 +967,12 @@ void StereoCameraView::updateForPupilDetectionProcMode() {
 void StereoCameraView::onShowAutoParamOverlay(bool state) {
     showAutoParamOverlay = state;
     applicationSettings->setValue("StereoCameraView.showAutoParamOverlay", showAutoParamOverlay);
-    emit onChangeShowAutoParamOverlay(showAutoParamOverlay & plotROIContour & pupilDetection->isAutoParamSettingsEnabled());
+    emit onChangeShowAutoParamOverlay(showAutoParamOverlay && pupilDetection->isAutoParamSettingsEnabled());
 }
 
 void StereoCameraView::onShowPositioningGuide(bool state) {
     showPositioningGuide = state;
-    applicationSettings->setValue("StereoCameraView.showPositioningGuide", showAutoParamOverlay);
+    applicationSettings->setValue("StereoCameraView.showPositioningGuide", showPositioningGuide);
     emit onChangeShowPositioningGuide(showPositioningGuide);
 }
 

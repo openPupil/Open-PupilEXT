@@ -42,9 +42,15 @@ public:
 
     enum ROIAllowedArea {ALL = 0, LEFT_HALF = 1, RIGHT_HALF = 2};
 
-    static constexpr QRectF defaultROImiddleR = QRectF( 0.35, 0.35, 0.3, 0.3 );
-    static constexpr QRectF defaultROIleftHalfR = QRectF( 0.05, 0.35, 0.3, 0.3 );
-    static constexpr QRectF defaultROIrightHalfR = QRectF( 0.65, 0.35, 0.3, 0.3 );
+    // corresponds to the "30%" default
+//    static constexpr QRectF defaultROImiddleR = QRectF( 0.35, 0.35, 0.3, 0.3 );
+//    static constexpr QRectF defaultROIleftHalfR = QRectF( 0.05, 0.35, 0.3, 0.3 );
+//    static constexpr QRectF defaultROIrightHalfR = QRectF( 0.65, 0.35, 0.3, 0.3 );
+
+    // corresponds to the "60%" default
+    static constexpr QRectF defaultROImiddleR = QRectF( 0.2, 0.2, 0.6, 0.6 );
+    static constexpr QRectF defaultROIleftHalfR = QRectF( 0.1, 0.2, 0.3, 0.6 );
+    static constexpr QRectF defaultROIrightHalfR = QRectF( 0.6, 0.2, 0.3, 0.6 );
 
     explicit VideoView(bool usingDoubleROI=false, QColor selectionColor1=Qt::blue, QColor selectionColor2=Qt::green, QWidget *parent=0);
 
@@ -119,10 +125,10 @@ private:
 
     float colorFillLowEnd = 0.0;
     ColorFill pupilColorFill = ColorFill::NO_FILL;
-    bool showROI = true;
-    bool plotPupilCenter = true;
-    bool showAutoParamOverlay = false;
-    bool showPositioningGuide = true;
+    bool showROI;
+    bool plotPupilCenter;
+    bool showAutoParamOverlay;
+    bool showPositioningGuide;
     bool pupilDetectionUsingROI;
 
 protected:

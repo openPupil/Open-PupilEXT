@@ -68,8 +68,6 @@ private:
     QLabel *HWTlineSourceLabel;
     QLabel *HWTtimeSpanLabel;
     QComboBox *HWTlineSourceBox;
-    QLabel *MCUConnDisconnButtonLabel;
-    QLabel *HWTstartStopButtonLabel;
     bool HWTrunning = false;
     QRadioButton *HWTradioButton;
     QHBoxLayout *HWTframerateLayout;
@@ -159,6 +157,10 @@ private slots:
     void updateImageROISettingsMax();
 
     void SWTframerateEnabledToggled(bool state);
+
+public slots:
+    void connectMCU();
+    void startHWT();
 
 signals:
     void onMCUConfig();

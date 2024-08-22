@@ -42,7 +42,7 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
     connect(tableView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(onTableRowDoubleClick(QModelIndex)));
 
 //    tableModel = new QStandardItemModel(17, stereoMode ? 2 : 1, this);
-    //int numCols=1;
+    //int numGraphs=1;
     switch(procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
             numCols=1;
@@ -72,8 +72,8 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
             tableModel->setHeaderData(0, Qt::Horizontal, QObject::tr("Eye A Main"));
-            tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Eye A Sec."));
-            tableModel->setHeaderData(2, Qt::Horizontal, QObject::tr("Eye B Main"));
+            tableModel->setHeaderData(1, Qt::Horizontal, QObject::tr("Eye B Main"));
+            tableModel->setHeaderData(2, Qt::Horizontal, QObject::tr("Eye A Sec."));
             tableModel->setHeaderData(3, Qt::Horizontal, QObject::tr("Eye B Sec."));
             break;
     }
@@ -110,13 +110,24 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
         cellColor2 = "#e6e6e6";
         gridColor = "#262626";
     }
+
+//    // This somehow does not work, though should
+//    QPalette p = tableView->palette();
+//    p.setColor(QPalette::Base, cellColor1);
+//    p.setColor(QPalette::AlternateBase, cellColor2);
+//    tableView->setPalette(p);
+
+//    // Somehow does not work either
+//    tableView->setStyleSheet("QTableView::item:alternate { background-color: "+ cellColor1 +"; } QTableView::item { background-color: "+ cellColor2 +"; }");
+
+    // Making the alternating row color in the workaround-way
     QString cellColor;
     for(int r = 0; r < tableModel->rowCount(); r++) {
         cellColor = (r % 2 != 0) ? cellColor1 : cellColor2;
         for (int c = 0; c < tableModel->columnCount(); c++) {
             tableModel->item(r, c)->setBackground(QBrush(QColor(cellColor)));
         }
-//        tableModel->verticalHeaderItem(r)->setBackground(QBrush(QColor(cellColor))); // It should, but somehow does not work
+//        tableModel->verticalHeaderItem(r)->setBackground(QBrush(QColor(cellColor))); // It also should, but somehow does not work
     }
     tableView->setStyleSheet("QTableView::section { background-color: " + cellColor2 + "; gridline-color: " + gridColor + "; }");
     tableView->setStyleSheet("QHeaderView::section { background-color: " + cellColor2 + "; gridline-color: " + gridColor + "; }");
@@ -124,18 +135,18 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
 
     switch(procMode) {
         case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
-            tableModel->horizontalHeaderItem(0)->setForeground(Qt::blue);
+            tableModel->horizontalHeaderItem(0)->setForeground(QColor("#04a0de")); // lighter blue
             break;
         case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
         // case ProcMode::MIRR_IMAGE_ONE_PUPIL:
         case ProcMode::STEREO_IMAGE_ONE_PUPIL:
-            tableModel->horizontalHeaderItem(0)->setForeground(Qt::blue);
+            tableModel->horizontalHeaderItem(0)->setForeground(QColor("#04a0de")); // lighter blue
             tableModel->horizontalHeaderItem(1)->setForeground(Qt::green);
             break;
         case ProcMode::STEREO_IMAGE_TWO_PUPIL:
-            tableModel->horizontalHeaderItem(0)->setForeground(Qt::blue);
+            tableModel->horizontalHeaderItem(0)->setForeground(QColor("#04a0de")); // lighter blue
             tableModel->horizontalHeaderItem(1)->setForeground(Qt::green);
-            tableModel->horizontalHeaderItem(2)->setForeground(QColor(144, 55, 212, 255)); // purple
+            tableModel->horizontalHeaderItem(2)->setForeground(QColor("#9e0ff7")); // lighter purple
             tableModel->horizontalHeaderItem(3)->setForeground(QColor(214, 140, 49,255)); // orange
             break;
     }
@@ -143,7 +154,7 @@ DataTable::DataTable(ProcMode procMode, QWidget *parent) : QWidget(parent), proc
     tableView->show();
 
     //resize(tableView->width(), tableView->height());
-//    resize(160 + numCols*80, 500);
+//    resize(160 + numGraphs*80, 500);
 }
 
 DataTable::~DataTable() {
@@ -153,7 +164,7 @@ DataTable::~DataTable() {
 QSize DataTable::sizeHint() const {
     return QSize(330, 500);
 
-//    return QSize(160 + numCols*80, 500);
+//    return QSize(160 + numGraphs*80, 500);
 }
 
 void DataTable::fitForTableSize() {
@@ -162,8 +173,8 @@ void DataTable::fitForTableSize() {
 ////    int oneItemHeight2 = tableModel->item(0)->sizeHint().height(); // returns -1 for some reason
 //    int minimumHeight = tableHeight; // + 60;
 
-    int minimumWidth = 120 * (tableModel->columnCount() + 1) + 80;
-    int minimumHeight = 26 * (tableModel->rowCount() + 1) + 20;
+    int minimumWidth = 130 * (tableModel->columnCount() + 1) + 100;
+    int minimumHeight = 32 * (tableModel->rowCount() + 1) + 30;
 //    parent->setMinimumSize(minimumWidth, minimumHeight);
     dynamic_cast<RestorableQMdiSubWindow*>(parent())->resize(minimumWidth, minimumHeight);
 }
@@ -182,6 +193,9 @@ void DataTable::customMenuRequested(QPoint pos){
 void DataTable::onPupilData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename) {
     // std::cout << "timestamp = " << QString::number(timestamp).toStdString() << "; filename = " << filename.toStdString() << std::endl;
 
+    if(resetScheduled)
+        reset();
+
     tableModel->item((int)DataTypes::DataType::TIME_RAW_TIMESTAMP,0)->setText(QString::number(timestamp));
 
     // QDateTime::fromMSecsSinceEpoch converts the UTC timestamp into localtime
@@ -190,45 +204,71 @@ void DataTable::onPupilData(quint64 timestamp, int procMode, const std::vector<P
 //    tableModel->item(0,0)->setText(QLocale::system().toString(date));
     tableModel->item((int)DataTypes::DataType::TIME,0)->setText(date.toString("hh:mm:ss"));
 
-    for(int i=0; i<Pupils.size(); i++)
-        if(Pupils[i].valid(-2))
-            setPupilData(Pupils[i], i);
-    // NOTE: this only works, because we defined the columns in the exact same order
-    // as in what pupil vector elements are, when they arrive
+    switch((ProcMode)procMode) {
+        case ProcMode::SINGLE_IMAGE_ONE_PUPIL:
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN], 0);
+            break;
+        case ProcMode::SINGLE_IMAGE_TWO_PUPIL:
+            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_A], 0);
+            setPupilData(Pupils[SINGLE_IMAGE_TWO_PUPIL_B], 1);
+            break;
+        case ProcMode::STEREO_IMAGE_ONE_PUPIL:
+            setPupilData(Pupils[STEREO_IMAGE_ONE_PUPIL_MAIN], 0);
+            setPupilData(Pupils[STEREO_IMAGE_ONE_PUPIL_SEC], 1);
+            break;
+        case ProcMode::STEREO_IMAGE_TWO_PUPIL:
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_MAIN], 0);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_B_MAIN], 1);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_A_SEC], 2);
+            setPupilData(Pupils[STEREO_IMAGE_TWO_PUPIL_B_SEC], 3);
+            break;
+    }
+
+//    for(int i=0; i<Pupils.size(); i++)
+//        if(Pupils[i].valid(-2))
+//            setPupilData(Pupils[i], i);
+//    // NOTE: this only works, because we defined the columns in the exact same order
+//    // as in what pupil vector elements are, when they arrive
 }
 
-// Updates the table column entries given pupil data and a column index (0, 1)
+// Updates the table columnID entries given pupil data and a columnID index (0, 1)
 // TODO: Figure out something cleaner using the key-value map we yet have
-void DataTable::setPupilData(const Pupil &pupil, int column) {
+void DataTable::setPupilData(const Pupil &pupil, int columnID) {
 
-    tableModel->item((int)DataTypes::DataType::PUPIL_CENTER_X, column)->setText(QString::number(pupil.center.x));
-    tableModel->item((int)DataTypes::DataType::PUPIL_CENTER_Y, column)->setText(QString::number(pupil.center.y));
-    tableModel->item((int)DataTypes::DataType::PUPIL_MAJOR, column)->setText(QString::number(pupil.majorAxis()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_MINOR, column)->setText(QString::number(pupil.minorAxis()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_WIDTH, column)->setText(QString::number(pupil.width()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_HEIGHT, column)->setText(QString::number(pupil.height()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_DIAMETER, column)->setText(QString::number(pupil.diameter()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_UNDIST_DIAMETER, column)->setText(QString::number(pupil.undistortedDiameter));
-    tableModel->item((int)DataTypes::DataType::PUPIL_PHYSICAL_DIAMETER, column)->setText(QString::number(pupil.physicalDiameter));
-    tableModel->item((int)DataTypes::DataType::PUPIL_CONFIDENCE, column)->setText(QString::number(pupil.confidence));
-    tableModel->item((int)DataTypes::DataType::PUPIL_OUTLINE_CONFIDENCE, column)->setText(QString::number(pupil.outline_confidence));
-    tableModel->item((int)DataTypes::DataType::PUPIL_CIRCUMFERENCE, column)->setText(QString::number(pupil.circumference()));
-    tableModel->item((int)DataTypes::DataType::PUPIL_RATIO, column)->setText(QString::number((double)pupil.majorAxis() / pupil.minorAxis()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_CENTER_X, columnID)->setText(QString::number(pupil.center.x));
+    tableModel->item((int)DataTypes::DataType::PUPIL_CENTER_Y, columnID)->setText(QString::number(pupil.center.y));
+    tableModel->item((int)DataTypes::DataType::PUPIL_MAJOR, columnID)->setText(QString::number(pupil.majorAxis()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_MINOR, columnID)->setText(QString::number(pupil.minorAxis()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_WIDTH, columnID)->setText(QString::number(pupil.width()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_HEIGHT, columnID)->setText(QString::number(pupil.height()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_DIAMETER, columnID)->setText(QString::number(pupil.diameter()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_UNDIST_DIAMETER, columnID)->setText(QString::number(pupil.undistortedDiameter));
+    tableModel->item((int)DataTypes::DataType::PUPIL_PHYSICAL_DIAMETER, columnID)->setText(QString::number(pupil.physicalDiameter));
+    tableModel->item((int)DataTypes::DataType::PUPIL_CONFIDENCE, columnID)->setText(QString::number(pupil.confidence));
+    tableModel->item((int)DataTypes::DataType::PUPIL_OUTLINE_CONFIDENCE, columnID)->setText(QString::number(pupil.outline_confidence));
+    tableModel->item((int)DataTypes::DataType::PUPIL_CIRCUMFERENCE, columnID)->setText(QString::number(pupil.circumference()));
+    tableModel->item((int)DataTypes::DataType::PUPIL_RATIO, columnID)->setText(QString::number((double)pupil.majorAxis() / pupil.minorAxis()));
 
 }
 
 // Slot handler receiving FPS data from a camera framecounter
 void DataTable::onCameraFPS(double fps) {
+    if(resetScheduled)
+        reset();
     tableModel->item((int)DataTypes::DataType::CAMERA_FPS)->setText(QString::number(fps));
 }
 
 // Slot handler receiving FPS data from a camera framecounter
 void DataTable::onCameraFramecount(int framecount) {
+    if(resetScheduled)
+        reset();
     tableModel->item((int)DataTypes::DataType::FRAME_NUMBER)->setText(QString::number(framecount));
 }
 
 // Slot handler receiving processing FPS data from the pupil detection process
 void DataTable::onProcessingFPS(double fps) {
+    if(resetScheduled)
+        reset();
     tableModel->item((int)DataTypes::DataType::PUPIL_FPS)->setText(QString::number(fps));
 }
 
@@ -258,4 +298,20 @@ void DataTable::onTableRowDoubleClick(const QModelIndex &modelIndex) {
     emit createGraphPlot(value);
 }
 
+void DataTable::reset() {
+
+    for(int r = 0; r < tableModel->rowCount(); r++) {
+        for (int c = 0; c < tableModel->columnCount(); c++) {
+            tableModel->item(r, c)->setText(QString());
+            // clearData(); somehow resets cell background as well, so not using it
+        }
+    }
+    tableView->update();
+
+    resetScheduled = false;
+}
+
+void DataTable::scheduleReset() {
+    resetScheduled = true;
+}
 

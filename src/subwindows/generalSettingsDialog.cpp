@@ -13,14 +13,14 @@
 GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
         QDialog(parent),
         //playbackSpeed(30),
-        imageWriterFormat("png"),
+        imageWriterFormat("tiff"),
         imageWriterDataRule("ask"),
         dataWriterDelimiter(","),
         dataWriterDataRule("ask"),
         applicationSettings(new QSettings(QSettings::IniFormat, QSettings::UserScope, QCoreApplication::organizationName(), QCoreApplication::applicationName(), parent)) {
 
     //this->setMinimumSize(200, 330); 
-    this->setMinimumSize(310, 510);
+    this->setMinimumSize(380, 580);
     this->setWindowTitle("Settings");
 
     readSettings();
@@ -50,7 +50,7 @@ GeneralSettingsDialog::GeneralSettingsDialog(QWidget *parent) :
 
 // Reads the settings from the QT application setting, if the entries were found
 void GeneralSettingsDialog::readSettings() {
-    const QString m_imageWriterFormat = applicationSettings->value("imageWriterFormat.chosenFormat", "png").toString();
+    const QString m_imageWriterFormat = applicationSettings->value("imageWriterFormat.chosenFormat", "tiff").toString();
     if (!m_imageWriterFormat.isEmpty()) {
         imageWriterFormat = m_imageWriterFormat;
     }
@@ -114,7 +114,7 @@ void GeneralSettingsDialog::updateForm() {
         dataWriterDelimiterBox->setCurrentIndex(2);
     else //if(dataWriterDelimiter == ",")
         dataWriterDelimiterBox->setCurrentIndex(0);
-    qDebug() << "Data writer delimiter read as: " << dataWriterDelimiter << "\n";
+//    qDebug() << "Data writer delimiter read as: " << dataWriterDelimiter << "\n";
 
     if(dataWriterDataStyle == "PupilEXT-0-1-1")
         dataWriterDataStyleBox->setCurrentIndex(0);
@@ -153,42 +153,43 @@ void GeneralSettingsDialog::saveSettings() {
 
 void GeneralSettingsDialog::createForm() {
 
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    QVBoxLayout *mainLayout = new QVBoxLayout();
 
 
-    dataWriterGroup = new QGroupBox("General Data Output", this);
-    QFormLayout *dataOutLayout = new QFormLayout(this);
+    dataWriterGroup = new QGroupBox("General Data Output");
+    QFormLayout *dataOutLayout = new QFormLayout();
 
-    QLabel *dataWriterDelimiterLabel = new QLabel(tr("Delimiter Character"), this);
-    dataWriterDelimiterBox = new QComboBox(this);
+    QLabel *dataWriterDelimiterLabel = new QLabel(tr("Delimiter Character"));
+    dataWriterDelimiterBox = new QComboBox();
     dataWriterDelimiterBox->addItem(QString("Comma [,]"), QString(","));
     dataWriterDelimiterBox->addItem(QString("Semicolon [;]"), QString(";"));
     dataWriterDelimiterBox->addItem(QString("Tabulation"), QString("\t"));
     dataWriterDelimiterBox->setCurrentText(dataWriterDelimiter);
     dataOutLayout->addRow(dataWriterDelimiterLabel, dataWriterDelimiterBox);
 
-    QLabel *dataWriterDataStyleLabel = new QLabel(tr("Data Style*: "), this);
-    dataWriterDataStyleBox = new QComboBox(this);
+    QLabel *dataWriterDataStyleLabel = new QLabel(tr("Data Style*: "));
+    dataWriterDataStyleBox = new QComboBox();
     dataWriterDataStyleBox->addItem(QString("PupilEXT v0.1.1"), QString("PupilEXT-0-1-1"));
     dataWriterDataStyleBox->addItem(QString("PupilEXT v0.1.2"), QString("PupilEXT-0-1-2"));
     dataWriterDataStyleBox->setCurrentText(dataWriterDataStyle);
     dataOutLayout->addRow(dataWriterDataStyleLabel, dataWriterDataStyleBox);
-    QLabel *dataWriterDataStyleWarnLabel = new QLabel(tr("*Older version will not save trial numbering."), this);
+    QLabel *dataWriterDataStyleWarnLabel = new QLabel(tr("*Older version will not save trial numbering."));
+    SupportFunctions::setSmallerLabelFontSize(dataWriterDataStyleWarnLabel);
     dataWriterDataStyleWarnLabel->setAlignment(Qt::AlignRight);
     dataOutLayout->addRow(dataWriterDataStyleWarnLabel);
 
 
-    QLabel *dataWriterDataRuleLabel = new QLabel(tr("Action when output recording already exists:"), this);
+    QLabel *dataWriterDataRuleLabel = new QLabel(tr("Action when output recording already exists:"));
     dataOutLayout->addRow(dataWriterDataRuleLabel);
 
-    dataWriterDataRuleBox = new QComboBox(this);
+    dataWriterDataRuleBox = new QComboBox();
     dataWriterDataRuleBox->addItem(QString("Ask every time"), QString("ask"));
     dataWriterDataRuleBox->addItem(QString("Append to found recording"), QString("append"));
     dataWriterDataRuleBox->addItem(QString("Keep existing and save new one too"), QString("new"));
     dataWriterDataRuleBox->setCurrentText(dataWriterDataRule);
     dataOutLayout->addRow(dataWriterDataRuleBox);
 
-    metaSnapshotBox = new QCheckBox("Generate metadata snapshot files", this);
+    metaSnapshotBox = new QCheckBox("Generate metadata snapshot files");
     metaSnapshotBox->setChecked(getMetaSnapshotsEnabled());
     dataOutLayout->addRow(metaSnapshotBox);
 
@@ -197,12 +198,12 @@ void GeneralSettingsDialog::createForm() {
 
 
 
-    imageWriterGroup = new QGroupBox("Image Writer", this);
-    QFormLayout *writerLayout = new QFormLayout(this);
+    imageWriterGroup = new QGroupBox("Image Writer");
+    QFormLayout *writerLayout = new QFormLayout();
 
     QLabel *formatLabel = new QLabel(tr("Image Format**"));
-    imageWriterFormatBox = new QComboBox(this);
-    imageWriterFormatBox->addItem(QString("tiff [large files]"), QString("tiff"));
+    imageWriterFormatBox = new QComboBox();
+    imageWriterFormatBox->addItem(QString("tiff [small files]"), QString("tiff"));
     imageWriterFormatBox->addItem(QString("png [configurable]"), QString("png"));
     imageWriterFormatBox->addItem(QString("bmp [large files]"), QString("bmp"));
     imageWriterFormatBox->addItem(QString("jpeg [configurable]"), QString("jpeg"));
@@ -212,14 +213,15 @@ void GeneralSettingsDialog::createForm() {
     imageWriterFormatBox->setCurrentIndex(imageWriterFormatBox->findData(imageWriterFormat));
     writerLayout->addRow(formatLabel, imageWriterFormatBox);
 
-    QLabel *formatNoteLabel = new QLabel(tr("**Please consider the file size vs. CPU load tradeoff!"));
+    QLabel *formatNoteLabel = new QLabel(tr("**Please consider the file size vs. CPU load tradeoff!\nAlso, jpeg and webp can be lossy, thus not recommended."));
+    SupportFunctions::setSmallerLabelFontSize(formatNoteLabel);
     writerLayout->addRow(formatNoteLabel);
 
     formatPngCompressionWidget = new QWidget();
     QHBoxLayout *formatPngCompressionLayout = new QHBoxLayout();
     formatPngCompressionLayout->setContentsMargins(0,0,0,0);
     QLabel *formatPngCompressionLabel = new QLabel(tr("PNG compression level:"));
-    formatPngCompressionBox = new QComboBox(this);
+    formatPngCompressionBox = new QComboBox();
     formatPngCompressionBox->addItem(QString("0 (large files, fast)"), 0);
     formatPngCompressionBox->addItem(QString("1"), 1);
     formatPngCompressionBox->addItem(QString("2"), 2);
@@ -240,7 +242,7 @@ void GeneralSettingsDialog::createForm() {
     QHBoxLayout *formatJpegQualityLayout = new QHBoxLayout();
     formatJpegQualityLayout->setContentsMargins(0,0,0,0);
     QLabel *formatJpegQualityLabel = new QLabel(tr("JPEG quality:"));
-    formatJpegQualityBox = new QSpinBox(this);
+    formatJpegQualityBox = new QSpinBox();
     formatJpegQualityBox->setMinimum(50);
     formatJpegQualityBox->setMaximum(100);
     formatJpegQualityBox->setSingleStep(1);
@@ -254,7 +256,7 @@ void GeneralSettingsDialog::createForm() {
     QHBoxLayout *formatWebpQualityLayout = new QHBoxLayout();
     formatWebpQualityLayout->setContentsMargins(0,0,0,0);
     QLabel *formatWebpQualityLabel = new QLabel(tr("WEBP quality:"));
-    formatWebpQualityBox = new QSpinBox(this);
+    formatWebpQualityBox = new QSpinBox();
     formatWebpQualityBox->setMinimum(50);
     formatWebpQualityBox->setMaximum(100);
     formatWebpQualityBox->setSingleStep(1);
@@ -264,17 +266,17 @@ void GeneralSettingsDialog::createForm() {
     formatWebpQualityWidget->setLayout(formatWebpQualityLayout);
     writerLayout->addRow(formatWebpQualityWidget);
 
-    QLabel *imageWriterDataRuleLabel = new QLabel(tr("Action when output recording already exists:"), this);
+    QLabel *imageWriterDataRuleLabel = new QLabel(tr("Action when output recording already exists:"));
     writerLayout->addRow(imageWriterDataRuleLabel);
 
-    imageWriterDataRuleBox = new QComboBox(this);
+    imageWriterDataRuleBox = new QComboBox();
     imageWriterDataRuleBox->addItem(QString("Ask every time"), QString("ask"));
     imageWriterDataRuleBox->addItem(QString("Append to found recording"), QString("append"));
     imageWriterDataRuleBox->addItem(QString("Keep existing and save new one too"), QString("new"));
     imageWriterDataRuleBox->setCurrentText(imageWriterDataRule);
     writerLayout->addRow(imageWriterDataRuleBox);
 
-    saveOfflineEventLogBox = new QCheckBox("Save trials/event log for offline analyses", this);
+    saveOfflineEventLogBox = new QCheckBox("Save trials/event log for offline analyses");
     saveOfflineEventLogBox->setChecked(getSaveOfflineEventLog());
     writerLayout->addRow(saveOfflineEventLogBox);
 
@@ -283,19 +285,19 @@ void GeneralSettingsDialog::createForm() {
 
     // GB NOTE: removed playback speed and playback loop settings, as these are yet in ImagePlaybackSettingsDialog
 
-    QGroupBox *appearanceGroup = new QGroupBox("Appearance", this);
-    QFormLayout *appearanceLayout = new QFormLayout(this);
+    QGroupBox *appearanceGroup = new QGroupBox("Appearance");
+    QFormLayout *appearanceLayout = new QFormLayout();
 
-    QLabel *darkAdaptLabel = new QLabel(tr("GUI dark mode:"), this);
+    QLabel *darkAdaptLabel = new QLabel(tr("GUI dark mode (needs restart):"));
 
-    darkAdaptBox = new QComboBox(this);
+    darkAdaptBox = new QComboBox();
     darkAdaptBox->addItem(QString("Light"));
     darkAdaptBox->addItem(QString("Dark"));
     darkAdaptBox->addItem(QString("Auto-detect"));
     darkAdaptBox->setCurrentIndex(darkAdaptMode);
     appearanceLayout->addRow(darkAdaptLabel, darkAdaptBox);
 
-    alwaysOnTopBox = new QCheckBox("Keep application always on top (needs restart)", this);
+    alwaysOnTopBox = new QCheckBox("Keep application always on top (needs restart)");
     alwaysOnTopBox->setChecked(getAlwaysOnTop());
     appearanceLayout->addRow(alwaysOnTopBox);
 
@@ -304,10 +306,10 @@ void GeneralSettingsDialog::createForm() {
 
 
 
-    QHBoxLayout *buttonsLayout = new QHBoxLayout(this);
+    QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
-    applyButton = new QPushButton(tr("Apply and Close"), this);
-    cancelButton = new QPushButton(tr("Cancel"), this);
+    applyButton = new QPushButton(tr("Apply and Close"));
+    cancelButton = new QPushButton(tr("Cancel"));
 
     buttonsLayout->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding));
 
@@ -343,10 +345,20 @@ void GeneralSettingsDialog::onSettingsChangedElsewhere() {
 // On apply button click
 // Save the settings, send signal that settings have changed
 void GeneralSettingsDialog::apply() {
+
+    bool alwaysOnTopBeforeSave = SupportFunctions::readBoolFromQSettings("alwaysOnTop", false, applicationSettings);
+    int darkAdaptModeBeforeSave = applicationSettings->value("GUIDarkAdaptMode", "2").toInt();
+
     saveSettings();
     emit onSettingsChange();
     
     // this->parentWidget()->repaint(); // todo: maybe do this via receiving onSettingChange from mainwindow?
+
+    // If there is any settings change that may need application restart to take effect,
+    // tell MainWindow to offer the user a restart in a dialog
+    if((alwaysOnTopBeforeSave != alwaysOnTop) || (darkAdaptModeBeforeSave != darkAdaptMode)) {
+        emit onSettingsChangeNeedingRestart();
+    }
 
     close();
 }

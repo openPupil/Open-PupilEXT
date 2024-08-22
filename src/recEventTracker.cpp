@@ -231,9 +231,10 @@ void RecEventTracker::saveOfflineEventLog(uint64 timestampFrom, uint64 timestamp
 
     std::cout << fileName.toStdString() << std::endl;
 
-    bool changedGiven = false;
-    QString changedPath;
-    bool pathWriteable = SupportFunctions::preparePath(fileName, changedGiven, changedPath);
+//    bool changedGiven = false;
+//    QString changedPath;
+    // NOTE: fileName should not be changed here anymore. Its checks and changes should take place earlier
+//    bool pathWriteable = SupportFunctions::preparePath(fileName, changedGiven, changedPath);
     //if(changedGiven)
     //    QMessageBox::warning(nullptr, "Path name changed", "The given path/name contained nonstandard characters,\nwhich were changed automatically for the following: a-z, A-Z, 0-9, _");
 
@@ -395,66 +396,47 @@ uint RecEventTracker::getTrialAtTimestamp(quint64 timestamp)
     return 1;
 }
 
+// TODO: when playback, store the last index, and start lookup only from that index, to spare calculation
 RecEventTracker::TrialIncrement RecEventTracker::getTrialIncrement(quint64 timestamp)
 {
     TrialIncrement emptyElem;
     if (trialIncrements.size() < 1)
         return emptyElem;
 
-    size_t i = 1;
-    while (i <= trialIncrements.size())
-    { // GB: I dont use decremental indexing here, caused some weird "overflow", MSVC 2019 x86_amd64
-        if (trialIncrements[trialIncrements.size() - i].timestamp < timestamp)
-        {
-            // if the gotten timestamp is just after an elem in the vector, that is the one we were looking for
-            //    qDebug() << "BUFFER: found applicable TrialIncrement of: \n" <<
-            //        "index " << trialIncrements.size()-i <<
-            //        "timestamp " << trialIncrements[trialIncrements.size()-i].timestamp <<
-            //        "trial number " << trialIncrements[trialIncrements.size()-i].trialNumber;
-            return trialIncrements[trialIncrements.size() - i];
+    for(int i = (trialIncrements.size()-1); i >= 0; i--) {
+        if (trialIncrements[i].timestamp <= timestamp) {
+            return trialIncrements[i];
         }
-        i++;
     }
     return (emptyElem);
 }
 
+// TODO: when playback, store the last index, and start lookup only from that index, to spare calculation
 RecEventTracker::Message RecEventTracker::getMessage(quint64 timestamp)
 {
     Message emptyElem;
     if (messages.size() < 1)
         return emptyElem;
 
-    size_t i = 1;
-    while (i <= messages.size())
-    {
-        if (messages[messages.size() - i].timestamp < timestamp)
-        {
-            return messages[messages.size() - i];
+    for(int i = (messages.size()-1); i >= 0; i--) {
+        if (messages[i].timestamp <= timestamp) {
+            return messages[i];
         }
-        i++;
     }
     return (emptyElem);
 }
 
+// TODO: when playback, store the last index, and start lookup only from that index, to spare calculation
 RecEventTracker::TemperatureCheck RecEventTracker::getTemperatureCheck(quint64 timestamp)
 {
     TemperatureCheck emptyElem;
     if (temperatureChecks.size() < 1)
         return emptyElem;
 
-    size_t i = 1;
-    while (i <= temperatureChecks.size())
-    { // GB: I dont use decremental indexing here, caused some weird "overflow", MSVC2019 x86_amd64
-        if (temperatureChecks[temperatureChecks.size() - i].timestamp < timestamp)
-        {
-            // if the gotten timestamp is just after an elem in the vector, that is the one we were looking for
-            //    qDebug() << "BUFFER: found applicable TemperatureCheck of: \n" <<
-            //        "index " << temperatureChecks.size()-i <<
-            //        "timestamp " << temperatureChecks[temperatureChecks.size()-i].timestamp <<
-            //        "trial number " << temperatureChecks[temperatureChecks.size()-i].trialNumber;
-            return temperatureChecks[temperatureChecks.size() - i];
+    for(int i = (temperatureChecks.size()-1); i >= 0; i--) {
+        if (temperatureChecks[i].timestamp <= timestamp) {
+            return temperatureChecks[i];
         }
-        i++;
     }
     return (emptyElem);
 }
