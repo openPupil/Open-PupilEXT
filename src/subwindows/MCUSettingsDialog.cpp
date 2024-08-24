@@ -534,7 +534,8 @@ void MCUSettingsDialog::loadSettings() {
     parityBox->setCurrentText(applicationSettings->value("MCUConnection.COM.parity", parityBox->itemText(SERIAL_DEF_PARITY)).toString());
     stopBitsBox->setCurrentText(applicationSettings->value("MCUConnection.COM.stopBits", stopBitsBox->itemText(SERIAL_DEF_STOPBITS)).toString());
     flowControlBox->setCurrentText(applicationSettings->value("MCUConnection.COM.flowControl", flowControlBox->itemText(SERIAL_DEF_FLOWCONTROL)).toString());
-    localEchoCheckBox->setChecked(applicationSettings->value("MCUConnection.COM.localEchoEnabled", localEchoCheckBox->isChecked()).toBool());
+    localEchoCheckBox->setChecked(SupportFunctions::readBoolFromQSettings("MCUConnection.COM.localEchoEnabled", localEchoCheckBox->isChecked(), applicationSettings));
+
     updateSettings();
 }
 

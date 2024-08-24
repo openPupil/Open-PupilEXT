@@ -47,7 +47,7 @@ void RemoteCCDialog::createForm() {
     QGroupBox *udpGroup = new QGroupBox("UDP");
     QFormLayout *udpLayout = new QFormLayout;
 
-    QLabel *udpIpLabel = new QLabel(tr("IP address:"));
+    udpIpLabel = new QLabel(tr("IP address:"));
     udpIpBox = new IPCtrl();
     //udpIpBox->setFixedWidth(140);
 
@@ -56,7 +56,7 @@ void RemoteCCDialog::createForm() {
 
     udpLayout->addRow(udpIpLabel, udpIpBox);
 
-    QLabel *udpPortLabel = new QLabel(tr("Port:"));
+    udpPortLabel = new QLabel(tr("Port:"));
     udpPortBox = new QSpinBox();
     udpPortBox->setMinimum(1);
     udpPortBox->setMaximum(9999);
@@ -86,7 +86,7 @@ void RemoteCCDialog::createForm() {
 
 
 
-    QLabel *comPortLabel = new QLabel(tr("Serial port:"));
+    comPortLabel = new QLabel(tr("Serial port:"));
 
     serialPortInfoListBox = new QComboBox();
     //comPortLayout->addWidget(serialPortInfoListBox);
@@ -110,11 +110,11 @@ void RemoteCCDialog::createForm() {
 
 
 
-    QLabel *baudRateLabel = new QLabel(tr("Baudrate"));
-    QLabel *dataBitsLabel = new QLabel(tr("Data bits"));
-    QLabel *parityLabel = new QLabel(tr("Parity"));
-    QLabel *stopBitsLabel = new QLabel(tr("Stop bits"));
-    QLabel *flowControlLabel = new QLabel(tr("Flow control"));
+    baudRateLabel = new QLabel(tr("Baudrate"));
+    dataBitsLabel = new QLabel(tr("Data bits"));
+    parityLabel = new QLabel(tr("Parity"));
+    stopBitsLabel = new QLabel(tr("Stop bits"));
+    flowControlLabel = new QLabel(tr("Flow control"));
 
     baudRateBox = new QComboBox();
     dataBitsBox = new QComboBox();
@@ -162,11 +162,20 @@ void RemoteCCDialog::connectUDP(const ConnPoolUDPInstanceSettings &p) {
 
     int index = connPoolUDP->setupAndOpenConnection(p, ConnPoolPurposeFlag::REMOTE_CONTROL);
     if(index >= 0) {
-        connectUDPButton->setEnabled(false);
-        disconnectUDPButton->setEnabled(true);
+        setLimitationsWhileConnectedUDP(true);
 
         connPoolUDPIndex = index;
         connPoolUDP->subscribeListener(index, this, SLOT(interpretCommand(QString, quint64)));
+
+        // TODO: nicer way for this?
+        //  this is necessary because sometimes PRGmainwindow calls this method
+        //  Other options include a loadSettings() call in the beginning, or making a new method for these
+        udpIpBox->blockSignals(true);
+        udpPortBox->blockSignals(true);
+        udpIpBox->setValue(p.ipAddress.toString());
+        udpPortBox->setValue(p.portNumber);
+        udpIpBox->blockSignals(false);
+        udpPortBox->blockSignals(false);
 
         //emit onCOMConnect();
         emit onConnStateChanged();
@@ -200,8 +209,7 @@ void RemoteCCDialog::disconnectUDP() {
     }
     connPoolUDPIndex = -1;
 
-    connectUDPButton->setEnabled(true);
-    disconnectUDPButton->setEnabled(false);
+    setLimitationsWhileConnectedUDP(false);
 
     //emit onUDPDisconnect();
     emit onConnStateChanged();
@@ -210,11 +218,29 @@ void RemoteCCDialog::disconnectUDP() {
 void RemoteCCDialog::connectCOM(const ConnPoolCOMInstanceSettings &p) {
     int index = connPoolCOM->setupAndOpenConnection(p, ConnPoolPurposeFlag::REMOTE_CONTROL);
     if(index >= 0) {
-        connectCOMButton->setEnabled(false);
-        disconnectCOMButton->setEnabled(true);
+        setLimitationsWhileConnectedCOM(true);
 
         connPoolCOMIndex = index;
         connPoolCOM->subscribeListener(index, this, SLOT(interpretCommand(QString, quint64)));
+
+        // TODO: nicer way for this?
+        //  this is necessary because sometimes PRGmainwindow calls this method
+        //  Other options include a loadSettings() call in the beginning, or making a new method for these
+        baudRateBox->blockSignals(true);
+        dataBitsBox->blockSignals(true);
+        flowControlBox->blockSignals(true);
+        parityBox->blockSignals(true);
+        stopBitsBox->blockSignals(true);
+        baudRateBox->setCurrentIndex(baudRateBox->findData(p.baudRate));
+        dataBitsBox->setCurrentIndex(dataBitsBox->findData(p.dataBits));
+        flowControlBox->setCurrentIndex(flowControlBox->findData(p.flowControl));
+        parityBox->setCurrentIndex(parityBox->findData(p.parity));
+        stopBitsBox->setCurrentIndex(stopBitsBox->findData(p.stopBits));
+        baudRateBox->blockSignals(false);
+        dataBitsBox->blockSignals(false);
+        flowControlBox->blockSignals(false);
+        parityBox->blockSignals(false);
+        stopBitsBox->blockSignals(false);
 
         //emit onCOMConnect();
         emit onConnStateChanged();
@@ -248,8 +274,7 @@ void RemoteCCDialog::disconnectCOM() {
     }
     connPoolCOMIndex = -1;
 
-    connectCOMButton->setEnabled(true);
-    disconnectCOMButton->setEnabled(false);
+    setLimitationsWhileConnectedCOM(false);
 
     //emit onCOMDisconnect();
     emit onConnStateChanged();
@@ -356,7 +381,8 @@ void RemoteCCDialog::loadSettings() {
     parityBox->setCurrentText(applicationSettings->value("RemoteControlConnection.COM.parity", parityBox->itemText(0)).toString());
     stopBitsBox->setCurrentText(applicationSettings->value("RemoteControlConnection.COM.stopBits", stopBitsBox->itemText(0)).toString());
     flowControlBox->setCurrentText(applicationSettings->value("RemoteControlConnection.COM.flowControl", flowControlBox->itemText(0)).toString());
-    //localEchoCheckBox->setChecked(applicationSettings->value("RemoteControlConnection.COM.localEchoEnabled", localEchoCheckBox->isChecked()).toBool());
+    //localEchoCheckBox->setChecked(SupportFunctions::readBoolFromQSettings("RemoteControlConnection.COM.localEchoEnabled", localEchoCheckBox->isChecked(), applicationSettings));
+
     updateSettings();
 }
 
@@ -394,6 +420,40 @@ void RemoteCCDialog::updateCOMDevices() {
 //    for(int i=0; i<poolPortNames.size(); i++) {
 //        serialPortInfoListBox->addItem(poolPortNames[i]);
 //    }
+}
+
+void RemoteCCDialog::setLimitationsWhileConnectedUDP(bool state) {
+
+    udpIpLabel->setDisabled(state);
+    udpPortLabel->setDisabled(state);
+
+    udpIpBox->setDisabled(state);
+    udpPortBox->setDisabled(state);
+
+    connectUDPButton->setDisabled(state);
+    disconnectUDPButton->setDisabled(!state);
+}
+
+void RemoteCCDialog::setLimitationsWhileConnectedCOM(bool state) {
+
+    serialPortInfoListBox->setDisabled(state);
+    refreshButton->setDisabled(state);
+
+    comPortLabel->setDisabled(state);
+    baudRateLabel->setDisabled(state);
+    dataBitsLabel->setDisabled(state);
+    parityLabel->setDisabled(state);
+    stopBitsLabel->setDisabled(state);
+    flowControlLabel->setDisabled(state);
+
+    baudRateBox->setDisabled(state);
+    dataBitsBox->setDisabled(state);
+    flowControlBox->setDisabled(state);
+    parityBox->setDisabled(state);
+    stopBitsBox->setDisabled(state);
+
+    connectCOMButton->setDisabled(state);
+    disconnectCOMButton->setDisabled(!state);
 }
 
 // TODO: something nicer?
@@ -434,25 +494,25 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
                 w->PRGopenStereoCamera(subStrings[0], subStrings[1]);
         } else if(str[1].toLower() == 'w' && str.size()>=4) { // open single webcam
             w->PRGopenSingleWebcam(str.mid(3, str.length()-3).toInt());
-        } else if(str[1].toLower() == 't' && str.size()==2) { // start pupil tracking
+        } else if(str[1].toLower() == 't') { // start pupil tracking
             w->PRGtrackStart();
-        } else if(str[1].toLower() == 'x' && str.size()==2) { // stop pupil tracking
+        } else if(str[1].toLower() == 'x') { // stop pupil tracking
             w->PRGtrackStop();
-        } else if(str[1].toLower() == 'r' && str.size()==2) { // start csv recording
+        } else if(str[1].toLower() == 'r') { // start csv recording
             w->PRGrecordStart();
-        } else if(str[1].toLower() == 's' && str.size()==2) { // stop csv recording
+        } else if(str[1].toLower() == 's') { // stop csv recording
             w->PRGrecordStop();
-        } else if(str[1].toLower() == 'v' && str.size()==2) { // start data streaming
+        } else if(str[1].toLower() == 'v') { // start data streaming
             w->PRGstreamStart();
-        } else if(str[1].toLower() == 'c' && str.size()==2) { // stop data streaming
+        } else if(str[1].toLower() == 'c') { // stop data streaming
             w->PRGstreamStop();
-        } else if(str[1].toLower() == 'm' && str.size()==2) { // start image recording
+        } else if(str[1].toLower() == 'm') { // start image recording
             w->PRGrecordImageStart();
-        } else if(str[1].toLower() == 'a' && str.size()==2) { // stop image recording
+        } else if(str[1].toLower() == 'a') { // stop image recording
             w->PRGrecordImageStop();
-        } else if(str[1].toLower() == 'd' && str.size()==2) { // disconnect from camera
+        } else if(str[1].toLower() == 'd') { // disconnect from camera
             w->PRGcloseCamera();
-        } else if(str[1].toLower() == 'f' && str.size()==2) { // force reset trial counter
+        } else if(str[1].toLower() == 'f') { // force reset trial counter
             w->PRGforceResetTrialCounter(timestamp);
         }
         return;
@@ -482,11 +542,11 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
         return;
     }
 
-    if(str[0].toLower() == 'i' && str.size()>=4) { // changing camera-related and Image acquisition settings
+    if(str[0].toLower() == 'i' && str.size()>=3) { // changing camera-related and Image acquisition settings
         if(str[1].toLower() == 't' && str.size()>=4) { // set image acquisition triggering mode
             if(str[3].toLower() == 'h') { // hardware-based triggering
                 w->PRGenableHWT(true);
-            } if(str[3].toLower() == 's') { // software-based triggering
+            } else if(str[3].toLower() == 's') { // software-based triggering
                 w->PRGenableHWT(false);
             }
         } else if(str[1].toLower() == 'h') { // set hardware-based triggering settings
@@ -535,38 +595,38 @@ void RemoteCCDialog::interpretCommand(const QString &msg, const quint64 &timesta
         return;
     }
 
-    if(str[0].toLower() == 'c' && str.size()>=6) { // establish connection
-        if(str[1].toLower() == 'r') { // for remote control
+    if(str[0].toLower() == 'c' && str.size()>=3) { // establish connection
+        if(str[1].toLower() == 'r' && str.size()>=6) { // for remote control
             if(str[2].toLower() == 'c') {
-                if(str.mid(3,3).toLower() == 'udp' && str.size()>=8)
-                    w->PRGconnectRemoteUDP(str.mid(7, str.length()-7));
-                else if(str.mid(3,3).toLower() == 'com' && str.size()>=8)
-                    w->PRGconnectRemoteCOM(str.mid(7, str.length()-7).toUpper());
+                if(str.size()>8 && str.mid(4,3).toLower() == "udp")
+                    w->PRGconnectRemoteUDP(str.mid(8, str.length()-8));
+                else if(str.size()>8 && str.mid(4,3).toLower() == "com")
+                    w->PRGconnectRemoteCOM(str.mid(8, str.length()-8).toUpper());
             } else if(str[2].toLower() == 'd') {
-                if(str.mid(3,3).toLower() == 'udp')
+                if(str.size()>=6 && str.mid(4,3).toLower() == "udp")
                     w->PRGdisconnectRemoteUDP();
-                else if(str.mid(3,3).toLower() == 'com')
+                else if(str.size()>=6 && str.mid(4,3).toLower() == "com")
                     w->PRGdisconnectRemoteCOM();
             }
-        } else if(str[1].toLower() == 's') { // for streaming
+        } else if(str[1].toLower() == 's' && str.size()>=6) { // for streaming
             if(str[2].toLower() == 'c') {
-                if(str.mid(3,3).toLower() == 'udp' && str.size()>=8)
-                    w->PRGconnectStreamUDP(str.mid(7, str.length()-7));
-                else if(str.mid(3,3).toLower() == 'com' && str.size()>=8)
-                    w->PRGconnectStreamCOM(str.mid(7, str.length()-7).toUpper());
-            } else if(str[2].toLower() == 'd') {
-                if(str.mid(3,3).toLower() == 'udp')
+                if(str.size()>8 && str.mid(4,3).toLower() == "udp")
+                    w->PRGconnectStreamUDP(str.mid(8, str.length()-8));
+                else if(str.size()>8 && str.mid(4,3).toLower() == "com")
+                    w->PRGconnectStreamCOM(str.mid(8, str.length()-8).toUpper());
+            } else if(str.size()>=6 && str[2].toLower() == 'd') {
+                if(str.mid(4,3).toLower() == "udp")
                     w->PRGdisconnectStreamUDP();
-                else if(str.mid(3,3).toLower() == 'com')
+                else if(str.size()>=6 && str.mid(4,3).toLower() == "com")
                     w->PRGdisconnectStreamCOM();
             }
         } else if(str[1].toLower() == 'm') { // for Microcontroller ("camera serial") connection
-            if(str[2].toLower() == 'c') {
-                if(str.mid(3,3).toLower() == 'udp' && str.size()>=8)
-                    w->PRGconnectMicrocontrollerUDP(str.mid(7, str.length()-7));
-                else if(str.mid(3,3).toLower() == 'com' && str.size()>=8)
-                    w->PRGconnectMicrocontrollerCOM(str.mid(7, str.length()-7).toUpper());
-            } else if(str[2].toLower() == 'd') {
+            if(str[2].toLower() == 'c' ) {
+                if(str.size()>8 && str.mid(4,3).toLower() == "udp")
+                    w->PRGconnectMicrocontrollerUDP(str.mid(8, str.length()-8));
+                else if(str.size()>8 && str.mid(4,3).toLower() == "com")
+                    w->PRGconnectMicrocontrollerCOM(str.mid(8, str.length()-8).toUpper());
+            } else if(str.size()>=3 && str[2].toLower() == 'd') {
                 w->PRGdisconnectMicrocontroller();
             }
         }

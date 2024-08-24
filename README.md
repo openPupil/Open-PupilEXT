@@ -92,6 +92,8 @@ Link to the GitHub repo of PyPupilEXT: [https://github.com/openPupil/PyPupilEXT]
   <img src="Misc/img/PupilEXT-Introduction.gif">
 </p>
 
+<i>Note: The animation above shows PupilEXT v0.1.1.</i>
+
 ## 1. Overview
 PupilEXT is a real-time pupillometry software whose graphical user interface is mainly programmed using C++ (QT. 5.15) and can be used to integrate high-resolution industrial cameras for online measurements. This Repository provides a guide on how to install, set up and use the system for pupillometry. Before using the PupilEXT framework, we recommend reading the work *"PupilEXT: flexible open-source platform for high resolution pupillometry in vision research"*.
 
@@ -156,6 +158,8 @@ After you have downloaded the software, you can open the dmg file and run PupilE
 <p align="center">
   <img src="Misc/img/PupilEXT_Start_Mac.gif">
 </p>
+
+<i>Note: The animation above shows PupilEXT v0.1.1.</i>
 
 **Step 3: Testing with the demo datasets**
 

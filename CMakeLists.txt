@@ -290,4 +290,9 @@ endif()
 #SET(CMAKE_CXX_FLAGS "-g -O0")
 #SET(CMAKE_C_FLAGS "-g -O0")
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -O3 -Wall -pedantic")
+# According to the published CMakeLists, these should be needed
+if(APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -O3")
+else()
+    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -O3 -Wall -pedantic")
+endif()

@@ -15,10 +15,11 @@
 // resulting in an image recording of 30000 frames in total, at 1 FPS 
 // (which ultimately results in 30000/500=60 seconds of recording)  
 // NOTE: The lowest possible FPS (in case of using this flashing code) is 0.00023283064 Hz
-// Even in case of 1000 FPS, the tick counter should last 4294967295/1000/60 =~ 71582 minutes safely
+// Even in case of 1000 FPS, the tick counter should last 2147483647/1000/60 =~ 35791 minutes safely
 
-long long int ReceivedValue1;
-long long int ReceivedValue2;
+// TODO: there is no atoll() for Arduino. use other for larder allowed numbers?
+long int ReceivedValue1;
+long int ReceivedValue2;
 char SerialReadChar;
 char SerialMessage[SERIAL_BUFFER_SIZE];
 int SerialBytesReadOnce = 0;
@@ -67,10 +68,10 @@ void checkMessage() {
   TokenBuffer = strtok(SerialMessage, "X");
   if(SerialMessage[1] == 'T') {
     TokenBuffer = strtok(NULL, "X");
-    ReceivedValue1 = atoll(TokenBuffer);
+    ReceivedValue1 = atol(TokenBuffer);
 
     TokenBuffer = strtok(NULL, ">");
-    ReceivedValue2 = atoll(TokenBuffer);
+    ReceivedValue2 = atol(TokenBuffer);
   }
 
   // Detect possible overflow

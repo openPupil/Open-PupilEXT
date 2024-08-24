@@ -2126,16 +2126,11 @@ void MainWindow::openImageDirectory(QString imageDirectory) {
     //const int playbackSpeed = applicationSettings->value("playbackSpeed", generalSettingsDialog->getPlaybackSpeed()).toInt();
     //const bool playbackLoop = (bool) applicationSettings->value("playbackLoop", (int) generalSettingsDialog->getPlaybackLoop()).toInt();
     const int playbackSpeed = applicationSettings->value("playbackSpeed", 30).toInt();
-    bool playbackLoop = false;
-    if( applicationSettings->value("playbackLoop", "1") == "1" ||
-        applicationSettings->value("playbackLoop", "1") == "true" )
-        playbackLoop = true;
-
-    // create simulated FileCamera
+    bool playbackLoop = SupportFunctions::readBoolFromQSettings("playbackLoop", true, applicationSettings);
 
     QString offlineEventLogFileName = imageDirectory + '/' + "offline_event_log.xml";
     std::cout << "expected offlineEventLogFileName = " << offlineEventLogFileName.toStdString() << std::endl;
-    if(QFileInfo(offlineEventLogFileName).exists() == true) {
+    if(QFileInfo(offlineEventLogFileName).exists()) {
         recEventTracker = new RecEventTracker(offlineEventLogFileName);
         if(recEventTracker->isReady()) {
             //connect( ...
@@ -2721,7 +2716,9 @@ void MainWindow::resetStatus(bool isConnect)
 
 //        streamingSettingsAct->setEnabled(false); / This should be enabled even if disconnected from camera
         trialWidget->setVisible(false);
+        trialWidgetLayoutSep->setVisible(false);
         messageWidget->setVisible(false);
+        messageWidgetLayoutSep->setVisible(false);
 
         recordAct->setEnabled(false); //
         cameraPlaying = true; //

@@ -82,7 +82,6 @@ private:
     QGroupBox *acquisitionGroup;
 
     void createForm();
-    void updateForms();
     void loadSettings();
     void saveSettings();
 
@@ -124,11 +123,12 @@ public slots:
     void setHWTruntime(double runtimeMinutes);
     void setHWTframerate(int fps);
 
-    void enableAcquisitionFrameRate(bool state);
     void setAcquisitionFPSValue(int value);
 
     void setExposureTimeValue(int value);
     void setGainValue(double value);
+
+    void updateForms();
 
 private slots:
 
@@ -140,8 +140,6 @@ private slots:
 
     void onLineSourceChange(int index);
     void updateFrameRateValue();
-
-    void onHWTenabledChange(bool state);
 
     void onSettingsChange();
 
@@ -156,11 +154,15 @@ private slots:
 
     void updateImageROISettingsMax();
 
-    void SWTframerateEnabledToggled(bool state);
+    void updateHWTStartStopRelatedWidgets();
+    void updateMCUConnDisconnButtonState();
 
 public slots:
     void connectMCU();
     void startHWT();
+
+    void SWTframerateEnabledToggled(bool state);
+    void onHWTenabledChange(bool state);
 
 signals:
     void onMCUConfig();

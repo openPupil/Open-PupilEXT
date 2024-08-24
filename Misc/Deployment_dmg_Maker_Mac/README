@@ -1,0 +1,4 @@
+The script make_dmg_from_app.command is a customized version of a dmg maker script from Andy Maloney's blog:
+https://asmaloney.com/2013/07/howto/packaging-a-mac-os-x-application-using-a-dmg/, last accessed 2024.08.23. 06:50 CET
+
+PupilEXT_dmg_background contains the PupilEXT logo, which is the work of the authors of PupilEXT v0.1.1, and was edited by Gabor Benyei to make the installer background image

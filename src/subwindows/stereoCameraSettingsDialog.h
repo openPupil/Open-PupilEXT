@@ -91,7 +91,6 @@ private:
     QGroupBox *acquisitionGroup;
 
     void createForm();
-    void updateForms();
     void loadSettings();
     void saveSettings();
 
@@ -137,6 +136,8 @@ public slots:
     void setExposureTimeValue(int value);
     void setGainValue(double value);
 
+    void updateForms();
+
 private slots:
 
     void updateDevicesBox();
@@ -167,6 +168,9 @@ private slots:
     void MCUConnDisconnButtonClicked();
 
     void updateImageROISettingsMax();
+
+    void updateHWTStartStopRelatedWidgets();
+    void updateMCUConnDisconnButtonState();
 
 public slots:
     void openStereoCamera(const QString &camName1, const QString &camName2);

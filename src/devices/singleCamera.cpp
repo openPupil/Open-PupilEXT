@@ -504,6 +504,12 @@ double SingleCamera::getGainMax() {
 
 void SingleCamera::setGainValue(double value) {
     try {
+        if (camera.Gain.IsReadable()) {
+            if (getGainMax() < value)
+                value = getGainMax();
+            else if (getGainMin() > value)
+                value = getGainMin();
+        }
         if (camera.Gain.IsWritable()) {
             camera.Gain.TrySetValue(value);
         }
@@ -514,6 +520,12 @@ void SingleCamera::setGainValue(double value) {
 
 void SingleCamera::setExposureTimeValue(int value) {
     try {
+        if (camera.ExposureTime.IsReadable()) {
+            if (getExposureTimeMax() < value)
+                value = getExposureTimeMax();
+            else if (getExposureTimeMin() > value)
+                value = getExposureTimeMin();
+        }
         if (camera.ExposureTime.IsWritable()) {
             camera.ExposureTime.TrySetValue(value);
         }

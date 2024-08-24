@@ -63,6 +63,9 @@ private:
 
     QSettings *applicationSettings;
 
+    QLabel *udpIpLabel;
+    QLabel *udpPortLabel;
+
     IPCtrl *udpIpBox;
     QSpinBox *udpPortBox;
 
@@ -70,6 +73,13 @@ private:
     ConnPoolCOMInstanceSettings m_currentSettingsCOM;
 
     QPushButton *refreshButton;
+
+    QLabel *comPortLabel;
+    QLabel *baudRateLabel;
+    QLabel *dataBitsLabel;
+    QLabel *parityLabel;
+    QLabel *stopBitsLabel;
+    QLabel *flowControlLabel;
 
     QComboBox *serialPortInfoListBox;
     QComboBox *baudRateBox;
@@ -111,6 +121,10 @@ public slots:
 
     void connectUDP(const ConnPoolUDPInstanceSettings &p);
     void connectCOM(const ConnPoolCOMInstanceSettings &p);
+
+    void setLimitationsWhileConnectedUDP(bool state);
+    void setLimitationsWhileConnectedCOM(bool state);
+
     void disconnectUDP();
     void disconnectCOM();
 

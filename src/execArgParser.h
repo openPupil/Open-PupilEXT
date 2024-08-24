@@ -36,12 +36,18 @@ private:
 
     std::vector<ExecArgs> execArgs;
 
+    // TODO: Actually, connecting to the microcontroller could be (and SHOULD BE, in the future) before
+    //  opening a single or stereo camera... BUT right now these camera settings dialogs (that are used for
+    //  connecting to the MCU in an intricate way) are not yet instantiated at that point. Thus, first
+    //  we need the cameras opened, and then connect to the MCU...
+    //  THIS HAS TO BE SOLVED ASAP, ALSO TO ENSURE WORK WITH DEDICATED HARDWARE
+
     enum PossArgsEnum {
-        CONNECT_MICROCONTROLLER_UDP,
-        CONNECT_MICROCONTROLLER_COM,
         OPEN_SINGLE_CAMERA,
         OPEN_STEREO_CAMERA,
         OPEN_SINGLE_WEBCAM,
+        CONNECT_MICROCONTROLLER_UDP,
+        CONNECT_MICROCONTROLLER_COM,
         SET_EXPOSURE_TIME_MICROSEC,
         SET_ACQUISITION_TRIGGERING_MODE,
         SET_HARDWARE_TRIGGERING_LINE_SOURCE,
@@ -77,16 +83,16 @@ private:
     // IMPORTANT: the order of this vector is also important!
     // it must follow the possible order of code execution that corresponds to the arguments
     const std::vector<PossArgs> possArgList = {
-        {CONNECT_MICROCONTROLLER_UDP, "-connectMicrocontrollerUDP", 1},
-        {CONNECT_MICROCONTROLLER_COM, "-connectMicrocontrollerCOM", 1},
         {OPEN_SINGLE_CAMERA, "-openSingleCamera", 1},
         {OPEN_STEREO_CAMERA, "-openStereoCamera", 2},
         {OPEN_SINGLE_WEBCAM, "-openSingleWebcam", 1},
+        {CONNECT_MICROCONTROLLER_UDP, "-connectMicrocontrollerUDP", 1},
+        {CONNECT_MICROCONTROLLER_COM, "-connectMicrocontrollerCOM", 1},
         {SET_EXPOSURE_TIME_MICROSEC, "-setExposureTimeMicrosec", 1},
         {SET_ACQUISITION_TRIGGERING_MODE, "-setAcquisitionTriggeringMode", 1},
-        {SET_HARDWARE_TRIGGERING_LINE_SOURCE, "-setHWTLineSource", 1},
-        {SET_HARDWARE_TRIGGERING_RUNTIME_LENGTH, "-setHWTRuntimeLength", 1},
-        {SET_HARDWARE_TRIGGERING_FRAMERATE, "-setHWTFramerate", 1},
+        {SET_HARDWARE_TRIGGERING_LINE_SOURCE, "-setHardwareTriggeringLineSource", 1},
+        {SET_HARDWARE_TRIGGERING_RUNTIME_LENGTH, "-setHardwareTriggeringRuntimeLength", 1},
+        {SET_HARDWARE_TRIGGERING_FRAMERATE, "-setHardwareTriggeringFramerate", 1},
         {START_HARDWARE_TRIGGERING, "-startHardwareTriggering", 0},
         {SET_SOFTWARE_TRIGGERING_FRAMERATE_LIMITING_ENABLED, "-setSoftwareTriggeringFramerateLimitingEnabled", 1},
         {SET_SOFTWARE_TRIGGERING_FRAMERATE_LIMIT, "-setSoftwareTriggeringFramerateLimit", 1},

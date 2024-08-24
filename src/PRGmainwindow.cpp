@@ -49,7 +49,11 @@ void MainWindow::PRGopenStereoCamera(const QString &camName1, const QString &cam
     if(selectedCamera && selectedCamera->isOpen())
         return;
 
-    // GB: UNDER DEV
+    // This extra step is needed because stereo camera opens first as a settings window,
+    // and THEN will the cameras be opened on command
+    if(!stereoCameraSettingsDialog)
+        stereoCameraSelected();
+
     stereoCameraSettingsDialog->openStereoCamera(camName1, camName2);
 }
 
@@ -348,7 +352,7 @@ void MainWindow::PRGconnectStreamUDP(QString conf) {
     //QStringList subStrings = conf.split(',');
     QRegExp separator("[,|;|*|&|#|:]");
     QStringList subStrings = conf.split(separator);
-    if(subStrings.length() < 3)
+    if(subStrings.length() < 3) // HERE WE HAVE 3, AS WE ALSO HAVE THE DATA CONTAINER SETTING
         return;
 
     if(subStrings[0].isEmpty())
@@ -394,7 +398,7 @@ void MainWindow::PRGconnectStreamCOM(QString conf) {
     //QStringList subStrings = conf.split(',');
     QRegExp separator("[,|;|*|&|#|:]");
     QStringList subStrings = conf.split(separator);
-    if(subStrings.length() < 7)
+    if(subStrings.length() < 7) // HERE WE HAVE 7, AS WE ALSO HAVE THE DATA CONTAINER SETTING
         return;
 
     const auto infos = QSerialPortInfo::availablePorts();
@@ -411,28 +415,28 @@ void MainWindow::PRGconnectStreamCOM(QString conf) {
         return;
         
     valid = false;
-    qint32 baudRate = subStrings[1].toInt(&valid, 10); 
+    qint32 baudRate = subStrings[1].toInt(&valid, 10);
     if(!valid)
         return;
 
     valid = false;
-    qint32 dataBits = subStrings[2].toInt(&valid, 10); 
+    qint32 dataBits = subStrings[2].toInt(&valid, 10);
     if(!valid)
         return;
 
     valid = false;
-    qint32 parity = subStrings[3].toInt(&valid, 10); 
+    qint32 parity = subStrings[3].toInt(&valid, 10);
     if(!valid)
         return;
 
     // NOTE: only integer values supported now
     valid = false;
-    qint32 stopBits = subStrings[4].toInt(&valid, 10); 
+    qint32 stopBits = subStrings[4].toInt(&valid, 10);
     if(!valid)
         return;
 
     valid = false;
-    qint32 flowControl = subStrings[5].toInt(&valid, 10); 
+    qint32 flowControl = subStrings[5].toInt(&valid, 10);
     if(!valid)
         return;
 
@@ -478,7 +482,7 @@ void MainWindow::PRGconnectMicrocontrollerUDP(QString conf) {
     //QStringList subStrings = conf.split(',');
     QRegExp separator("[,|;|*|&|#|:]");
     QStringList subStrings = conf.split(separator);
-    if(subStrings.length() < 3)
+    if(subStrings.length() < 2)
         return;
 
     if(subStrings[0].isEmpty())
@@ -497,7 +501,7 @@ void MainWindow::PRGconnectMicrocontrollerUDP(QString conf) {
 
     MCUSettingsDialogInst->selectConnectionMethod(MCUSettingsDialog::ConnectionMethod::UDP);
 //    MCUSettingsDialogInst->connectUDP(p);
-    if(stereoCameraSettingsDialog) {
+    if(singleCameraSettingsDialog) {
         singleCameraSettingsDialog->connectMCU();
     }
     if(stereoCameraSettingsDialog) {
@@ -572,7 +576,7 @@ void MainWindow::PRGconnectMicrocontrollerCOM(QString conf) {
 
     MCUSettingsDialogInst->selectConnectionMethod(MCUSettingsDialog::ConnectionMethod::COM);
 //    MCUSettingsDialogInst->connectCOM(p);
-    if(stereoCameraSettingsDialog) {
+    if(singleCameraSettingsDialog) {
         singleCameraSettingsDialog->connectMCU();
     }
     if(stereoCameraSettingsDialog) {
@@ -598,54 +602,63 @@ void MainWindow::PRGdisconnectStreamCOM() {
 void MainWindow::PRGdisconnectMicrocontroller() {
     if(MCUSettingsDialogInst->isConnected())
         MCUSettingsDialogInst->doDisconnect();
+
+    // This especially does not go through the camera settings windows, so we
+    // need to explicitly tell them to refresh the connect/disconnect etc. buttons
+    if(singleCameraSettingsDialog) {
+        singleCameraSettingsDialog->updateForms();
+    }
+    if(stereoCameraSettingsDialog) {
+        stereoCameraSettingsDialog->updateForms();
+    }
 }
 
 void MainWindow::PRGenableHWT(bool state) {
     if(!selectedCamera || selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
         return;
-    if(state)
-        singleCameraSettingsDialog->onHardwareTriggerEnable();
-    else
-        singleCameraSettingsDialog->onHardwareTriggerDisable();
+    singleCameraSettingsDialog->onHWTenabledChange(state);
 }
 void MainWindow::PRGstartHWT() {
-    if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
+    if( !selectedCamera ||
+            (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA) ||
+            !MCUSettingsDialogInst->isConnected() ) {
         return;
-    if(selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+    }
+    if(selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA)
         singleCameraSettingsDialog->startHardwareTrigger();
-    else /*if(selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA)*/
+    else /*if(selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA)*/
         stereoCameraSettingsDialog->startHardwareTrigger();
 }
 void MainWindow::PRGstopHWT() {
     if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
         return;
-    if(selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+    if(selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA)
         singleCameraSettingsDialog->stopHardwareTrigger();
-    else /*if(selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA)*/
+    else /*if(selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA)*/
         stereoCameraSettingsDialog->stopHardwareTrigger();
 }
 void MainWindow::PRGsetHWTlineSource(int lineSourceNum) {
     if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
         return;
-    if(selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+    if(selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA)
         singleCameraSettingsDialog->setHWTlineSource(lineSourceNum);
-    else /*if(selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA)*/
+    else /*if(selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA)*/
         stereoCameraSettingsDialog->setHWTlineSource(lineSourceNum);
 }
 void MainWindow::PRGsetHWTruntime(float runtimeMinutes) {
     if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
         return;
-    if(selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+    if(selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA)
         singleCameraSettingsDialog->setHWTruntime(runtimeMinutes);
-    else /*if(selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA)*/
+    else /*if(selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA)*/
         stereoCameraSettingsDialog->setHWTruntime(runtimeMinutes);
 }
 void MainWindow::PRGsetHWTframerate(int fps) {
     if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
         return;
-    if(selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+    if(selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA)
         singleCameraSettingsDialog->setHWTframerate(fps);
-    else /*if(selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA)*/
+    else /*if(selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA)*/
         stereoCameraSettingsDialog->setHWTframerate(fps);
 }
 void MainWindow::PRGenableSWTframerateLimiting(const QString &state) {
@@ -653,9 +666,9 @@ void MainWindow::PRGenableSWTframerateLimiting(const QString &state) {
         return;
 
     if(state == "true" || state == "1") {
-        singleCameraSettingsDialog->enableAcquisitionFrameRate(true);
+        singleCameraSettingsDialog->SWTframerateEnabledToggled(true);
     } else if(state == "false" || state == "0") {
-        singleCameraSettingsDialog->enableAcquisitionFrameRate(false);
+        singleCameraSettingsDialog->SWTframerateEnabledToggled(false);
     }
 }
 void MainWindow::PRGsetSWTframerate(int fps) {
@@ -667,17 +680,17 @@ void MainWindow::PRGsetSWTframerate(int fps) {
 void MainWindow::PRGsetExposure(int value) {
     if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
         return;
-    if(selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+    if(selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA)
         singleCameraSettingsDialog->setExposureTimeValue(value);
-    else /*if(selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA)*/
+    else /*if(selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA)*/
         stereoCameraSettingsDialog->setExposureTimeValue(value);
 }
 void MainWindow::PRGsetGain(double value) {
     if(!selectedCamera || (selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA && selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA))
         return;
-    if(selectedCamera->getType() != CameraImageType::LIVE_SINGLE_CAMERA)
+    if(selectedCamera->getType() == CameraImageType::LIVE_SINGLE_CAMERA)
         singleCameraSettingsDialog->setGainValue(value);
-    else /*if(selectedCamera->getType() != CameraImageType::LIVE_STEREO_CAMERA)*/
+    else /*if(selectedCamera->getType() == CameraImageType::LIVE_STEREO_CAMERA)*/
         stereoCameraSettingsDialog->setGainValue(value);
 }
 

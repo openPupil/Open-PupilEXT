@@ -15,11 +15,11 @@ Using startup arguments can ease everyday use of PupilEXT by automatically execu
 
 First all provided arguments are sorted to fit in a predefined order, which then can be properly processed argumentwise. The order is the following:
 ```
--connectMicrocontrollerUDP
--connectMicrocontrollerCOM
 -openSingleCamera
 -openStereoCamera
 -openSingleWebcam
+-connectMicrocontrollerUDP
+-connectMicrocontrollerCOM
 -setExposureTimeMicrosec
 -setAcquisitionTriggeringMode
 -setHWTLineSource
@@ -55,6 +55,23 @@ PupilEXT.exe -openSingleCamera "Basler a2A1920-160umBAS (12345678)" -startTracki
 ```
 
 If there are no quotation marks around a needed value for an argument, e.g. the camera name text, then PupilEXT will still try to interpret the given text as the needed value, e.g. camera name, but wherever a whitespace character comes, argument parser will think that the next characters belong to the next argument already, and e.g. a camera simply called "Basler" will be erroneously searched for.
+
+### Examples (Windows):
+
+Connecting to a stereo camera setup:
+```
+PupilEXT.exe -connectMicrocontrollerUDP "192.168.40.200;7000" -startHardwareTriggering -setHardwareTriggeringLineSource "1" -setHardwareTriggeringRuntimeLength "0" -setHardwareTriggeringFramerate "20" -openStereoCamera "Basler acA1300-200um (22625200)" "Basler acA1300-200um (22845124)"
+```
+
+Connecting to a single camera setup with microcontroller (hardware-based) image acquisition triggering:
+```
+PupilEXT.exe -connectMicrocontrollerUDP "192.168.40.200;7000" -setAcquisitionTriggeringMode "H" -startHardwareTriggering -setHardwareTriggeringLineSource "1" -setHardwareTriggeringRuntimeLength "0" -setHardwareTriggeringFramerate "20" -openSingleCamera "Basler acA1300-200um (22625200)"
+```
+
+Connecting to a single camera setup with software-based image acquisition triggering:
+```
+PupilEXT.exe -setSoftwareTriggeringFramerateLimitingEnabled "1" -setSoftwareTriggeringFramerateLimit "30" -setAcquisitionTriggeringMode "S" -openSingleCamera "Basler acA1300-200um (22625200)"
+```
 
 
 ---

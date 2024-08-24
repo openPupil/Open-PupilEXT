@@ -4,39 +4,7 @@
 // TODO: remove duplicates in list?
 ExecArgParser::ExecArgParser(int argc, char *argv[]) {
 
-    /*
-    argv = new char* [] { 
-        "PupilEXT.exe",
-        "-openSingleCamera",
-        "Basler a2A1920-160umBAS (40242221)",
-        "-setPDAlgorithm",
-        "PuRe", // HIBA TÖRTÉNIK HA SWIRSKI2D, A RUNWITHCONFIDENCE CALL-BAN
-        "-setPDUsingROI",
-        "1",
-        "-setPDComputeOutlineConf",
-        "1",
-        "-startTracking",
-        "-setDataOutputDelimiter",
-        "comma",
-        "-setImageOutputPath",
-        "C:/_PupilEXT test image output path",
-        "-setImageOutputFormat",
-        "tiff",
-        "-startImageRecording",
-        "-setDataOutputPath",
-        "C:/_PupilEXT test csv output file",
-        "-startDataRecording",
-        "-connectRemoteUDP",
-        "127.0.0.1,6900",
-        "-connectRemoteCOM",
-        "COM4,9600,mistake"
-    };
-    argc = 24;
-    */
-
     //std::cout << "First (index 0) argument, a.k.a. executable name: " << argv[0] << std::endl;
-
-    
     //std::cout << "argc: " << argc << std::endl;
 
     for(size_t i = 1; i < argc; ++i) {
@@ -115,20 +83,20 @@ void ExecArgParser::iterThroughDuties() {
     
         //qDebug() << "Now doing argID: " << execArgs[i].argID;
 
+        if(execArgs[i].argID == getArgIdx(OPEN_SINGLE_CAMERA) && execArgs[i].argVals.size()>=1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGopenSingleCamera(execArgs[i].argVals[0].toLower());
+        }
+        if(execArgs[i].argID == getArgIdx(OPEN_STEREO_CAMERA) && execArgs[i].argVals.size()>=2 && !execArgs[i].argVals[0].isEmpty() && !execArgs[i].argVals[1].isEmpty()) {
+            w->PRGopenStereoCamera(execArgs[i].argVals[0].toLower(), execArgs[i].argVals[1].toLower());
+        }
+        if(execArgs[i].argID == getArgIdx(OPEN_SINGLE_WEBCAM) && execArgs[i].argVals.size()>=1 && !execArgs[i].argVals[0].isEmpty()) {
+            w->PRGopenSingleWebcam(execArgs[i].argVals[0].toInt());
+        }
         if(execArgs[i].argID == getArgIdx(CONNECT_MICROCONTROLLER_UDP) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGconnectMicrocontrollerUDP(execArgs[i].argVals[0].toLower());
         }
         if(execArgs[i].argID == getArgIdx(CONNECT_MICROCONTROLLER_COM) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGconnectMicrocontrollerCOM(execArgs[i].argVals[0].toLower());
-        }
-        if(execArgs[i].argID == getArgIdx(OPEN_SINGLE_CAMERA) && execArgs[i].argVals.size()>=1 && !execArgs[i].argVals[0].isEmpty()) {
-            w->PRGopenSingleCamera(execArgs[i].argVals[0].toLower());
-        }
-        if(execArgs[i].argID == getArgIdx(OPEN_SINGLE_CAMERA) && execArgs[i].argVals.size()>=2 && !execArgs[i].argVals[0].isEmpty() && !execArgs[i].argVals[1].isEmpty()) {
-            w->PRGopenStereoCamera(execArgs[i].argVals[0].toLower(), execArgs[i].argVals[1].toLower());
-        }
-        if(execArgs[i].argID == getArgIdx(OPEN_SINGLE_WEBCAM) && execArgs[i].argVals.size()>=1 && !execArgs[i].argVals[0].isEmpty()) {
-            w->PRGopenSingleWebcam(execArgs[i].argVals[0].toInt());
         }
         if(execArgs[i].argID == getArgIdx(SET_EXPOSURE_TIME_MICROSEC) && execArgs[i].argVals.size()==1 && !execArgs[i].argVals[0].isEmpty()) {
             w->PRGsetExposure(execArgs[i].argVals[0].toInt());

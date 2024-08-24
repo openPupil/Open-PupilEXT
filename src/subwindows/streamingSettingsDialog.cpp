@@ -168,7 +168,7 @@ void StreamingSettingsDialog::createForm() {
     dataContainerCOMBox->addItem(tr("JSON"), DataStreamer::DataContainer::JSON);
     dataContainerCOMBox->addItem(tr("XML"), DataStreamer::DataContainer::XML);
     dataContainerCOMBox->addItem(tr("YAML"), DataStreamer::DataContainer::YAML);
-    dataContainerUDPBox->setCurrentIndex(0);
+    dataContainerCOMBox->setCurrentIndex(0);
     comLayout->addRow(dataContainerCOMLabel, dataContainerCOMBox);
 
 
@@ -201,6 +201,19 @@ void StreamingSettingsDialog::connectUDP(const ConnPoolUDPInstanceSettings &p) {
 
         connPoolUDPIndex = index;
         //connPoolUDP->subscribeListener(index, this, SLOT(readData(QString)));
+
+        // TODO: nicer way for this?
+        //  this is necessary because sometimes PRGmainwindow calls this method
+        //  Other options include a loadSettings() call in the beginning, or making a new method for these
+        udpIpBox->blockSignals(true);
+        udpPortBox->blockSignals(true);
+        dataContainerUDPBox->blockSignals(true);
+        udpIpBox->setValue(p.ipAddress.toString());
+        udpPortBox->setValue(p.portNumber);
+        dataContainerUDPBox->setCurrentText(applicationSettings->value("StreamingSettings.UDP.dataContainer", "CSV").toString());
+        udpIpBox->blockSignals(false);
+        udpPortBox->blockSignals(false);
+        dataContainerUDPBox->blockSignals(false);
 
         emit onUDPConnect();
         //emit onConnStateChanged();
@@ -243,6 +256,28 @@ void StreamingSettingsDialog::connectCOM(const ConnPoolCOMInstanceSettings &p) {
 
         connPoolCOMIndex = index;
         //connPoolCOM->subscribeListener(index, this, SLOT(readData(QString)));
+
+        // TODO: nicer way for this?
+        //  this is necessary because sometimes PRGmainwindow calls this method
+        //  Other options include a loadSettings() call in the beginning, or making a new method for these
+        baudRateBox->blockSignals(true);
+        dataBitsBox->blockSignals(true);
+        flowControlBox->blockSignals(true);
+        parityBox->blockSignals(true);
+        stopBitsBox->blockSignals(true);
+        dataContainerCOMBox->blockSignals(true);
+        baudRateBox->setCurrentIndex(baudRateBox->findData(p.baudRate));
+        dataBitsBox->setCurrentIndex(dataBitsBox->findData(p.dataBits));
+        flowControlBox->setCurrentIndex(flowControlBox->findData(p.flowControl));
+        parityBox->setCurrentIndex(parityBox->findData(p.parity));
+        stopBitsBox->setCurrentIndex(stopBitsBox->findData(p.stopBits));
+        dataContainerCOMBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.dataContainer", "CSV").toString());
+        baudRateBox->blockSignals(false);
+        dataBitsBox->blockSignals(false);
+        flowControlBox->blockSignals(false);
+        parityBox->blockSignals(false);
+        stopBitsBox->blockSignals(false);
+        dataContainerCOMBox->blockSignals(false);
 
         emit onCOMConnect();
         //emit onConnStateChanged();
@@ -384,7 +419,8 @@ void StreamingSettingsDialog::loadSettings() {
     parityBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.parity", parityBox->itemText(0)).toString());
     stopBitsBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.stopBits", stopBitsBox->itemText(0)).toString());
     flowControlBox->setCurrentText(applicationSettings->value("StreamingSettings.COM.flowControl", flowControlBox->itemText(0)).toString());
-    //localEchoCheckBox->setChecked(applicationSettings->value("StreamingSettings.COM.localEchoEnabled", localEchoCheckBox->isChecked()).toBool());
+    // localEchoCheckBox->setChecked(SupportFunctions::readBoolFromQSettings("StreamingSettings.COM.localEchoEnabled", localEchoCheckBox->isChecked(), applicationSettings));
+
     updateSettings();
 }
 

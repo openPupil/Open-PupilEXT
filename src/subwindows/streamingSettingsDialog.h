@@ -81,7 +81,6 @@ private:
     QPushButton *refreshButton;
 
     QLabel *comPortLabel;
-
     QLabel *baudRateLabel;
     QLabel *dataBitsLabel;
     QLabel *parityLabel;

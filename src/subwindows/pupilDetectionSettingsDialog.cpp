@@ -301,12 +301,12 @@ void PupilDetectionSettingsDialog::loadSettings() {
     }
 
     pupilDetection->setAlgorithm(applicationSettings->value("PupilDetectionSettingsDialog.algorithm", algorithmBox->currentText()).toString());
-//    pupilDetection->enableOutlineConfidence(applicationSettings->value("PupilDetectionSettingsDialog.outlineConfidence", outlineConfidenceBox->isChecked()).toBool());
-//    pupilDetection->enableROIPreProcessing(applicationSettings->value("PupilDetectionSettingsDialog.processROI", roiPreprocessingBox->isChecked()).toBool());
-    pupilDetection->enableOutlineConfidence(applicationSettings->value("PupilDetectionSettingsDialog.outlineConfidence", true).toBool());
-    pupilDetection->enableROIPreProcessing(applicationSettings->value("PupilDetectionSettingsDialog.processROI", true).toBool());
-    pupilDetection->enablePupilUndistortion(applicationSettings->value("PupilDetectionSettingsDialog.undistortPupilSize", pupilUndistortionBox->isChecked()).toBool());
-    pupilDetection->enableImageUndistortion(applicationSettings->value("PupilDetectionSettingsDialog.undistortImage", imageUndistortionBox->isChecked()).toBool());
+//    pupilDetection->enableOutlineConfidence(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.outlineConfidence", outlineConfidenceBox->isChecked(), applicationSettings));
+//    pupilDetection->enableROIPreProcessing(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.processROI", roiPreprocessingBox->isChecked(), applicationSettings));
+    pupilDetection->enableOutlineConfidence(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.outlineConfidence", true, applicationSettings));
+    pupilDetection->enableROIPreProcessing(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.processROI", true, applicationSettings));
+    pupilDetection->enablePupilUndistortion(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.undistortPupilSize", pupilUndistortionBox->isChecked(), applicationSettings));
+    pupilDetection->enableImageUndistortion(SupportFunctions::readBoolFromQSettings("PupilDetectionSettingsDialog.undistortImage", imageUndistortionBox->isChecked(), applicationSettings));
 
     pupilMethodSettings[algorithmBox->currentIndex()]->loadSettings();
 

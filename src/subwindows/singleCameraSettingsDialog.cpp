@@ -251,6 +251,10 @@ void SingleCameraSettingsDialog::createForm() {
     // This would normally never be used in case of hardware triggering, so it is moved to the "software triggering"
     // section and kept disabled
     SWTframerateEnabled = new QCheckBox("Limit framerate to: ");
+    // NOTE: isEnabledAcquisitionFrameRate() HAS TO BE corresponding to the QSettings state,
+    // and NOT the inherent camera state here! because loadSettings resets it like so beforehand
+    // It is necessary because opening the camera once as part of stereo will wipe this internal
+    // setting of the camera to false (it has to, to let it see the ResultingFramerate)
     SWTframerateEnabled->setChecked(camera->isEnabledAcquisitionFrameRate());
     SWTframerateEnabled->setEnabled(!camera->isHardwareTriggerEnabled()); //
     SWTframerateBox = new QSpinBox();
@@ -266,6 +270,10 @@ void SingleCameraSettingsDialog::createForm() {
     SWTframerateBox->setMaximum(std::numeric_limits<short>::max());
     SWTframerateBox->setSingleStep(1);
     SWTframerateBox->setValue(camera->getAcquisitionFPSValue());
+    // NOTE: isEnabledAcquisitionFrameRate() HAS TO BE corresponding to the QSettings state,
+    // and NOT the inherent camera state here! because loadSettings resets it like so beforehand
+    // It is necessary because opening the camera once as part of stereo will wipe this internal
+    // setting of the camera to false (it has to, to let it see the ResultingFramerate)
     SWTframerateBox->setEnabled(camera->isEnabledAcquisitionFrameRate()); //
     SWTframerateBox->setFixedWidth(60);
 //    camera->enableAcquisitionFrameRate(false); //
@@ -417,7 +425,6 @@ void SingleCameraSettingsDialog::createForm() {
     connect(imageROIoffsetYInputBox, SIGNAL(valueChanged(int)), this, SLOT(onSetImageROIoffsetY(int)));
 
     connect(SWTframerateEnabled, SIGNAL(toggled(bool)), this, SLOT(SWTframerateEnabledToggled(bool)));
-    connect(SWTframerateEnabled, SIGNAL(toggled(bool)), this, SLOT(enableAcquisitionFrameRate(bool)));
     connect(SWTframerateBox, SIGNAL(valueChanged(int)), this, SLOT(setAcquisitionFPSValue(int)));
 
     connect(HWTlineSourceBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onLineSourceChange(int)));
@@ -437,7 +444,11 @@ void SingleCameraSettingsDialog::updateForms() {
     if(!camera->isOpen())
         return;
 
+    updateHWTStartStopRelatedWidgets();
+    updateMCUConnDisconnButtonState();
+
     SWTframerateEnabled->setChecked(camera->isEnabledAcquisitionFrameRate());
+    applicationSettings->setValue("SingleCameraSettingsDialog.SWTframerateEnabled", camera->isEnabledAcquisitionFrameRate());
     if(!HWTrunning) {
         SWTframerateBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin()));
         SWTframerateBox->setMaximum(camera->getAcquisitionFPSMax());
@@ -580,12 +591,7 @@ void SingleCameraSettingsDialog::startHardwareTrigger() {
     emit onHardwareTriggerStart(cmd);
 
     HWTrunning = true;
-    HWTframerateBox->setEnabled(false);
-    HWTlineSourceBox->setEnabled(false);
-    HWTtimeSpanBox->setEnabled(false);
-    HWTstartStopButton->setText("Stop Image Acquisition");
-    HWTstartStopButton->setStyleSheet("QPushButton { background-color: #c3f558; border: 1px solid #757575; border-radius: 5px;}");
-
+    updateHWTStartStopRelatedWidgets();
 }
 
 // Stops the hardware trigger signal by sending a stop signal to the microcontroller
@@ -595,11 +601,25 @@ void SingleCameraSettingsDialog::stopHardwareTrigger() {
     emit onHardwareTriggerStop(QString("<SX>"));
 
     HWTrunning = false;
-    HWTframerateBox->setEnabled(camera->isHardwareTriggerEnabled());
-    HWTlineSourceBox->setEnabled(camera->isHardwareTriggerEnabled());
-    HWTtimeSpanBox->setEnabled(camera->isHardwareTriggerEnabled());
-    HWTstartStopButton->setText("Start Image Acquisition");
-    HWTstartStopButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
+    updateHWTStartStopRelatedWidgets();
+}
+
+void SingleCameraSettingsDialog::updateHWTStartStopRelatedWidgets() {
+    if(HWTrunning) {
+        HWTframerateBox->setEnabled(false);
+        HWTlineSourceBox->setEnabled(false);
+        HWTtimeSpanBox->setEnabled(false);
+        HWTstartStopButton->setText("Stop Image Acquisition");
+        HWTstartStopButton->setStyleSheet(
+                "QPushButton { background-color: #c3f558; border: 1px solid #757575; border-radius: 5px;}");
+    } else {
+        HWTframerateBox->setEnabled(camera->isHardwareTriggerEnabled());
+        HWTlineSourceBox->setEnabled(camera->isHardwareTriggerEnabled());
+        HWTtimeSpanBox->setEnabled(camera->isHardwareTriggerEnabled());
+        HWTstartStopButton->setText("Start Image Acquisition");
+        HWTstartStopButton->setStyleSheet(
+                "QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
+    }
 }
 
 void SingleCameraSettingsDialog::connectMCU() {
@@ -615,6 +635,17 @@ void SingleCameraSettingsDialog::startHWT() {
 }
 
 void SingleCameraSettingsDialog::onHWTenabledChange(bool state) {
+
+//    if(state == camera->isHardwareTriggerEnabled())
+//        return;
+
+    // if set programmatically, we need to change radio button states here
+    SWTradioButton->blockSignals(true);
+    SWTradioButton->blockSignals(true);
+    SWTradioButton->setChecked(!state);
+    HWTradioButton->setChecked(state);
+    SWTradioButton->blockSignals(false);
+    SWTradioButton->blockSignals(false);
 
     if(HWTrunning) {
         stopHardwareTrigger();
@@ -646,12 +677,13 @@ void SingleCameraSettingsDialog::onHWTenabledChange(bool state) {
     } else {
         emit onHardwareTriggerDisable();
     }
+    this->update();
 }
 
 void SingleCameraSettingsDialog::loadSettings() {
 
-    SWTradioButton->setChecked(!applicationSettings->value("SingleCameraSettingsDialog.hwTriggerEnabled", camera->isHardwareTriggerEnabled()).toBool());
-    HWTradioButton->setChecked(applicationSettings->value("SingleCameraSettingsDialog.hwTriggerEnabled", camera->isHardwareTriggerEnabled()).toBool());
+    SWTradioButton->setChecked(!SupportFunctions::readBoolFromQSettings("SingleCameraSettingsDialog.hwTriggerEnabled", camera->isHardwareTriggerEnabled(), applicationSettings));
+    HWTradioButton->setChecked(SupportFunctions::readBoolFromQSettings("SingleCameraSettingsDialog.hwTriggerEnabled", camera->isHardwareTriggerEnabled(), applicationSettings));
     camera->enableHardwareTrigger(HWTradioButton->isChecked());
 
     HWTlineSourceBox->setCurrentText(applicationSettings->value("SingleCameraSettingsDialog.lineSource", QString::fromStdString(camera->getLineSource().c_str())).toString());
@@ -681,8 +713,9 @@ void SingleCameraSettingsDialog::loadSettings() {
     imageROIoffsetYInputBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.imageROIoffsetY", 0).toInt());
 
     // The safest is to enable limiting by default, as first opening a high speed hi-res camera can just freeze the computer
-    SWTframerateEnabled->setChecked(applicationSettings->value("SingleCameraSettingsDialog.SWTframerateEnabled", "1").toBool());
-    camera->enableAcquisitionFrameRate(SWTframerateEnabled->isChecked());
+    bool m_SWTframerateEnabled = SupportFunctions::readBoolFromQSettings("SingleCameraSettingsDialog.SWTframerateEnabled", true, applicationSettings);
+    SWTframerateEnabled->setChecked(m_SWTframerateEnabled);
+    camera->enableAcquisitionFrameRate(m_SWTframerateEnabled);
 
     // 50 FPS is good for a first start, for the same reasons
     SWTframerateBox->setValue(applicationSettings->value("SingleCameraSettingsDialog.acquisitionFramerate", "50").toInt());
@@ -732,6 +765,7 @@ void SingleCameraSettingsDialog::onSetImageROIwidth(int val) {
     updateImageROISettingsMax();
     updateImageROISettingsValues();
     updateCamImageRegionsWidget();
+    updateFrameRateValue(); // important
 }
 
 void SingleCameraSettingsDialog::onSetImageROIheight(int val) {
@@ -739,6 +773,7 @@ void SingleCameraSettingsDialog::onSetImageROIheight(int val) {
     updateImageROISettingsMax();
     updateImageROISettingsValues();
     updateCamImageRegionsWidget();
+    updateFrameRateValue(); // important
 }
 
 void SingleCameraSettingsDialog::onSetImageROIoffsetX(int val) {
@@ -874,45 +909,64 @@ void SingleCameraSettingsDialog::setLimitationsWhileTracking(bool state) {
 }
 
 void SingleCameraSettingsDialog::setExposureTimeValue(int value) {
+
+    // this is necessary if we programmatically set it
+    exposureInputBox->blockSignals(true);
+    exposureInputBox->setValue(value);
+    exposureInputBox->blockSignals(false);
+
     camera->setExposureTimeValue(value);
     updateFrameRateValue();
 }
 
 void SingleCameraSettingsDialog::setGainValue(double value) {
+
+    // this is necessary if we programmatically set it
+    gainBox->blockSignals(true);
+    gainBox->setValue(value);
+    gainBox->blockSignals(false);
+
     camera->setGainValue(value);
     updateFrameRateValue();
 }
 
 void SingleCameraSettingsDialog::setAcquisitionFPSValue(int value) {
-    camera->setAcquisitionFPSValue(value);
-    updateFrameRateValue();
-}
 
-void SingleCameraSettingsDialog::enableAcquisitionFrameRate(bool state) {
-    camera->enableAcquisitionFrameRate(state);
+    // this is necessary if we programmatically set it
+    SWTframerateBox->blockSignals(true);
+    SWTframerateBox->setValue(value);
+    SWTframerateBox->blockSignals(false);
+
+    camera->setAcquisitionFPSValue(value);
     updateFrameRateValue();
 }
 
 void SingleCameraSettingsDialog::MCUConnDisconnButtonClicked() {
     if(MCUSettings->isConnected()) {
         stopHardwareTrigger();
-
         MCUSettings->doDisconnect();
-        MCUConnDisconnButton->setText("Connect");
-        MCUConnDisconnButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
-        HWTstartStopButton->setEnabled(false);
     } else {
         MCUSettings->doConnect();
+    }
+    updateMCUConnDisconnButtonState();
+}
+
+void SingleCameraSettingsDialog::updateMCUConnDisconnButtonState() {
+    if(MCUSettings->isConnected()) {
         MCUConnDisconnButton->setText("Disconnect");
         MCUConnDisconnButton->setStyleSheet("QPushButton { background-color: #c3f558; border: 1px solid #757575; border-radius: 5px;}");
         HWTstartStopButton->setEnabled(camera->isHardwareTriggerEnabled());
+    } else {
+        MCUConnDisconnButton->setText("Connect");
+        MCUConnDisconnButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
+        HWTstartStopButton->setEnabled(false);
     }
 }
 
 void SingleCameraSettingsDialog::setHWTlineSource(int lineSourceNum) {
     if(HWTrunning)
         return;
-    HWTlineSourceBox->setCurrentIndex(lineSourceNum-1);
+    HWTlineSourceBox->setCurrentIndex(lineSourceNum);
 }
 
 void SingleCameraSettingsDialog::setHWTruntime(double runtimeMinutes) {
@@ -928,6 +982,17 @@ void SingleCameraSettingsDialog::setHWTframerate(int fps) {
 }
 
 void SingleCameraSettingsDialog::SWTframerateEnabledToggled(bool state) {
+
+    // this is necessary if we programmatically set it
+    SWTframerateEnabled->blockSignals(true);
+    SWTframerateEnabled->setChecked(state);
+    SWTframerateEnabled->blockSignals(false);
+
+    camera->enableAcquisitionFrameRate(state);
+    updateFrameRateValue();
+
+    applicationSettings->setValue("SingleCameraSettingsDialog.SWTframerateEnabled", state);
+
     SWTframerateBox->setEnabled(state);
     if(state)
         setAcquisitionFPSValue(SWTframerateBox->value());

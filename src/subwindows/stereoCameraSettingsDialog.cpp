@@ -545,6 +545,9 @@ void StereoCameraSettingsDialog::updateForms() {
     if(!camera->isOpen())
         return;
 
+    updateHWTStartStopRelatedWidgets();
+    updateMCUConnDisconnButtonState();
+
     SWTframerateEnabled->setChecked(camera->isEnabledAcquisitionFrameRate());
 //    SWTframerateBox->setMinimum(std::max(1, camera->getAcquisitionFPSMin()));
 //    SWTframerateBox->setMaximum(camera->getAcquisitionFPSMax());
@@ -615,7 +618,7 @@ void StereoCameraSettingsDialog::updateFrameRateValue() {
 //    //// }
 
     // instead:
-    int supposedMaxFPS = static_cast<int>(floor(camera->getAcquisitionFPSMax()));
+    int supposedMaxFPS = static_cast<int>(floor(camera->getResultingFrameRateValue()));
     if(!camera->isOpen() || supposedMaxFPS <= 0) {
         supposedMaxFPS = std::numeric_limits<short>::max();
     }
@@ -665,11 +668,7 @@ void StereoCameraSettingsDialog::startHardwareTrigger() {
     emit onHardwareTriggerStart(cmd);
 
     HWTrunning = true;
-    HWTframerateBox->setEnabled(false);
-    HWTlineSourceBox->setEnabled(false);
-    HWTtimeSpanBox->setEnabled(false);
-    HWTstartStopButton->setStyleSheet("QPushButton { background-color: #c3f558; border: 1px solid #757575; border-radius: 5px;}");
-    HWTstartStopButton->setText("Stop Image Acquisition");
+    updateHWTStartStopRelatedWidgets();
 }
 
 // Stops the hardware trigger signal by sending a stop signal to the microcontroller
@@ -679,11 +678,25 @@ void StereoCameraSettingsDialog::stopHardwareTrigger() {
     emit onHardwareTriggerStop(QString("<SX>"));
 
     HWTrunning = false;
-    HWTframerateBox->setEnabled(true);
-    HWTlineSourceBox->setEnabled(true);
-    HWTtimeSpanBox->setEnabled(true);
-    HWTstartStopButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
-    HWTstartStopButton->setText("Start Image Acquisition");
+    updateHWTStartStopRelatedWidgets();
+}
+
+void StereoCameraSettingsDialog::updateHWTStartStopRelatedWidgets() {
+    if(HWTrunning) {
+        HWTframerateBox->setEnabled(false);
+        HWTlineSourceBox->setEnabled(false);
+        HWTtimeSpanBox->setEnabled(false);
+        HWTstartStopButton->setText("Stop Image Acquisition");
+        HWTstartStopButton->setStyleSheet(
+                "QPushButton { background-color: #c3f558; border: 1px solid #757575; border-radius: 5px;}");
+    } else {
+        HWTframerateBox->setEnabled(true);
+        HWTlineSourceBox->setEnabled(true);
+        HWTtimeSpanBox->setEnabled(true);
+        HWTstartStopButton->setText("Start Image Acquisition");
+        HWTstartStopButton->setStyleSheet(
+                "QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
+    }
 }
 
 // This method is to be used for camera warmup connection upon program start (argument command), 
@@ -692,13 +705,13 @@ void StereoCameraSettingsDialog::stopHardwareTrigger() {
 void StereoCameraSettingsDialog::openStereoCamera(const QString &camName1, const QString &camName2) {
     int idx1 = -1;
     for(int i=0; i<mainCameraBox->count(); i++)
-        if(mainCameraBox->itemText(i) == camName1) {
+        if(mainCameraBox->itemText(i).toLower() == camName1) {
             idx1 = i;
             break;
         }
     int idx2 = -1;
     for(int i=0; i<secondaryCameraBox->count(); i++)
-        if(secondaryCameraBox->itemText(i) == camName1) {
+        if(secondaryCameraBox->itemText(i).toLower() == camName2) {
             idx2 = i;
             break;
         }
@@ -771,6 +784,7 @@ void StereoCameraSettingsDialog::openStereoCamera() {
 
     updateImageROISettingsMax();
     updateImageROISettingsValues();
+    updateFrameRateValue();
 
     // BG: migrated enabling/disabling widget groups into a separate function
     // Activate all settings groups underneath
@@ -837,7 +851,7 @@ void StereoCameraSettingsDialog::loadSettings() {
     imageROIoffsetXInputBox->setValue(applicationSettings->value("StereoCameraSettingsDialog.imageROIoffsetX", 0).toInt()); // DEV
     imageROIoffsetYInputBox->setValue(applicationSettings->value("StereoCameraSettingsDialog.imageROIoffsetY", 0).toInt()); // DEV
 
-//    SWTframerateEnabled->setChecked(applicationSettings->value("StereoCameraSettingsDialog.SWTframerateEnabled", camera->isEnabledAcquisitionFrameRate()).toBool());
+//    SWTframerateEnabled->setChecked(...
 //    camera->enableAcquisitionFrameRate(SWTframerateEnabled->isChecked());
 
 //    SWTframerateBox->setValue(applicationSettings->value("StereoCameraSettingsDialog.acquisitionFramerate", camera->getAcquisitionFPSValue()).toInt());
@@ -895,6 +909,7 @@ void StereoCameraSettingsDialog::onSetImageROIwidth(int val) {
     updateImageROISettingsMax();
     updateImageROISettingsValues();
     updateCamImageRegionsWidget();
+    updateFrameRateValue(); // important
 }
 
 void StereoCameraSettingsDialog::onSetImageROIheight(int val) {
@@ -905,6 +920,7 @@ void StereoCameraSettingsDialog::onSetImageROIheight(int val) {
     updateImageROISettingsMax();
     updateImageROISettingsValues();
     updateCamImageRegionsWidget();
+    updateFrameRateValue(); // important
 }
 
 void StereoCameraSettingsDialog::onSetImageROIoffsetX(int val) {
@@ -1082,11 +1098,23 @@ void StereoCameraSettingsDialog::setLimitationsWhileCameraNotOpen(bool state) {
 }
 
 void StereoCameraSettingsDialog::setExposureTimeValue(int value) {
+
+    // this is necessary if we programmatically set it
+    exposureInputBox->blockSignals(true);
+    exposureInputBox->setValue(value);
+    exposureInputBox->blockSignals(false);
+
     camera->setExposureTimeValue(value);
     updateFrameRateValue();
 }
 
 void StereoCameraSettingsDialog::setGainValue(double value) {
+
+    // this is necessary if we programmatically set it
+    gainBox->blockSignals(true);
+    gainBox->setValue(value);
+    gainBox->blockSignals(false);
+
     camera->setGainValue(value);
     updateFrameRateValue();
 }
@@ -1102,23 +1130,29 @@ void StereoCameraSettingsDialog::secondaryCameraBoxCurrentIndexChanged(int) {
 void StereoCameraSettingsDialog::MCUConnDisconnButtonClicked() {
     if(MCUSettings->isConnected()) {
         stopHardwareTrigger();
-
         MCUSettings->doDisconnect();
-        MCUConnDisconnButton->setText("Connect");
-        MCUConnDisconnButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
-        HWTstartStopButton->setEnabled(false);
     } else {
         MCUSettings->doConnect();
+    }
+    updateMCUConnDisconnButtonState();
+}
+
+void StereoCameraSettingsDialog::updateMCUConnDisconnButtonState() {
+    if(MCUSettings->isConnected()) {
         MCUConnDisconnButton->setText("Disconnect");
         MCUConnDisconnButton->setStyleSheet("QPushButton { background-color: #c3f558; border: 1px solid #757575; border-radius: 5px;}");
         HWTstartStopButton->setEnabled(true);
+    } else {
+        MCUConnDisconnButton->setText("Connect");
+        MCUConnDisconnButton->setStyleSheet("QPushButton { background-color: #f5ab87; border: 1px solid #757575; border-radius: 5px;}");
+        HWTstartStopButton->setEnabled(false);
     }
 }
 
 void StereoCameraSettingsDialog::setHWTlineSource(int lineSourceNum) {
     if(!camera->isOpen() || HWTrunning)
         return;
-    HWTlineSourceBox->setCurrentIndex(lineSourceNum-1);
+    HWTlineSourceBox->setCurrentIndex(lineSourceNum);
 }
 
 void StereoCameraSettingsDialog::setHWTruntime(double runtimeMinutes) {

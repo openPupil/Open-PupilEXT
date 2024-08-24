@@ -179,6 +179,23 @@ void StereoCamera::open(bool enableHardwareTrigger) {
             std::cout << std::endl;
             std::cout << std::endl;
         }
+
+        // Rewrite these properties in the cameras in order to be able to read ResultingFramerate later
+        if( cameras.GetSize()>0 &&
+            cameras[0].AcquisitionFrameRateEnable.IsReadable() &&
+            cameras[0].AcquisitionFrameRateEnable.IsWritable() &&
+            cameras[0].AcquisitionFrameRateEnable.GetValue() ) {
+
+            cameras[0].AcquisitionFrameRateEnable.TrySetValue(false);
+        }
+        if( cameras.GetSize()>1 &&
+            cameras[1].AcquisitionFrameRateEnable.IsReadable() &&
+            cameras[1].AcquisitionFrameRateEnable.IsWritable() &&
+            cameras[1].AcquisitionFrameRateEnable.GetValue() ) {
+
+            cameras[1].AcquisitionFrameRateEnable.TrySetValue(false);
+        }
+
     } catch (const GenericException &e) {
         genericExceptionOccured(e);
     }
@@ -351,6 +368,12 @@ void StereoCamera::setGainValue(double value) {
                 cameras[1].GainRaw.TrySetValue(intValue);
             }
         } else {
+            if (cameras[0].Gain.IsReadable() && cameras[1].Gain.IsReadable()) {
+                if (getGainMax() < value)
+                    value = getGainMax();
+                else if (getGainMin() > value)
+                    value = getGainMin();
+            }
             if (cameras.GetSize() == 2 && cameras[0].Gain.IsWritable() && cameras[1].Gain.IsWritable()) {
                 cameras[0].Gain.TrySetValue(value);
                 cameras[1].Gain.TrySetValue(value);
@@ -373,6 +396,12 @@ void StereoCamera::setExposureTimeValue(int value) {
                 cameras[1].ExposureTimeAbs.TrySetValue(value);
             }
         } else {
+            if (cameras[0].ExposureTime.IsReadable() && cameras[1].ExposureTime.IsReadable()) {
+                if (getExposureTimeMax() < value)
+                    value = getExposureTimeMax();
+                else if (getExposureTimeMin() > value)
+                    value = getExposureTimeMin();
+            }
             if (cameras.GetSize() == 2 && cameras[0].ExposureTime.IsWritable() &&
                 cameras[1].ExposureTime.IsWritable()) {
                 std::cout << "Writing exposure value: " << value << std::endl;
