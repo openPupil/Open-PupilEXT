@@ -132,8 +132,8 @@ Please use our discussion forum to share your ideas, setup and experience with P
 https://github.com/openPupil/Open-PupilEXT/discussions
 
 ## 2. Getting started: The easy way
-### 2.1. Installation on MacOS (MacOS 12.6.7 or later)
-The direct installation requires that you have MacOS 12.6.7 or later installed on your machine. If this is not the case, you likely need to build PupilEXT from source, as the provided pre-build binaries in this section will only work on MacOS 12.6.7 or later. You can try on an earlier version of MacOS, but you are not quaranteed to succeed.
+### 2.1. Installation on MacOS (MacOS 12.7.6 or later)
+The direct installation requires that you have MacOS 12.7.6 or later installed on your machine. If this is not the case, you likely need to build PupilEXT from source, as the provided pre-build binaries in this section will only work on MacOS 12.7.6 or later. You can try on an earlier version of MacOS, but you are not quaranteed to succeed.
 
 **Step 1: Download and install the Pylon Camera Softwware**
 
