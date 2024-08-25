@@ -13,7 +13,7 @@
 CameraCalibration::CameraCalibration(QObject *parent) : QObject(parent), mode(NONE), intrinsicRMSE(0), avgMAE(0), sharpnessThreshold(3), captureCount(0), referenceObjectPoints(1), verifyFrameNumber(0), verifyOutputPath("") {
 
     captureDelay = 500;
-    updateDelay = 33;
+    drawDelay = 33;
 
     // Factor which scales down images, increases speed for real time pattern detection, points are later optimized at subpixel on full image
     scalingFactor = 0.5;
@@ -178,7 +178,7 @@ void CameraCalibration::onNewImage(const CameraImage &cimg) {
                         0.25 * img.rows))), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(0, 0, 255), 3);
             }
 
-            emit processedImage(mimg);
+            emit processedImageLowFPS(mimg);
         }
     } else if(mode==CAPTURING) {
         // When enough images were collected, perform calibration
@@ -187,7 +187,7 @@ void CameraCalibration::onNewImage(const CameraImage &cimg) {
         cv::putText(img, "CALIBRATING", cv::Point(static_cast<int>(static_cast<int>(0.1 * img.cols)), static_cast<int>(static_cast<int>(
                 0.1 * img.rows))), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(255, 0, 0), 3);
 
-        emit processedImage(mimg);
+        emit processedImageLowFPS(mimg);
 
         //bool success = calibrate();
         calibrationSuccess = QtConcurrent::run(this, &CameraCalibration::calibrate);
@@ -199,7 +199,7 @@ void CameraCalibration::onNewImage(const CameraImage &cimg) {
         cv::putText(img, "CALIBRATING", cv::Point(static_cast<int>(static_cast<int>(0.1 * img.cols)), static_cast<int>(static_cast<int>(
                 0.1 * img.rows))), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(255, 0, 0), 3);
 
-        emit processedImage(mimg);
+        emit processedImageLowFPS(mimg);
 
         if(calibrationSuccess.isFinished() && calibrationSuccess.result()) {
             // Calibration finished, change state and calculate undistort-matrix for image undistortion
@@ -218,7 +218,7 @@ void CameraCalibration::onNewImage(const CameraImage &cimg) {
         }
     } else if(mode==CALIBRATED) {
         // Display the undistorted images to the user together with the calibration error
-        if(timer.elapsed() > updateDelay && !img.empty()) {
+        if(timer.elapsed() > drawDelay && !img.empty()) {
             timer.restart();
 
             cv::Mat undist = img.clone();
@@ -232,7 +232,7 @@ void CameraCalibration::onNewImage(const CameraImage &cimg) {
 
             mimg.img = undist;
 
-            emit processedImage(mimg);
+            emit processedImageLowFPS(mimg);
         }
     } else if(mode==VERIFYING) {
         // Verification mode, detecting the calibration pattern and calculating the reprojection error live for each image
@@ -323,14 +323,14 @@ void CameraCalibration::onNewImage(const CameraImage &cimg) {
                                                                 static_cast<int>(0.25 * img.rows)), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(0, 0, 255), 3);
             }
 
-            emit processedImage(mimg);
+            emit processedImageLowFPS(mimg);
         }
     } else {
         // None of the states i.e. uncalibrated and not collecting, just display the camera image
-        if(timer.elapsed() > updateDelay && !img.empty()) {
+        if(timer.elapsed() > drawDelay && !img.empty()) {
             timer.restart();
 
-            emit processedImage(mimg);
+            emit processedImageLowFPS(mimg);
         }
     }
 }

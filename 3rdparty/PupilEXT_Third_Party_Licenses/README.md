@@ -65,11 +65,23 @@ PupilEXT integrates several open source libraries. This document provides a list
 
 <a id="Tbb" href="https://github.com/oneapi-src/oneTBB"><b>Tbb</b></a> is for parallel programming. ([License](https://github.com/oneapi-src/oneTBB/blob/master/LICENSE.txt))
 
-<a id="Breeze-Icons" href="https://github.com/KDE/breeze-icons"><b>Breeze Icons</b></a> is a set of icons. ([License](https://github.com/KDE/breeze-icons/blob/master/icons/LICENSE))
-
 <a id="Gflags" href="https://github.com/gflags/gflags"><b>Gflags</b></a> is a library for comandline processing. ([License](https://github.com/gflags/gflags/blob/master/COPYING.txt))
 
+## List of used graphics, icons, and helper scripts
 
+<a id="Breeze-Icons" href="https://github.com/KDE/breeze-icons"><b>Breeze Icons</b></a> is a set of icons. ([License](https://github.com/KDE/breeze-icons/blob/master/icons/LICENSE))
 
+The following icon files are modifications of existing icons from the KDE Breeze icon set: 1cam1pup.svg, 1cam2pup.svg, 1cam1pup.svg, 1Mcam1pup.svg, 2cam1pup.svg, 2cam2pup.svg, 2cam2pupNS.svg, media-record-green.svg, camera-video-stereo.svg, crosshairs-gaze-calibration.svg, crosshairs-gaze-validation.svg. These modified files were made by contributor Gábor Bényei, and can be found in the icons folder as resources, licensed in accordance to KDE Breeze license (GNU LESSER GENERAL PUBLIC LICENSE Version 3).
+
+The following icon files are the work of Gábor Bényei, and are declared public domain: computer-connection.svg, equals1b.svg, plus1b.svg, messageEmpty.svg, rs232.svg.
+
+The OpenCV logo (OpenCV_Logo_with_text_svg_version.svg) is the work of Adi Shavit, under BSD license. License text and source: https://commons.wikimedia.org/wiki/File:OpenCV_Logo_with_text_svg_version.svg, last accessed 2024.08.16. 09:36 CET
+
+The Qt logo (Qt_logo_2016.svg) is the work of The Qt Project, and is public domain. License reference and source: https://commons.wikimedia.org/wiki/File:Qt_logo_2016.svg, last accessed 2024.08.16 09:36 CET
+
+The script make_dmg_from_app.command is a customized version of a dmg maker script from Andy Maloney's blog:
+https://asmaloney.com/2013/07/howto/packaging-a-mac-os-x-application-using-a-dmg/, last accessed 2024.08.23. 06:50 CET
+
+PupilEXT_dmg_background contains the PupilEXT logo, which is the work of the authors of PupilEXT v0.1.1, and was edited by Gabor Benyei to make the installer background image
 
 

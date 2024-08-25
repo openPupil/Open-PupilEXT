@@ -1,6 +1,0 @@
-{
-    "cmake.configureSettings": {
-        "VCPKG_TARGET_TRIPLET": "x64-osx",
-        "CMAKE_TOOLCHAIN_FILE": "3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake"
-    }
-}

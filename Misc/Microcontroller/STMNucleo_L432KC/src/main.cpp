@@ -58,7 +58,7 @@ void onTick() {
   LED_Green = !LED_Green;
   Trigger = !Trigger;
   LED_ticker++;
-  if (LED_ticker >= 2 * Threshold_Ticker) {
+  if (LED_ticker >= 2 * Threshold_Ticker && Threshold_Ticker!=0) { // This line was modified to check "&& Threshold_Ticker!=0" by Gabor Benyei
     myTick.detach();
     LED_Green = 0;
     Trigger = 0;

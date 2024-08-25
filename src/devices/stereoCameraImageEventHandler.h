@@ -1,9 +1,7 @@
-
-#ifndef PUPILEXT_STEREOCAMERAIMAGEEVENTHANDLER_H
-#define PUPILEXT_STEREOCAMERAIMAGEEVENTHANDLER_H
+#pragma once
 
 /**
-    @author Moritz Lode
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 
@@ -57,7 +55,6 @@ private:
 signals:
 
     void onNewGrabResult(CameraImage grabResult);
+    void imagesSkipped();
 
 };
-
-#endif //PUPILEXT_STEREOCAMERAIMAGEEVENTHANDLER_H

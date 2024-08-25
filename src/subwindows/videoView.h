@@ -1,9 +1,7 @@
-
-#ifndef PUPILEXT_VIDEOVIEW_H
-#define PUPILEXT_VIDEOVIEW_H
+#pragma once
 
 /**
-    @author Moritz Lode
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include <QtWidgets/QWidget>
@@ -19,8 +17,12 @@
 #include "imageGraphicsItem.h"
 #include "ResizableRectItem.h"
 #include <QtWidgets/QHBoxLayout>
+#include <QDebug>
+#include "../pupilDetection.h"
 
 enum ViewMode {FIT = 0, FULL = 1, ZOOM = 2};
+
+enum ColorFill {NO_FILL = 0, CONFIDENCE = 1, OUTLINE_CONFIDENCE = 2};
 
 /**
     Custom widget representing a live camera view displaying a given camera images in a live-view
@@ -38,87 +40,40 @@ class VideoView : public QWidget {
 
 public:
 
-    explicit VideoView(QWidget *parent=0);
+    enum ROIAllowedArea {ALL = 0, LEFT_HALF = 1, RIGHT_HALF = 2};
+
+    // corresponds to the "30%" default
+//    static constexpr QRectF defaultROImiddleR = QRectF( 0.35, 0.35, 0.3, 0.3 );
+//    static constexpr QRectF defaultROIleftHalfR = QRectF( 0.05, 0.35, 0.3, 0.3 );
+//    static constexpr QRectF defaultROIrightHalfR = QRectF( 0.65, 0.35, 0.3, 0.3 );
+
+    // corresponds to the "60%" default
+    static constexpr QRectF defaultROImiddleR = QRectF( 0.2, 0.2, 0.6, 0.6 );
+    static constexpr QRectF defaultROIleftHalfR = QRectF( 0.1, 0.2, 0.3, 0.6 );
+    static constexpr QRectF defaultROIrightHalfR = QRectF( 0.6, 0.2, 0.3, 0.6 );
+
+    explicit VideoView(bool usingDoubleROI=false, QColor selectionColor1=Qt::blue, QColor selectionColor2=Qt::green, QWidget *parent=0);
 
     QSize sizeHint() const override;
 
-    // Source Andy Maloney: https://github.com/asmaloney/asmOpenCV/blob/master/asmOpenCV.h
-    static inline QImage cvMatToQImage(const cv::Mat &inMat)
-    {
-        switch (inMat.type())
-        {
-            // 8-bit, 4 channel
-            case CV_8UC4:
-            {
-                QImage image(inMat.data,
-                             inMat.cols, inMat.rows,
-                             static_cast<int>(inMat.step),
-                             QImage::Format_ARGB32);
+    QRectF getImageSize() {
+        return QRectF(imageSize.width, imageSize.height, imageSize.width, imageSize.height);
+    }
 
-                return image;
-            }
-
-                // 8-bit, 3 channel
-            case CV_8UC3:
-            {
-                QImage image(inMat.data,
-                             inMat.cols, inMat.rows,
-                             static_cast<int>(inMat.step),
-                             QImage::Format_RGB888);
-
-                return image.rgbSwapped();
-            }
-
-            // 8-bit, 1 channel
-            case CV_8U:
-            {
-#if QT_VERSION >= 0x050500
-
-                // From Qt 5.5
-                QImage image(inMat.data, inMat.cols, inMat.rows,
-                             static_cast<int>(inMat.step),
-                             QImage::Format_Grayscale8);
-#else
-                static QVector<QRgb>  sColorTable;
-
-                // only create our color table the first time
-                if (sColorTable.isEmpty())
-                {
-                    sColorTable.resize(256);
-                    for (int i = 0; i < 256; ++i)
-                    {
-                        sColorTable[i] = qRgb(i, i, i);
-                    }
-                }
-
-                QImage image(inMat.data,
-                    inMat.cols, inMat.rows,
-                    static_cast<int>(inMat.step),
-                    QImage::Format_Indexed8);
-
-                image.setColorTable(sColorTable);
-#endif
-                return image;
-            }
-
-            default:
-                std::cerr << "cvMatToQImage() - cv::Mat image type not handled in switch:" << inMat.type() << std::endl;
-                break;
-        }
-
-        return QImage();
+    void setImageSize(const float width, const float height){
+        imageSize.width = width;
+        imageSize.height = height;
     }
 
 private:
 
+    QSettings *applicationSettings;
+
     QGraphicsView *graphicsView;
-    QGraphicsView *roiGraphicsView;
+    QGraphicsView *roi1GraphicsView;
     QGraphicsScene *graphicsScene;
 
     ImageGraphicsItem *currentImage;
-
-    ResizableRectItem *roiSelection;
-    QRect ROI;
 
     bool initialFit;
     cv::Size imageSize;
@@ -126,36 +81,130 @@ private:
 
     int mode;
 
+    std::vector<cv::Rect> tROIs;
+    std::vector<Pupil> tPupils;
+
+    ResizableRectItem *roi1Selection; 
+    ResizableRectItem *roi2Selection; 
+    // we need these, because due to some kind of bug (Qt 5.15), the rect item's sceneBoundingRect() returns inappropriate values
+    QRectF roi1SelectionRectLastR; // the last saved position. necessary in cases when there is no pupil detection going on, and we are setting a custom ROI, which is not yet committed, but moved on the scene. when image play is on, this variable is needed
+    QRectF roi2SelectionRectLastR; 
+    void updateViewInternal(const cv::Mat &img);
+
+    std::vector<QGraphicsItem*> geBufferPG;
+    QRect imageROI = QRect(0,0,0,0);
+    QSize sensorSize = QSize(0,0);
+    QPen penPositioningGuide = QColor(173, 66, 245, 255);
+    
+    const float wImg = 640;
+    const float sf = 0.3F;
+
+    std::vector<QGraphicsItem*> geBufferROI;
+    
+    QColor selectionColorCorrect1;// = Qt::blue;
+    QColor selectionColorCorrect2;// = Qt::green;
+    QColor selectionColorWrong1 = Qt::red;
+    QColor selectionColorWrong2 = Qt::darkRed;
+
+    QPen penROIprocessed = QPen(QColor(Qt::magenta));
+    QPen penROIunprocessed1;// = Qt::blue;
+    QPen penROIunprocessed2;// = Qt::green;
+    QPen penPupilOutline = QPen(QColor(Qt::red));
+    QPen penPupilCenter = QPen(QColor(Qt::red));
+
+    std::vector<QGraphicsItem*> geBufferAP;
+    QPen penAutoParamAccent = QColor(245, 197, 66, 255);
+    QPen penAutoParamBack = QColor(144, 66, 245, 255);
+    int autoParamPupSizePercent = 50;
+
+    bool usingDoubleROI = false;
+    QGraphicsView *roi2GraphicsView; // NOTE: shows the zoomed in pupil if needed. overlays the image
+
+    int roi1AllowedArea = ROIAllowedArea::ALL;
+    int roi2AllowedArea = ROIAllowedArea::ALL;
+
+    float colorFillLowEnd = 0.0;
+    ColorFill pupilColorFill = ColorFill::NO_FILL;
+    bool showROI;
+    bool plotPupilCenter;
+    bool showAutoParamOverlay;
+    bool showPositioningGuide;
+    bool pupilDetectionUsingROI;
+
 protected:
 
     void resizeEvent(QResizeEvent *event) override;
 
 public slots:
 
-    void updateView(const cv::Mat &img);
+    void updateViewProcessed(const cv::Mat &img, const std::vector<cv::Rect> &ROIs, const std::vector<Pupil> &Pupils);
+    void drawUnprocessedOverlay();
+    void drawProcessedOverlay();
+    void drawOverlay();
+    void drawAutoParamOverlay();
+    void drawPositioningGuide();
 
-    void updatePupilView(const QRect &rect);
+    void setSelectionColor1(QColor color);
+    void setSelectionColor2(QColor color);
+    
+    void updatePupilViews(const std::vector<QRect> &rects);
     void enablePupilView(bool value);
 
-    void setROISelection(float roiSize);
-    void setROISelection(QRectF roi);
+    void updateView(const cv::Mat &img);
+
+    void setROI1SelectionR(float roiSize);
+    void setROI1SelectionR(QRectF roi);
+    void setROI2SelectionR(float roiSize);
+    void setROI2SelectionR(QRectF roi);
+
+    QRectF getROI1SelectionR();
+    QRectF getROI2SelectionR();
+
+    void clearProcessedOverlayMemory();
+
+    void setDoubleROI(bool state); 
+    bool getDoubleROI();
+    void setROI1AllowedArea(int roiAllowedArea);
+    void setROI2AllowedArea(int roiAllowedArea);
+
+    void onShowROI(bool value);
+    void onChangePupilDetectionUsingROI(bool state);
+    void onShowPupilCenter(bool value);
+    void onChangePupilColorFill(int colorFill);
+    void onChangePupilColorFillThreshold(float value);
+    void onChangeShowAutoParamOverlay(bool state);
+    void onChangeShowPositioningGuide(bool state);
+
+    void setImageROI(const QRect& ROI);
+    void setSensorSize(const QSize& size);
+
+    void setAutoParamPupSize(int value);
 
     void showROISelection(bool value);
 
-    bool saveROISelection();
-    void discardROISelection();
+    bool saveROI1Selection();
+    bool saveROI2Selection();
+
+    void resetROISelection();
 
     void fitView();
     void showFullView();
     void zoomInView();
     void zoomOutView();
 
-    void onROIChange();
+    void onROI1Change();
+    void onROI2Change();
+
+    void refitPupilDetailViews();
 
 signals:
 
-    void onROISelection(QRectF roi);
+    // these emit a QRectF, which has its x, y, width, height expressed as pixels of image width and height
+    void onROI1SelectionD(QRectF roiD);
+    void onROI2SelectionD(QRectF roiD);
+
+    // these emit a QRectF, which has its x, y, width, height expressed as ratios of image width and height, expressed as floats between 0.0 and 1.0
+    void onROI1SelectionR(QRectF roiR);
+    void onROI2SelectionR(QRectF roiR);
 
 };
-
-#endif //PUPILEXT_VIDEOVIEW_H

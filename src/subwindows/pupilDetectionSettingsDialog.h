@@ -1,9 +1,7 @@
-
-#ifndef PUPILEXT_PUPILDETECTIONSETTINGSDIALOG_H
-#define PUPILEXT_PUPILDETECTIONSETTINGSDIALOG_H
+#pragma once
 
 /**
-    @author Moritz Lode
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include <QDialog>
@@ -48,17 +46,31 @@ private:
     QPushButton *applyButton;
     QPushButton *cancelButton;
     QPushButton *applyCloseButton;
-
+    
     QComboBox *algorithmBox;
     QCheckBox *outlineConfidenceBox;
     QCheckBox *roiPreprocessingBox;
     QCheckBox *pupilUndistortionBox;
     QCheckBox *imageUndistortionBox;
 
+    QIcon procModeIcon_undetermined;
+    QIcon procModeIcon_1cam1pup;
+    QIcon procModeIcon_1cam2pup;
+    QIcon procModeIcon_1Mcam1pup;
+    QIcon procModeIcon_2cam1pup;
+    QIcon procModeIcon_2cam2pup;
+    //QFormLayout *procModeBoxLayout;
+    QPushButton *iLabelFakeButton;
+    QGroupBox *procModeGroup;
+    QLabel *procModeInfoLabel;
+    QComboBox *procModeBox;
+
+    ProcMode lastKnownProcMode = ProcMode::UNDETERMINED;
+
     void createForm();
     void updateForm();
     void loadSettings();
-    void saveSettings();
+    void saveUniversalSettings();
 
 private slots:
 
@@ -71,11 +83,16 @@ private slots:
     void onPupilUndistortionClick(int state);
     void onImageUndistortionClick(int state);
 
+    void onProcModeSelection(int idx);
+    void updateProcModeEnabled();
+    void updateProcModeCompatibility();
+
 public slots:
 
     void onSettingsChange();
+    void onDisableProcModeSelector(bool state);
+
+signals:
+    void pupilDetectionProcModeChanged(int val);
 
 };
-
-
-#endif //PUPILEXT_PUPILDETECTIONSETTINGSDIALOG_H

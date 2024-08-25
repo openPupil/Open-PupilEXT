@@ -10,17 +10,19 @@
 SingleFileCameraCalibrationView::SingleFileCameraCalibrationView(FileCamera *camera, QWidget *parent): QWidget(parent), camera(camera) {
 
     this->setMinimumSize(600, 330);
-    this->setWindowTitle("Offline Stereo Calibration");
+    this->setWindowTitle("Offline Single Calibration");
 
     calibrationWorker = camera->getCameraCalibration();
 
     settingsDirectory = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 
     if(!settingsDirectory.exists()) {
-        settingsDirectory.mkdir(".");
+// mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
+//        settingsDirectory.mkdir(".");
+        QDir().mkpath(settingsDirectory.absolutePath());
     }
 
-    QVBoxLayout* layout = new QVBoxLayout(this);
+    QVBoxLayout* layout = new QVBoxLayout();
 
     textField = new QTextEdit();
     textField->setText("Not calibrated.");

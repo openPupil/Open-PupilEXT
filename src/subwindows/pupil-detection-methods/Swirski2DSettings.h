@@ -1,9 +1,7 @@
-
-#ifndef PUPILEXT_SWIRSKI2DSETTINGS_H
-#define PUPILEXT_SWIRSKI2DSETTINGS_H
+#pragma once
 
 /**
-    @author Moritz Lode
+    @authors Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include "PupilMethodSetting.h"
@@ -11,6 +9,7 @@
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QtWidgets>
 #include <QtWidgets/QLabel>
+#include "../../SVGIconColorAdjuster.h"
 
 #include "json.h"
 #include <fstream>
@@ -25,51 +24,65 @@ class Swirski2DSettings : public PupilMethodSetting {
 
 public:
 
-    explicit Swirski2DSettings(Swirski2D *m_swirski, QWidget *parent=0) : PupilMethodSetting(parent), p_swirski(m_swirski), configParameters(defaultParameters)  {
-        configParameters = applicationSettings->value("Swirski2DSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
+    explicit Swirski2DSettings(PupilDetection * pupilDetection, Swirski2D *m_swirski, QWidget *parent=0) : 
+        PupilMethodSetting("Swirski2DSettings.configParameters","Swirski2DSettings.configIndex", parent), 
+        p_swirski(m_swirski), 
+        pupilDetection(pupilDetection){
 
-        configIndex = applicationSettings->value("Swirski2DSettings.configIndex", "Default").toString();
-
+        PupilMethodSetting::setDefaultParameters(defaultParameters);
         createForm();
+        configsBox->setCurrentText(settingsMap.key(configIndex));
 
-        if(parameterConfigs->findText(configIndex) < 0) {
-            std::cout<<"Did not found config: "<<configIndex.toStdString()<<std::endl;
-            parameterConfigs->setCurrentText("Default");
+        if(isAutoParamEnabled()) {
+            minRadiusBox->setEnabled(false);
+            maxRadiusBox->setEnabled(false);
         } else {
-            parameterConfigs->setCurrentText(configIndex);
+            minRadiusBox->setEnabled(true);
+            maxRadiusBox->setEnabled(true);
         }
 
-        QGridLayout *infoLayout = new QGridLayout(infoBox);
-
-        QIcon trackOnIcon = QIcon(":/icons/Breeze/status/22/dialog-information.svg");
-        QLabel *iLabel = new QLabel();
-        iLabel->setPixmap(trackOnIcon.pixmap(QSize(32, 32)));
-        infoLayout->addWidget(iLabel, 0, 0);
+        QVBoxLayout *infoLayout = new QVBoxLayout(infoBox);
+        QHBoxLayout *infoLayoutRow1 = new QHBoxLayout();
+        QPushButton *iLabelFakeButton = new QPushButton();
+        iLabelFakeButton->setFlat(true);
+        iLabelFakeButton->setAttribute(Qt::WA_NoSystemBackground, true);
+        iLabelFakeButton->setAttribute(Qt::WA_TranslucentBackground, true);
+        iLabelFakeButton->setStyleSheet("QPushButton { background-color: transparent; border: 0px }");
+        iLabelFakeButton->setIcon(SVGIconColorAdjuster::loadAndAdjustColors(QString(":/icons/Breeze/status/22/dialog-information.svg"), applicationSettings));
+        iLabelFakeButton->setFixedSize(QSize(32,32));
+        iLabelFakeButton->setIconSize(QSize(32,32));
+        infoLayoutRow1->addWidget(iLabelFakeButton);
 
         QLabel *pLabel = new QLabel();
         pLabel->setWordWrap(true);
         pLabel->setTextInteractionFlags(Qt::LinksAccessibleByMouse);
         pLabel->setOpenExternalLinks(true);
+        SupportFunctions::setSmallerLabelFontSize(pLabel);
         pLabel->setText("Lech Swirski, Andreas Bulling, Neil A. Dodgson, \"Robust real-time pupil tracking in highly off-axis images\", 2012 <a href=\"http://www.cl.cam.ac.uk/research/rainbow/projects/pupiltracking\">Website</a><br/>License: <a href=\"https://opensource.org/licenses/MIT\">MIT</a>");
-        infoLayout->addWidget(pLabel, 1, 0);
+        infoLayoutRow1->addWidget(pLabel);
+
+        infoLayout->addLayout(infoLayoutRow1);
 
         QLabel *confLabel;
         if(p_swirski->hasConfidence())
-            confLabel = new QLabel("Info:\nThis method does provide its own confidence.");
+            confLabel = new QLabel("Info: This method does provide its own confidence.");
         else
-            confLabel = new QLabel("Info:\nThis method does not provide its own confidence, use the outline confidence.");
+            confLabel = new QLabel("Info: This method does not provide its own confidence, use the outline confidence.");
+        SupportFunctions::setSmallerLabelFontSize(confLabel);
         confLabel->setWordWrap(true);
-        infoLayout->addWidget(confLabel, 2, 0);
+        infoLayout->addWidget(confLabel);
 
-        QLabel *infoLabel = new QLabel("CAUTION:\nProcessing using this algorithm may be very slow, reduce the camera acquiring fps accordingly.");
+        QLabel *infoLabel = new QLabel("CAUTION: Processing using this algorithm may be very slow, reduce the camera acquiring fps accordingly.");
+        SupportFunctions::setSmallerLabelFontSize(infoLabel);
         infoLabel->setWordWrap(true);
         infoLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
-        infoLayout->addWidget(infoLabel, 3, 0);
+        infoLayout->addWidget(infoLabel);
 #if _DEBUG
-        QLabel *warnLabel = new QLabel("CAUTION:\nDebug build may perform very slow.\nUse release build or adjust processing speed to not risk memory overflow.");
+        QLabel *warnLabel = new QLabel("CAUTION: Debug build may perform very slow. Use release build or adjust processing speed to not risk memory overflow.");
+        SupportFunctions::setSmallerLabelFontSize(warnLabel);
         warnLabel->setWordWrap(true);
         warnLabel->setStyleSheet(QStringLiteral("QLabel{color: red;}"));
-        infoLayout->addWidget(warnLabel, 4, 0);
+        infoLayout->addWidget(warnLabel);
 #endif
 
         infoBox->setLayout(infoLayout);
@@ -77,59 +90,40 @@ public:
 
     ~Swirski2DSettings() override = default;
 
-    void addSecondary(Swirski2D *s_swirski) {
-        secondarySwirski = s_swirski;
+    void add2(Swirski2D *s_swirski) {
+        swirski2 = s_swirski;
     }
-
-    QMap<QString, QList<float>> getParameter() {
-        return configParameters;
+    void add3(Swirski2D *s_swirski) {
+        swirski3 = s_swirski;
     }
-
-    void setParameter(QMap<QString, QList<float>> params) {
-        if(defaultParameters.size() == params.size())
-            configParameters = params;
+    void add4(Swirski2D *s_swirski) {
+        swirski4 = s_swirski;
     }
-
-    void reset() {
-        configParameters = defaultParameters;
-    }
-
 public slots:
 
     void loadSettings() override {
-        configParameters = applicationSettings->value("Swirski2DSettings.configParameters", QVariant::fromValue(configParameters)).value<QMap<QString, QList<float>>>();
-        configIndex = applicationSettings->value("Swirski2DSettings.configIndex", "Default").toString();
+        PupilMethodSetting::loadSettings();
 
-        if(parameterConfigs->findText(configIndex) < 0) {
-            std::cout<<"Did not found config: "<<configIndex.toStdString()<<std::endl;
-            parameterConfigs->setCurrentText("Default");
+        if(isAutoParamEnabled()) {
+            float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
+            pupilDetection->setAutoParamEnabled(true);
+            pupilDetection->setAutoParamPupSizePercent(autoParamPupSizePercent);
+            pupilDetection->setAutoParamScheduled(true);
+
+            minRadiusBox->setEnabled(false);
+            maxRadiusBox->setEnabled(false);
         } else {
-            parameterConfigs->setCurrentText(configIndex);
+            pupilDetection->setAutoParamEnabled(false);
+            minRadiusBox->setEnabled(true);
+            maxRadiusBox->setEnabled(true);
         }
 
-//        QList<float> selectedParameter = configParameters.value(configIndex);
-//
-//        minRadiusBox->setValue(selectedParameter[0]);
-//        maxRadiusBox->setValue(selectedParameter[1]);
-//
-//        cannyBlurBox->setValue(selectedParameter[2]);
-//        cannyThreshold1Box->setValue(selectedParameter[3]);
-//        cannyThreshold2Box->setValue(selectedParameter[4]);
-//        starburstPointsBox->setValue(selectedParameter[5]);
-//
-//        percInlierBox->setValue(selectedParameter[6]);
-//        iterInlierBox->setValue(selectedParameter[7]);
-//        termPercBox->setValue(selectedParameter[8]);
-//        imageAwareBox->setChecked(selectedParameter[9]);
-//        earlyRejectionBox->setChecked(selectedParameter[10]);
-
-        updateSettings();
+        applySpecificSettings();
     }
 
-    void updateSettings() override {
-        p_swirski->params.Radius_Min = minRadiusBox->value();
-        p_swirski->params.Radius_Max = maxRadiusBox->value();
-
+    void applySpecificSettings() override {
+        
+        // First come the parameters roughly independent from ROI size and relative pupil size 
         p_swirski->params.CannyBlur = cannyBlurBox->value();
         p_swirski->params.CannyThreshold1 = cannyThreshold1Box->value();
         p_swirski->params.CannyThreshold2 = cannyThreshold2Box->value();
@@ -141,46 +135,100 @@ public slots:
         p_swirski->params.EarlyTerminationPercentage = termPercBox->value();
         p_swirski->params.EarlyRejection = earlyRejectionBox->isChecked();
 
+        QList<float>& currentParameters = getCurrentParameters();
+        currentParameters[2] = cannyBlurBox->value();
+        currentParameters[3] = cannyThreshold1Box->value();
+        currentParameters[4] = cannyThreshold2Box->value();
+        currentParameters[5] = starburstPointsBox->value();
+        currentParameters[6] = percInlierBox->value();
+        currentParameters[7] = iterInlierBox->value();
+        currentParameters[8] = termPercBox->value();
+        currentParameters[9] = imageAwareBox->isChecked();
+        currentParameters[10] = earlyRejectionBox->isChecked();
 
-        configParameters[parameterConfigs->currentText()][0] = minRadiusBox->value();
-        configParameters[parameterConfigs->currentText()][1] = maxRadiusBox->value();
-        configParameters[parameterConfigs->currentText()][2] = cannyBlurBox->value();
-        configParameters[parameterConfigs->currentText()][3] = cannyThreshold1Box->value();
-        configParameters[parameterConfigs->currentText()][4] = cannyThreshold2Box->value();
-        configParameters[parameterConfigs->currentText()][5] = starburstPointsBox->value();
-        configParameters[parameterConfigs->currentText()][6] = percInlierBox->value();
-        configParameters[parameterConfigs->currentText()][7] = iterInlierBox->value();
-        configParameters[parameterConfigs->currentText()][8] = termPercBox->value();
-        configParameters[parameterConfigs->currentText()][9] = imageAwareBox->isChecked();
-        configParameters[parameterConfigs->currentText()][10] = earlyRejectionBox->isChecked();
+        if(swirski2) {
+            swirski2->params.CannyBlur = cannyBlurBox->value();
+            swirski2->params.CannyThreshold1 = cannyThreshold1Box->value();
+            swirski2->params.CannyThreshold2 = cannyThreshold2Box->value();
+            swirski2->params.StarburstPoints = starburstPointsBox->value();
 
+            swirski2->params.PercentageInliers = percInlierBox->value();
+            swirski2->params.InlierIterations = iterInlierBox->value();
+            swirski2->params.ImageAwareSupport = imageAwareBox->isChecked();
+            swirski2->params.EarlyTerminationPercentage = termPercBox->value();
+            swirski2->params.EarlyRejection = earlyRejectionBox->isChecked();
+        }
+        if(swirski3) {
+            swirski3->params.CannyBlur = cannyBlurBox->value();
+            swirski3->params.CannyThreshold1 = cannyThreshold1Box->value();
+            swirski3->params.CannyThreshold2 = cannyThreshold2Box->value();
+            swirski3->params.StarburstPoints = starburstPointsBox->value();
 
-        if(secondarySwirski) {
-            secondarySwirski->params.Radius_Min = minRadiusBox->value();
-            secondarySwirski->params.Radius_Max = maxRadiusBox->value();
+            swirski3->params.PercentageInliers = percInlierBox->value();
+            swirski3->params.InlierIterations = iterInlierBox->value();
+            swirski3->params.ImageAwareSupport = imageAwareBox->isChecked();
+            swirski3->params.EarlyTerminationPercentage = termPercBox->value();
+            swirski3->params.EarlyRejection = earlyRejectionBox->isChecked();
+        }
+        if(swirski4) {
+            swirski4->params.CannyBlur = cannyBlurBox->value();
+            swirski4->params.CannyThreshold1 = cannyThreshold1Box->value();
+            swirski4->params.CannyThreshold2 = cannyThreshold2Box->value();
+            swirski4->params.StarburstPoints = starburstPointsBox->value();
 
-            secondarySwirski->params.CannyBlur = cannyBlurBox->value();
-            secondarySwirski->params.CannyThreshold1 = cannyThreshold1Box->value();
-            secondarySwirski->params.CannyThreshold2 = cannyThreshold2Box->value();
-            secondarySwirski->params.StarburstPoints = starburstPointsBox->value();
-
-            secondarySwirski->params.PercentageInliers = percInlierBox->value();
-            secondarySwirski->params.InlierIterations = iterInlierBox->value();
-            secondarySwirski->params.ImageAwareSupport = imageAwareBox->isChecked();
-            secondarySwirski->params.EarlyTerminationPercentage = termPercBox->value();
-            secondarySwirski->params.EarlyRejection = earlyRejectionBox->isChecked();
+            swirski4->params.PercentageInliers = percInlierBox->value();
+            swirski4->params.InlierIterations = iterInlierBox->value();
+            swirski4->params.ImageAwareSupport = imageAwareBox->isChecked();
+            swirski4->params.EarlyTerminationPercentage = termPercBox->value();
+            swirski4->params.EarlyRejection = earlyRejectionBox->isChecked();
         }
 
-        emit onConfigChange(parameterConfigs->currentText());
+        // Then the specific ones that are set by autoParam
+        int procMode = pupilDetection->getCurrentProcMode();
+        if(isAutoParamEnabled()) {
+            float autoParamPupSizePercent = applicationSettings->value("autoParamPupSizePercent", pupilDetection->getAutoParamPupSizePercent()).toFloat();
+            pupilDetection->setAutoParamPupSizePercent(autoParamPupSizePercent);
+            pupilDetection->setAutoParamScheduled(true);
 
-        applicationSettings->setValue("Swirski2DSettings.configParameters", QVariant::fromValue(configParameters));
-        applicationSettings->setValue("Swirski2DSettings.configIndex", parameterConfigs->currentText());
+        } else {
+
+            p_swirski->params.Radius_Min = minRadiusBox->value();
+            p_swirski->params.Radius_Max = maxRadiusBox->value();
+
+            currentParameters[0] = minRadiusBox->value();
+            currentParameters[1] = maxRadiusBox->value();
+
+            if(swirski2) {
+                swirski2->params.Radius_Min = minRadiusBox->value();
+                swirski2->params.Radius_Max = maxRadiusBox->value();
+            }
+            if(swirski3) {
+                swirski3->params.Radius_Min = minRadiusBox->value();
+                swirski3->params.Radius_Max = maxRadiusBox->value();
+            }
+            if(swirski4) {
+                swirski4->params.Radius_Min = minRadiusBox->value();
+                swirski4->params.Radius_Max = maxRadiusBox->value();
+            }
+            
+        }
+
+        emit onConfigChange(configsBox->currentText());
+    }
+
+    void applyAndSaveSpecificSettings() override {
+        applySpecificSettings();
+        PupilMethodSetting::saveSpecificSettings();
     }
 
 private:
 
     Swirski2D *p_swirski;
-    Swirski2D *secondarySwirski = nullptr;
+    Swirski2D *swirski2 = nullptr;
+    Swirski2D *swirski3 = nullptr;
+    Swirski2D *swirski4 = nullptr;
+
+    PupilDetection *pupilDetection;
 
     QSpinBox *minRadiusBox;
     QSpinBox *maxRadiusBox;
@@ -197,13 +245,9 @@ private:
     QCheckBox *imageAwareBox;
     QCheckBox *earlyRejectionBox;
 
-    QPushButton *resetButton;
-    QComboBox *parameterConfigs;
-    QPushButton *fileButton;
-
     void createForm() {
-
-        QList<float> selectedParameter = configParameters.value(configIndex);
+        PupilMethodSetting::loadSettings();
+        QList<float>& selectedParameter = getCurrentParameters();
 
         int Radius_Min = selectedParameter[0];
         int Radius_Max = selectedParameter[1];
@@ -223,68 +267,111 @@ private:
 
         QHBoxLayout *configsLayout = new QHBoxLayout();
 
-        parameterConfigs = new QComboBox();
-        configsLayout->addWidget(parameterConfigs);
+        configsBox = new QComboBox();
+        QLabel *parameterConfigsLabel = new QLabel(tr("Parameter configuration:"));
+        configsBox->setFixedWidth(250);
+        configsLayout->addWidget(parameterConfigsLabel);
+        configsLayout->addWidget(configsBox);
 
-        QMapIterator<QString, QList<float>> i(configParameters);
-        while (i.hasNext()) {
-            i.next();
-            parameterConfigs->addItem(i.key());
+        for (QMap<QString, Settings>::const_iterator cit = settingsMap.cbegin(); cit != settingsMap.cend(); cit++)
+        {
+            configsBox->addItem(cit.key());
         }
 
-        connect(parameterConfigs, SIGNAL(currentTextChanged(QString)), this, SLOT(onParameterConfigSelection(QString)));
+        connect(configsBox, SIGNAL(currentTextChanged(QString)), this, SLOT(onParameterConfigSelection(QString)));
 
         mainLayout->addLayout(configsLayout);
+
+        QHBoxLayout *configsNoteLayout = new QHBoxLayout();
+        QLabel* configsNoteLabel = new QLabel(tr("Note: Configurations marked with an asterisk (*) are recommended for Basler\nacA2040-120um (1/1.8\" sensor format) camera(s) equipped with f=50 mm 2/3\"\nnominal sensor format lens, using 4:3 aspect ratio pupil detection ROI(s)."));
+        SupportFunctions::setSmallerLabelFontSize(configsNoteLabel);
+        configsNoteLabel->setFixedHeight(60);
+        configsNoteLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+        configsNoteLayout->addWidget(configsNoteLabel);
+        mainLayout->addLayout(configsNoteLayout);
+
         mainLayout->addSpacerItem(new QSpacerItem(40, 5, QSizePolicy::Fixed));
 
 
-        QGroupBox *ellipseGroup = new QGroupBox("Ellipse Detection");
-        QGroupBox *optionsGroup = new QGroupBox("Options");
+        QGroupBox *ellipseGroup = new QGroupBox("Algorithm specific: Ellipse Detection");
+        QGroupBox *optionsGroup = new QGroupBox("Algorithm specific: Options");
 
         QFormLayout *ellipseLayout = new QFormLayout();
         QFormLayout *optionsLayout = new QFormLayout();
 
-        QLabel *minRadiusLabel = new QLabel(tr("Min. Radius:"));
+        QLabel *minRadiusLabel = new QLabel(tr("Min. Radius [px]:"));
         minRadiusBox = new QSpinBox();
         minRadiusBox->setMaximum(5000);
         minRadiusBox->setValue(Radius_Min);
-        ellipseLayout->addRow(minRadiusLabel, minRadiusBox);
+        minRadiusBox->setFixedWidth(80);
 
-        QLabel *maxRadiusLabel = new QLabel(tr("Max. Radius:"));
+        QLabel *maxRadiusLabel = new QLabel(tr("Max. Radius [px]:"));
         maxRadiusBox = new QSpinBox();
         maxRadiusBox->setMaximum(5000);
         maxRadiusBox->setValue(Radius_Max);
-        ellipseLayout->addRow(maxRadiusLabel, maxRadiusBox);
+        maxRadiusBox->setFixedWidth(80);
+
+        QHBoxLayout *layoutRow1 = new QHBoxLayout;
+        layoutRow1->addWidget(minRadiusBox);
+        QSpacerItem *sp1 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum); 
+        layoutRow1->addSpacerItem(sp1);
+        layoutRow1->addWidget(maxRadiusLabel);
+        layoutRow1->addWidget(maxRadiusBox);
+        //layoutRow1->addSpacerItem(sp);
+        ellipseLayout->addRow(minRadiusLabel, layoutRow1);
+
 
         QLabel *cannyBlurLabel = new QLabel(tr("Canny Blur:"));
         cannyBlurBox = new QDoubleSpinBox();
         cannyBlurBox->setValue(CannyBlur);
+        cannyBlurBox->setFixedWidth(80);
         ellipseLayout->addRow(cannyBlurLabel, cannyBlurBox);
 
         QLabel *cannyThreshold1Label = new QLabel(tr("Canny Threshold 1:"));
         cannyThreshold1Box = new QDoubleSpinBox();
         cannyThreshold1Box->setValue(CannyThreshold1);
-        ellipseLayout->addRow(cannyThreshold1Label, cannyThreshold1Box);
+        cannyThreshold1Box->setFixedWidth(80);
 
         QLabel *cannyThreshold2Label = new QLabel(tr("Canny Threshold 2:"));
         cannyThreshold2Box = new QDoubleSpinBox();
         cannyThreshold2Box->setValue(CannyThreshold2);
-        ellipseLayout->addRow(cannyThreshold2Label, cannyThreshold2Box);
+        cannyThreshold2Box->setFixedWidth(80);
+
+        QHBoxLayout *layoutRow2 = new QHBoxLayout;
+        layoutRow2->addWidget(cannyThreshold1Box);
+        QSpacerItem *sp2 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum); 
+        layoutRow2->addSpacerItem(sp2);
+        layoutRow2->addWidget(cannyThreshold2Label);
+        layoutRow2->addWidget(cannyThreshold2Box);
+        //layoutRow2->addSpacerItem(sp);
+        ellipseLayout->addRow(cannyThreshold1Label, layoutRow2);
+
 
         QLabel *starburstPointsLabel = new QLabel(tr("Starburst Points:"));
         starburstPointsBox = new QSpinBox();
         starburstPointsBox->setValue(StarburstPoints);
+        starburstPointsBox->setFixedWidth(80);
         ellipseLayout->addRow(starburstPointsLabel, starburstPointsBox);
 
         QLabel *percInlierLabel = new QLabel(tr("Perc. Inliers:"));
         percInlierBox = new QSpinBox();
         percInlierBox->setValue(PercentageInliers);
-        ellipseLayout->addRow(percInlierLabel, percInlierBox);
+        percInlierBox->setFixedWidth(80);
 
         QLabel *iterInlierLabel = new QLabel(tr("Inlier Iterations:"));
         iterInlierBox = new QSpinBox();
         iterInlierBox->setValue(InlierIterations);
-        ellipseLayout->addRow(iterInlierLabel, iterInlierBox);
+        iterInlierBox->setFixedWidth(80);
+
+        QHBoxLayout *layoutRow3 = new QHBoxLayout;
+        layoutRow3->addWidget(percInlierBox);
+        QSpacerItem *sp3 = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum); 
+        layoutRow3->addSpacerItem(sp3);
+        layoutRow3->addWidget(iterInlierLabel);
+        layoutRow3->addWidget(iterInlierBox);
+        //layoutRow2->addSpacerItem(sp);
+        ellipseLayout->addRow(percInlierLabel, layoutRow3);
+
 
         ellipseGroup->setLayout(ellipseLayout);
         mainLayout->addWidget(ellipseGroup);
@@ -293,6 +380,7 @@ private:
         QLabel *termPercLabel = new QLabel(tr("Early Termination Perc.:"));
         termPercBox = new QSpinBox();
         termPercBox->setValue(EarlyTerminationPercentage);
+        termPercBox->setFixedWidth(80);
         optionsLayout->addRow(termPercLabel, termPercBox);
 
         QLabel *imageAwareLabel = new QLabel(tr("Image Aware RANSAC:"));
@@ -311,8 +399,8 @@ private:
 
         QHBoxLayout *buttonsLayout = new QHBoxLayout();
 
-        resetButton = new QPushButton("Reset");
-        fileButton = new QPushButton("Load File");
+        resetButton = new QPushButton("Reset algorithm parameters");
+        fileButton = new QPushButton("Load config file");
 
         buttonsLayout->addWidget(resetButton);
         connect(resetButton, SIGNAL(clicked()), this, SLOT(onResetClick()));
@@ -334,7 +422,7 @@ private:
 
         //std::cout << std::setw(4) << j << std::endl;
 
-        QList<float> customs = defaultParameters["Default"];
+        QList<float> customs = defaultParameters[Settings::DEFAULT];
 
         customs[0] = j["Parameter Set"]["Radius_Min"];
         customs[1] = j["Parameter Set"]["Radius_Max"];
@@ -348,12 +436,7 @@ private:
         customs[9] = j["Parameter Set"]["ImageAwareSupport"];
         customs[10] = j["Parameter Set"]["EarlyRejection"];
 
-        configParameters.insert("Custom", customs);
-
-        if(parameterConfigs->findText("Custom") < 0) {
-            parameterConfigs->addItem("Custom");
-        }
-        parameterConfigs->setCurrentText("Custom");
+        insertCustomEntry(customs);
 
 //        minRadiusBox->setValue(j["Parameter Set"]["Radius_Min"]);
 //        maxRadiusBox->setValue(j["Parameter Set"]["Radius_Max"]);
@@ -377,26 +460,23 @@ private:
 //            { "Full Image Optimized", {40, 43, 6.4f, 21, 22, 26, 16, 10, 34, 0, 1} }
 //    };
 
-    QMap<QString, QList<float>> defaultParameters = {
-            { "Default", {40, 80, 1.6f, 20., 40, 0, 20, 2, 95, 1, 1} },
-            { "ROI 0.3 Optimized", {10, 112, 0.1f, 33, 64, 26, 21, 6, 22, 0, 1} },
-            { "ROI 0.6 Optimized", {21, 108, 0.3f, 21, 79, 31, 25, 2, 14, 1, 0} },
-            { "Full Image Optimized", {19, 115, 0.4f, 46, 63, 25, 38, 10, 27, 0, 1} }
+    QMap<Settings, QList<float>> defaultParameters = {
+            { Settings::DEFAULT, {40.0f, 80.0f, 1.6f, 20.0f, 40.0f, 0.0f, 20.0f, 2.0f, 95.0f, 1.0f, 1.0f} },
+            { Settings::ROI_0_3_OPTIMIZED, {10.0f, 112.0f, 0.1f, 33.0f, 64.0f, 26.0f, 21.0f, 6.0f, 22.0f, 0.0f, 1.0f} },
+            { Settings::ROI_0_6_OPTIMIZED, {21.0f, 108.0f, 0.3f, 21.0f, 79.0f, 31.0f, 25.0f, 2.0f, 14.0f, 1.0f, 0.0f} },
+            { Settings::FULL_IMAGE_OPTIMIZED, {19.0f, 115.0f, 0.4f, 46.0f, 63.0f, 25.0f, 38.0f, 10.0f, 27.0f, 0.0f, 1.0f} },
+            { Settings::AUTOMATIC_PARAMETRIZATION, {-1.0f, -1.0f, 0.4f, 46.0f, 63.0f, 25.0f, 38.0f, 10.0f, 27.0f, 0.0f, 1.0f} },
+            { Settings::CUSTOM, {-1.0f, -1.0f, 0.4f, 46.0f, 63.0f, 25.0f, 38.0f, 10.0f, 27.0f, 0.0f, 1.0f} }
     };
-
-
-    QMap<QString, QList<float>> configParameters;
-    QString configIndex;
 
 
 private slots:
 
     void onParameterConfigSelection(QString configKey) {
-        QList<float> selectedParameter = configParameters.value(configKey);
+        setConfigIndex(configKey);
+        QList<float>& selectedParameter = getCurrentParameters();
 
-        minRadiusBox->setValue(selectedParameter[0]);
-        maxRadiusBox->setValue(selectedParameter[1]);
-
+        // First come the parameters roughly independent from ROI size and relative pupil size 
         cannyBlurBox->setValue(selectedParameter[2]);
         cannyThreshold1Box->setValue(selectedParameter[3]);
         cannyThreshold2Box->setValue(selectedParameter[4]);
@@ -408,31 +488,20 @@ private slots:
         imageAwareBox->setChecked(selectedParameter[9]);
         earlyRejectionBox->setChecked(selectedParameter[10]);
 
-        //updateSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
-    }
+        // Then the specific ones that are set by autoParam
+        if(isAutoParamEnabled()) {
+            minRadiusBox->setEnabled(false);
+            maxRadiusBox->setEnabled(false);
+            // TODO: hide value text too
+        } else {
+            minRadiusBox->setEnabled(true);
+            maxRadiusBox->setEnabled(true);
 
-    void onResetClick() {
-        QString configKey = parameterConfigs->itemText(parameterConfigs->currentIndex());
-        configParameters[configKey] = defaultParameters.value(configKey);
-        onParameterConfigSelection(configKey);
-    }
-
-    void onLoadFileClick() {
-        QString filename = QFileDialog::getOpenFileName(this, tr("Open Algorithm Parameter File"), "", tr("JSON files (*.json)"));
-
-        if(!filename.isEmpty()) {
-
-            try {
-                loadSettingsFromFile(filename);
-            } catch(...) {
-                QMessageBox msgBox;
-                msgBox.setText("Error while loading parameter file. \nCorrect format and algorithm?");
-                msgBox.exec();
-            }
+            minRadiusBox->setValue(selectedParameter[0]);
+            maxRadiusBox->setValue(selectedParameter[1]);
         }
+
+        //applySpecificSettings(); // settings are only updated when apply click in pupildetectionsettingsdialog
     }
 
 };
-
-
-#endif //PUPILEXT_SWIRSKI2DSETTINGS_H

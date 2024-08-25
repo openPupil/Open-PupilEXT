@@ -12,126 +12,149 @@
 #include "devices/fileCamera.h"
 
 #include <fstream>
+#include <cmath>
 
 
 // QTs event signal eventloop queues images for us, we run this pupildetection worker in a extra thread and every call to newImage is queued automatically
 // This may however queue a large number of images if the processing speed is slow, increasing the memory potentially until it is full and the application is killed
 // We dont have access to the eventloop to handle this, so its up to the user for now to not use a rate too high
 
+void PupilDetection::populateWithMethods(std::vector<PupilDetectionMethod*> &vec) {
+    vec.push_back(new ElSe());
+    vec.push_back(new ExCuSe());
+    vec.push_back(new PuRe());
+    vec.push_back(new PuReST());
+    vec.push_back(new Starburst());
+    vec.push_back(new Swirski2D());
+
+    // TODO finish integrating Swirski3D
+    //double focal_length = 0.5;
+    //pupilDetectionMethods.push_back(new Swirski3D(new PuReST(), focal_length, 5, 0.5));
+}
+
 // Creates a new pupil detection worker which include all pupil detection algorithms
 // Should be run on a seperate thread
-PupilDetection::PupilDetection(QObject *parent) : QObject(parent),
+PupilDetection::PupilDetection(QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, QObject *parent) : QObject(parent),
                                                   camera(nullptr),
                                                   frameCounter(new FrameRateCounter(parent)),
-                                                  stereoMode(false),
                                                   useOutlineConfidence(true),
                                                   useROIPreProcessing(false),
                                                   useImageUndistort(false),
                                                   usePupilUndistort(false),
                                                   trackingOn(false),
                                                   calibrated(false),
-                                                  showROI(true),
-                                                  showPupilCenter(false),
+                                                  //showROI(true),
+                                                  //showPupilCenter(false),
+                                                  autoParamEnabled(false),
                                                   currentConfigLabel("Default"),
-                                                  ROI(),
-                                                  ROISecondary() {
+                                                  currentProcMode(ProcMode::UNDETERMINED),
+                                                  ROIsingleImageOnePupil(),
+                                                  ROIsingleImageTwoPupilA(),
+                                                  ROIsingleImageTwoPupilB(),
+                                                  ROIstereoImageOnePupil1(),
+                                                  ROIstereoImageOnePupil2(),
+                                                  ROIstereoImageTwoPupilA1(),
+                                                  ROIstereoImageTwoPupilA2(),
+                                                  ROIstereoImageTwoPupilB1(),
+                                                  ROIstereoImageTwoPupilB2(),
+                                                  ROImirrImageOnePupil1(),
+                                                  ROImirrImageOnePupil2(),
+                                                  imageMutex(imageMutex),
+                                                  imagePublished(imagePublished),
+                                                  imageProcessed(imageProcessed)
+                                                  {
 
     drawDelay = 33; // ~30fps
 
     // we initialize the algorithms here one time and save them in a list, the created objects are then changed through index change of the list
-    pupilDetectionMethods.push_back(new ElSe());
-    pupilDetectionMethods.push_back(new ExCuSe());
-    pupilDetectionMethods.push_back(new PuRe());
-    pupilDetectionMethods.push_back(new PuReST());
-    pupilDetectionMethods.push_back(new Starburst());
-    pupilDetectionMethods.push_back(new Swirski2D());
-    // TODO finish integrating Swirski3D
-    //double focal_length = 0.5;
-    //pupilDetectionMethods.push_back(new Swirski3D(new PuReST(), focal_length, 5, 0.5));
-
-    // We need a second instance of every detection method for stereo detection due to the threaded execution and potential non-thread safe algorithm code
-    pupilDetectionMethodsSecondary.push_back(new ElSe());
-    pupilDetectionMethodsSecondary.push_back(new ExCuSe());
-    pupilDetectionMethodsSecondary.push_back(new PuRe());
-    pupilDetectionMethodsSecondary.push_back(new PuReST());
-    pupilDetectionMethodsSecondary.push_back(new Starburst());
-    pupilDetectionMethodsSecondary.push_back(new Swirski2D());
-    //pupilDetectionMethodsSecondary.push_back(new Swirski3D(new PuReST(), focal_length, 5, 0.5));
+    populateWithMethods(pupilDetectionMethods1);
+    populateWithMethods(pupilDetectionMethods2);
+    populateWithMethods(pupilDetectionMethods3);
+    populateWithMethods(pupilDetectionMethods4);
 
     // Default algorithm PuRe
     pupilDetectionIndex = 2;
 
     // Processing speed frame counter
     connect(frameCounter, SIGNAL(fps(double)), this, SIGNAL(fps(double)));
-    connect(this, SIGNAL(processedPupilData(quint64, Pupil, QString)), frameCounter, SLOT(count()));
-    connect(this, SIGNAL(processedStereoPupilData(quint64, Pupil, Pupil, QString)), frameCounter, SLOT(count()));
+
+    assert( connect(this, SIGNAL(processedPupilData(quint64, int, std::vector<Pupil>, QString)), frameCounter, SLOT(count())) );
 
     drawTimer.start();
     processingTimer.start();
+
+    //configureCameraConnection();
 }
 
 PupilDetection::~PupilDetection() {
-
 }
 
 // Attaches a camera to the pupil detection process
 // Checks if the camera is calibrated and stereo or single, sets the detection mode accordingly
 void PupilDetection::setCamera(Camera *m_camera) {
 
-    camera = m_camera;
+    if (camera != m_camera) {
+        camera = m_camera;
 
-    stereoMode = camera->getType()==CameraImageType::LIVE_STEREO_CAMERA || camera->getType()==CameraImageType::STEREO_IMAGE_FILE;
-    calibrated = false;
+        // This can happen upon camera disconnect, especially important upon main window closing when a camera was open
+        // The m_camera is set to nullptr then, but the following code does not get executed because of this return;
+        if(!m_camera)
+            return;
 
-    if(camera->getType()==CameraImageType::LIVE_STEREO_CAMERA) {
-        stereoCalibration = dynamic_cast<StereoCamera*>(camera)->getCameraCalibration();
-        calibrated = static_cast<bool>(stereoCalibration->isCalibrated());
-    } else if(camera->getType()==CameraImageType::STEREO_IMAGE_FILE) {
-        stereoCalibration = dynamic_cast<FileCamera*>(camera)->getStereoCameraCalibration();
-        calibrated = static_cast<bool>(stereoCalibration->isCalibrated());
-    } else if(camera->getType()==CameraImageType::LIVE_SINGLE_CAMERA) {
-        singleCalibration = dynamic_cast<SingleCamera*>(camera)->getCameraCalibration();
-        calibrated = static_cast<bool>(singleCalibration->isCalibrated());
-    } else if(camera->getType()==CameraImageType::SINGLE_IMAGE_FILE) {
-        singleCalibration = dynamic_cast<FileCamera*>(camera)->getCameraCalibration();
-        calibrated = static_cast<bool>(singleCalibration->isCalibrated());
+        calibrated = false;
+
+        if (camera->getType() == CameraImageType::LIVE_STEREO_CAMERA) {
+            stereoCalibration = dynamic_cast<StereoCamera *>(camera)->getCameraCalibration();
+            calibrated = static_cast<bool>(stereoCalibration->isCalibrated());
+        } else if (camera->getType() == CameraImageType::STEREO_IMAGE_FILE) {
+            stereoCalibration = dynamic_cast<FileCamera *>(camera)->getStereoCameraCalibration();
+            calibrated = static_cast<bool>(stereoCalibration->isCalibrated());
+        } else if (camera->getType() == CameraImageType::LIVE_SINGLE_CAMERA) {
+            singleCalibration = dynamic_cast<SingleCamera *>(camera)->getCameraCalibration();
+            calibrated = static_cast<bool>(singleCalibration->isCalibrated());
+        } else if (camera->getType() == CameraImageType::SINGLE_IMAGE_FILE) {
+            singleCalibration = dynamic_cast<FileCamera *>(camera)->getCameraCalibration();
+            calibrated = static_cast<bool>(singleCalibration->isCalibrated());
+        }
+        else if (camera->getType() == CameraImageType::LIVE_SINGLE_WEBCAM) {
+            singleCalibration = dynamic_cast<SingleWebcam *>(camera)->getCameraCalibration();
+            calibrated = static_cast<bool>(singleCalibration->isCalibrated());
+        }
+        configureCameraConnection(true);
     }
 }
 
 // Starts the algorithm by connecting the camera image signals to the processing callbacks
+// GB: now the distinction between stereo/single modes is made using procMode enum
 void PupilDetection::startDetection() {
+
+    // TODO: check if ROIs are set ?
+
+    // BG: NOTE: maybe not here? But one algorithm is changed, we certainly need to re-parameter
+    if(autoParamEnabled)
+        performAutoParam();
 
     trackingOn = true;
     if(camera) {
-        if(stereoMode) {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImage(CameraImage)));
-        } else {
-            //runtimeHistory.clear();
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewImage(CameraImage)));
-        }
+        //configureCameraConnection();
         emit processingStarted();
     }
 }
 
 // Stops the pupil detection by disconnecting the signals of new images to the processing
+// GB: now the distinction between stereo/single modes is made using procMode enum
 void PupilDetection::stopDetection() {
 
     if(camera && trackingOn) {
         trackingOn = false;
 
-        if(stereoMode) {
-            // For debugging, measuring times
-            //auto timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
-            //writeVectorCSV(runtimeHistory, "timestamp,runtime[ms]", pupilDetectionMethods[pupilDetectionIndex]->title() + "_" + std::to_string(timestamp) + "_triangulateHistory.csv");
-            disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImage(CameraImage)));
-        } else {
-            // Runtime history
-            //auto timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
-            //writeVectorCSV(runtimeHistory, "timestamp,runtime[ms]", pupilDetectionMethods[pupilDetectionIndex]->title() + "_" + std::to_string(timestamp) + "_runtimeHistory.csv");
-            disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewImage(CameraImage)));
-        }
+
         emit processingFinished();
+        imageProcessed->wakeAll();
+        imagePublished->wakeAll();
+        qDebug() << "Woke up imageProcessing";
     }
+    qDebug() << "Woke up imageProcessing";
 }
 
 // Changes the applied pupil detection algorithm
@@ -139,62 +162,87 @@ void PupilDetection::stopDetection() {
 // Emits a signal to signal the algorithm changed
 void PupilDetection::setAlgorithm(QString method) {
 
-    if(camera && trackingOn) {
-        if(stereoMode) {
-            disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImage(CameraImage)));
-        } else {
-            disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewImage(CameraImage)));
-        }
-    }
+    configureCameraConnection(false);
 
     frameCounter->reset();
 
     int i = 0;
-    for(auto pm: pupilDetectionMethods) {
-        if(pm->title() == method.toStdString())
+    for(auto pm: pupilDetectionMethods1) {
+        //if(pm->title() == method.toStdString())
+        //modified for tolower to care for when someone is setting this through an UDP command and had a case-typo
+        if(QString::fromStdString(pm->title()).toLower() == method.toLower())
             pupilDetectionIndex = i;
         i++;
     }
 
+    // NOTE: maybe not here? But one algorithm is changed, we certainly need to re-parameter
+    if(autoParamEnabled)
+        autoParamScheduled = true;
+
     emit algorithmChanged();
 
-    if(camera && trackingOn) {
-        if(stereoMode) {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImage(CameraImage)));
-        } else {
-            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewImage(CameraImage)));
-        }
-    }
+    configureCameraConnection(true);
 }
 
 // Slot callback for receiving new single camera images
 // Performs the processing/pupil detection
 // Emits the pupil detection result as a signal, as well as processed images with plotted pupil contours
 // Depending on the configuration, performs undistortion on the images or pupil detections
-void PupilDetection::onNewImage(const CameraImage &cimg) {
+void PupilDetection::onNewSingleImageForOnePupil(const CameraImage &cimg) {
+    if (synchronised) {
+        const QMutexLocker locker(imageMutex);
+        onNewSingleImageForOnePupilImpl(cimg);
+//        qDebug() << "pupilDetection locking";
+  //      qDebug() << "pupilDetection image processed, unlocking";
+        imagePublished->wakeAll();
+        if (trackingOn) {
+//            qDebug() << "Locking image processing";
+            imageProcessed->wait(imageMutex);
+        }
+    }
+    else {
+        onNewSingleImageForOnePupilImpl(cimg);
+    }
+}
+
+void PupilDetection::onNewSingleImageForOnePupilImpl(const CameraImage &image) {
 
     // Processing fps restriction not working correctly, timers overhead seem to break timing, left out for now
-    //std::cout<<cimg.filename<<std::endl;
-
+    //qDebug()<<cimg->filename;
     if (!trackingOn) {
-        std::cout<<"Single: Tracking is stopped but receiving signals."<<std::endl;
+        //qDebug()<<"Single: onNewSingleImageForOnePupil: Tracking is stopped but receiving signals."; // GB: changed text
+        //qDebug() << image->frameNumber;
+        // TODO: also emit one in case the file camera was PAUSED !
+        if ((drawTimer.elapsed() > drawDelay) ||
+            (camera->getType() == SINGLE_IMAGE_FILE && (
+                    (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == image.frameNumber) ||
+                    (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == image.frameNumber)
+            ) ) ) {
+            emit processedImageLowFPS(image);
+        }
         return;
     }
 
-    cv::Mat bwFrame = cimg.img;
+    cv::Mat bwFrame = image.img;
 
     // Undistorting the whole image is rather slow (~4ms on our test system), use contour point undistort instead (>~1ms)
     if(!usePupilUndistort && useImageUndistort) {
         //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-        bwFrame = singleCalibration->undistortImage(cimg.img);
-        //std::cout<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 <<std::endl;
+        bwFrame = singleCalibration->undistortImage(image.img);
+        //qDebug()<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 ;
     }
 
     cv::Rect roi = cv::Rect(0, 0, bwFrame.cols, bwFrame.rows);
 
-    if(useROIPreProcessing && !ROI.empty() && roi != ROI && ROI.width<=bwFrame.cols && ROI.height<=bwFrame.rows) {
-        roi = ROI;
-        bwFrame = bwFrame(ROI);
+    if(useROIPreProcessing && !ROIsingleImageOnePupil.empty() && roi != ROIsingleImageOnePupil && ROIsingleImageOnePupil.width<=bwFrame.cols && ROIsingleImageOnePupil.height<=bwFrame.rows) {
+        roi = ROIsingleImageOnePupil;
+        bwFrame = bwFrame(ROIsingleImageOnePupil);
+    } else if(autoParamEnabled && autoParamScheduled)
+        ROIsingleImageOnePupil = roi;
+
+    if(autoParamEnabled && autoParamScheduled) {
+        performAutoParam();
+        autoParamScheduled = false;
     }
 
     if (bwFrame.channels() > 1) {
@@ -206,13 +254,14 @@ void PupilDetection::onNewImage(const CameraImage &cimg) {
     // Pupil detection
     try {
         if(useOutlineConfidence) {
+
             //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-            pupilDetectionMethods[pupilDetectionIndex]->runWithConfidence(bwFrame, pupil);
-            //runtimeHistory.push_back(std::make_pair(cimg.timestamp, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count()));
+            pupilDetectionMethods1[pupilDetectionIndex]->runWithConfidence(bwFrame, pupil);
+            //runtimeHistory.push_back(std::make_pair(cimg->timestamp, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count()));
         } else {
             //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-            pupilDetectionMethods[pupilDetectionIndex]->run(bwFrame, pupil);
-            //runtimeHistory.push_back(std::make_pair(cimg.timestamp, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count()));
+            pupilDetectionMethods1[pupilDetectionIndex]->run(bwFrame, pupil);
+            //runtimeHistory.push_back(std::make_pair(cimg->timestamp, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count()));
         }
     } catch (...) {
         pupil.clear();
@@ -227,19 +276,217 @@ void PupilDetection::onNewImage(const CameraImage &cimg) {
     if(usePupilUndistort && !useImageUndistort) {
         //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
         pupil.undistortedDiameter = singleCalibration->undistortPupilDiameter(pupil);
-        //std::cout<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 <<std::endl;
+        //qDebug()<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 ;
     } else if(!usePupilUndistort && useImageUndistort) {
         pupil.undistortedDiameter = pupil.diameter();
     }
 
-    pupil.algorithmName = pupilDetectionMethods[pupilDetectionIndex]->title();
+    pupil.algorithmName = pupilDetectionMethods1[pupilDetectionIndex]->title();
+
+    std::vector<Pupil> Pupils;
+    Pupils.push_back(pupil);
 
     // Drawing of pupil detections on the image is only performed at ~30fps
-    if (trackingOn && drawTimer.elapsed() > drawDelay) {
+    // NOTE: It is important to not only check for drawDelay, but care for the special case,
+    // when the last signals from an image playback arrive before another drawDelay is happened,
+    // to not make the playback stuck just near the end. That is why we check for frame number too
+    if ((drawTimer.elapsed() > drawDelay) ||
+        (camera->getType() == SINGLE_IMAGE_FILE && (
+            (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == image.frameNumber) ||
+            (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == image.frameNumber)
+            ) ) ) {
+
         drawTimer.start();
 
-        CameraImage mimg = cimg;
-        mimg.img = cimg.img.clone();
+        const CameraImage &mimg = image;
+        mimg.img = image.img.clone();
+
+        if(!usePupilUndistort && useImageUndistort) {
+            mimg.img = singleCalibration->undistortImage(image.img);
+        }
+        // not necessary to copy twice
+        //else {
+        //    mimg->img = cimg->img.clone();
+        //}ú
+        /*
+
+        // moved code to singleCameraView code
+        if (mimg->img.channels() == 1) {
+            cv::cvtColor(mimg->img, mimg->img, cv::COLOR_GRAY2BGR);
+        }
+
+        //if(showROI)
+            cv::rectangle(mimg->img, roi, cv::Scalar(255, 0, 255 ), 3);
+
+        if(pupil.valid(-2.0)) {
+            cv::ellipse(mimg->img, pupil, cv::Scalar( 0, 200, 255 ), 1); //BG: it was 0,0,255
+            //if(showPupilCenter)
+                cv::circle(mimg->img, pupil.center, 1, CV_RGB(255,0,0),3);
+        } else {
+            cv::putText(mimg->img, "NO PUPIL FOUND", cv::Point(static_cast<int>(0.25 * mimg->img.cols),
+                                                              static_cast<int>(0.25 * mimg->img.rows)), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(255, 0, 255), 4);
+        }
+        emit processedImageLowFPS(mimg);
+        */
+
+        std::vector<cv::Rect> ROIs;
+        if(useROIPreProcessing) {
+            ROIs.push_back(ROIsingleImageOnePupil);
+        } else {
+            ROIs.push_back(roi);
+            //ROIs.push_back(cv::Rect(0,0, bwFrame.size().width, bwFrame.size().height));
+        }
+        emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
+
+        // to inform imagePlaybackControlDialog about the just processed image
+        if(camera->getType() == SINGLE_IMAGE_FILE) {
+            emit processedImageLowFPS(mimg);
+//            qDebug() << image.frameNumber;
+        }
+        //qDebug() << "frameNumber left pupilDetection: " << cimg->frameNumber;
+        emit processedPupilDataLowFPS(image.timestamp, currentProcMode, Pupils, QString::fromStdString(image.filename));
+    }
+
+    emit processedPupilData(image.timestamp, currentProcMode, Pupils, QString::fromStdString(image.filename));
+}
+
+// Slot callback for receiving new single camera images that contain two pupils/eyes
+// Performs the processing/pupil detection
+// Emits the pupil detection result as a signal, as well as processed images with plotted pupil contours
+// Depending on the configuration, performs undistortion on the images or pupil detections
+void PupilDetection::onNewSingleImageForTwoPupil(const CameraImage &cimg) {
+    if (synchronised) {
+        const QMutexLocker locker(imageMutex);
+        onNewSingleImageForTwoPupilImpl(cimg);
+//        qDebug() << "pupilDetection locking";
+        //      qDebug() << "pupilDetection image processed, unlocking";
+        imagePublished->wakeAll();
+        if (trackingOn) {
+            qDebug() << "Locking image processing";
+            imageProcessed->wait(imageMutex);
+        }
+    }
+    else {
+        onNewSingleImageForTwoPupilImpl(cimg);
+    }
+
+}
+
+void PupilDetection::onNewSingleImageForTwoPupilImpl(const CameraImage &cimg) {
+
+    if (!trackingOn) {
+        qDebug() << cimg.frameNumber;
+        // TODO: also emit one in case the file camera was PAUSED !
+        if ((drawTimer.elapsed() > drawDelay) ||
+            (camera->getType() == SINGLE_IMAGE_FILE && (
+                    (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == cimg.frameNumber) ||
+                    (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == cimg.frameNumber)
+            ) ) ) {
+            emit processedImageLowFPS(cimg);
+        }
+        return;
+    }
+
+    cv::Mat bwFrameA;
+    cv::Mat bwFrameB;
+
+    // Undistorting the whole image is rather slow (~4ms on our test system), use contour point undistort instead (>~1ms)
+    if(!usePupilUndistort && useImageUndistort) {
+        //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+        bwFrameA = singleCalibration->undistortImage(cimg.img);
+        //qDebug()<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 ;
+    } else {
+        bwFrameA = cimg.img;
+    }
+    bwFrameB = bwFrameA;
+
+    // BG: NOTE: by default we only use the left and right halves of the input image
+    cv::Rect roiA = cv::Rect(0, 0, (int)std::floor(cimg.img.cols/2)-1, cimg.img.rows);
+    cv::Rect roiB = cv::Rect((int)std::ceil(cimg.img.cols/2)+1, 0, cimg.img.cols, cimg.img.rows);
+
+    if(useROIPreProcessing && !ROIsingleImageTwoPupilA.empty() && roiA != ROIsingleImageTwoPupilA && ROIsingleImageTwoPupilA.width<=bwFrameA.cols && ROIsingleImageTwoPupilA.height<=bwFrameA.rows) {
+        roiA = ROIsingleImageTwoPupilA;
+        bwFrameA = bwFrameA(ROIsingleImageTwoPupilA);
+    } else if(autoParamEnabled && autoParamScheduled)
+        ROIsingleImageTwoPupilA = roiA;
+
+    if(useROIPreProcessing && !ROIsingleImageTwoPupilB.empty() && roiB != ROIsingleImageTwoPupilB && ROIsingleImageTwoPupilB.width<=bwFrameB.cols && ROIsingleImageTwoPupilB.height<=bwFrameB.rows) {
+        roiB = ROIsingleImageTwoPupilB;
+        bwFrameB = bwFrameB(ROIsingleImageTwoPupilB);
+    } else if(autoParamEnabled && autoParamScheduled)
+        ROIsingleImageTwoPupilB = roiB;
+
+    if(autoParamEnabled && autoParamScheduled) {
+        performAutoParam();
+        autoParamScheduled = false;
+    }
+
+    if (cimg.img.channels() > 1) {
+        cv::cvtColor(bwFrameA, bwFrameA, cv::COLOR_BGR2GRAY);
+        cv::cvtColor(bwFrameB, bwFrameB, cv::COLOR_BGR2GRAY);
+    }
+
+    // We execute pupil detection for main and secondary images concurrently using treads, we execute both in separate threads, then wait till both are finished
+    QFutureSynchronizer<Pupil> synchronizer;
+    Pupil pupilA;
+    Pupil pupilB;
+
+    try {
+        //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+        if(useOutlineConfidence) {
+            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameA));
+            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameB));
+        } else {
+            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameA));
+            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameB));
+        }
+        synchronizer.waitForFinished();
+        // Unhandled exceptions in the QtConcurrent::run function are thrown at the result() call
+        pupilA = synchronizer.futures().at(0).result();
+        pupilB = synchronizer.futures().at(1).result();
+    } catch (...) {
+        pupilA.clear();
+        pupilB.clear();
+    }
+
+    // Shift the pupil position back to the original image coordinates instead of ROI
+    if(useROIPreProcessing) {
+        pupilA.shift(roiA.tl());
+        pupilB.shift(roiB.tl());
+    }
+
+    if(usePupilUndistort && !useImageUndistort) {
+        pupilA.undistortedDiameter = singleCalibration->undistortPupilDiameter(pupilA);
+        pupilB.undistortedDiameter = singleCalibration->undistortPupilDiameter(pupilB);
+    } else if(!usePupilUndistort && useImageUndistort) {
+        pupilA.undistortedDiameter = pupilA.diameter();
+        pupilB.undistortedDiameter = pupilB.diameter();
+    }
+
+    pupilA.algorithmName = pupilDetectionMethods1[pupilDetectionIndex]->title();
+    pupilB.algorithmName = pupilA.algorithmName;
+
+    // TODO: ? Implement basic pythagorean px-mm mapping
+
+    std::vector<Pupil> Pupils;
+    Pupils.push_back(pupilA);
+    Pupils.push_back(pupilB);
+
+    // NOTE: It is important to not only check for drawDelay, but care for the special case,
+    // when the last signals from an image playback arrive before another drawDelay is happened,
+    // to not make the playback stuck just near the end. That is why we check for frame number too
+    if ((drawTimer.elapsed() > drawDelay) ||
+        (camera->getType() == SINGLE_IMAGE_FILE && (
+                (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == cimg.frameNumber) ||
+                (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == cimg.frameNumber)
+        ) ) ) {
+        // NOTE: need to emit the processed image and data also when the user hits pause or stop, and we are waiting there for the last read image to arrive processed
+
+        drawTimer.start();
+
+        const CameraImage &mimg = cimg;
+//        mimg->img = cimg->img.clone();
+// //        mimg->imgB = cimg->img.clone(); // would be the same
 
         if(!usePupilUndistort && useImageUndistort) {
             mimg.img = singleCalibration->undistortImage(cimg.img);
@@ -247,54 +494,91 @@ void PupilDetection::onNewImage(const CameraImage &cimg) {
             mimg.img = cimg.img.clone();
         }
 
-        if (mimg.img.channels() == 1) {
-            cv::cvtColor(mimg.img, mimg.img, cv::COLOR_GRAY2BGR);
-        }
-
-        if(showROI)
-            cv::rectangle(mimg.img, roi, cv::Scalar(255, 0, 255 ), 3);
-
-        if(pupil.valid(-2.0)) {
-            cv::ellipse(mimg.img, pupil, cv::Scalar( 0, 0, 255 ), 1);
-            if(showPupilCenter)
-                cv::circle(mimg.img, pupil.center, 1, CV_RGB(255,0,0),3);
+        std::vector<cv::Rect> ROIs;
+        if(useROIPreProcessing) {
+            ROIs.push_back(ROIsingleImageTwoPupilA);
+            ROIs.push_back(ROIsingleImageTwoPupilB);
         } else {
-            cv::putText(mimg.img, "NO PUPIL FOUND", cv::Point(static_cast<int>(0.25 * mimg.img.cols),
-                                                              static_cast<int>(0.25 * mimg.img.rows)), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(255, 0, 255), 4);
+            ROIs.push_back(roiA);
+            ROIs.push_back(roiB);
+            // ROIs.push_back(cv::Rect(0, 0, bwFrameA.size().width, bwFrameA.size().height));
+            // ROIs.push_back(cv::Rect((int)std::ceil(cimg->img.cols/2)+1, 0, bwFrameB.size().width, bwFrameB.size().height));
         }
+        emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
 
-        emit processedImage(mimg);
+        // to inform imagePlaybackControlDialog about the just processed image
+        if(camera->getType() == SINGLE_IMAGE_FILE)
+                emit processedImageLowFPS(mimg);
+
+        emit processedPupilDataLowFPS(cimg.timestamp, currentProcMode, Pupils, QString::fromStdString(cimg.filename));
     }
+    emit processedPupilData(cimg.timestamp, currentProcMode, Pupils, QString::fromStdString(cimg.filename));
 
-    emit processedPupilData(cimg.timestamp, pupil, QString::fromStdString(cimg.filename));
 }
 
 // Slot callback for receiving new stereo camera images
 // Performs the processing/pupil detection
 // Emits the pupil detection result as a signal, as well as processed images with plotted pupil contours
 // Depending on the configuration, performs undistortion on the pupil detections
-void PupilDetection::onNewStereoImage(const CameraImage &simg) {
+void PupilDetection::onNewStereoImageForOnePupil(const CameraImage &simg) {
+
+    if (synchronised) {
+        const QMutexLocker locker(imageMutex);
+        onNewStereoImageForOnePupilImpl(simg);
+//        qDebug() << "pupilDetection locking";
+        //      qDebug() << "pupilDetection image processed, unlocking";
+        imagePublished->wakeAll();
+        if (trackingOn) {
+            qDebug() << "Locking image processing";
+            imageProcessed->wait(imageMutex);
+        }
+    }
+    else {
+        onNewStereoImageForOnePupilImpl(simg);
+    }
+
+}
+
+
+void PupilDetection::onNewStereoImageForOnePupilImpl(const CameraImage &simg) {
+
     // at the moment, the images are not undistorted completely but only the major axis points are undistorted after detection for absolute unit conversion
     // This creates a discrepancy between the undistorted pixel size and the physical measure, as a fix, undistortedDiamter can be calculated using useUndistort
 
     if (!trackingOn) {
-        std::cout<<"Stereo: Tracking is stopped but receiving signals."<<std::endl;
+        qDebug() << simg.frameNumber;
+        // TODO: also emit one in case the file camera was PAUSED !
+        if ((drawTimer.elapsed() > drawDelay) ||
+            (camera->getType() == STEREO_IMAGE_FILE && (
+                    (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == simg.frameNumber) ||
+                    (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == simg.frameNumber)
+            ) ) ) {
+            emit processedImageLowFPS(simg);
+        }
         return;
     }
 
-    cv::Rect roi = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
-    cv::Rect roiSecondary = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
     cv::Mat bwFrame = simg.img;
     cv::Mat bwFrameSecondary = simg.imgSecondary;
+    cv::Rect roi = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Rect roiSecondary = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
 
-    if(useROIPreProcessing && !ROI.empty() && roi != ROI && ROI.width<=bwFrame.cols && ROI.height<=bwFrame.rows) {
-        roi = ROI;
-        bwFrame = bwFrame(ROI);
-    }
+    // GB: like this the global ROI variables can inform performAutoParam() about ROI sizes
+    if(useROIPreProcessing && !ROIstereoImageOnePupil1.empty() && roi != ROIstereoImageOnePupil1 && ROIstereoImageOnePupil1.width<=bwFrame.cols && ROIstereoImageOnePupil1.height<=bwFrame.rows) {
+        roi = ROIstereoImageOnePupil1;
+        bwFrame = bwFrame(ROIstereoImageOnePupil1);
+    } else if(autoParamEnabled && autoParamScheduled)
+        ROIstereoImageOnePupil1 = roi;
 
-    if(useROIPreProcessing && !ROISecondary.empty() && roiSecondary != ROISecondary && ROISecondary.width<=bwFrameSecondary.cols && ROISecondary.height<=bwFrameSecondary.rows) {
-        roiSecondary = ROISecondary;
-        bwFrameSecondary = bwFrameSecondary(ROISecondary);
+    if(useROIPreProcessing && !ROIstereoImageOnePupil2.empty() && roiSecondary != ROIstereoImageOnePupil2 && ROIstereoImageOnePupil2.width<=bwFrameSecondary.cols && ROIstereoImageOnePupil2.height<=bwFrameSecondary.rows) {
+        roiSecondary = ROIstereoImageOnePupil2;
+        bwFrameSecondary = bwFrameSecondary(ROIstereoImageOnePupil2);
+    } else if(autoParamEnabled && autoParamScheduled)
+        ROIstereoImageOnePupil2 = roiSecondary;
+
+    if(autoParamEnabled && autoParamScheduled) {
+        performAutoParam();
+        autoParamScheduled = false;
     }
 
     if (simg.img.channels() > 1) {
@@ -310,16 +594,11 @@ void PupilDetection::onNewStereoImage(const CameraImage &simg) {
     try {
         //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
         if(useOutlineConfidence) {
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrame));
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethodsSecondary[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameSecondary));
+            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrame));
+            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameSecondary));
         } else {
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrame));
-            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethodsSecondary[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameSecondary));
-
-//            std::function<Pupil(const cv::Mat&)> run = [&](const cv::Mat &img){ return pupilDetectionMethods[pupilDetectionIndex]->run(img); };
-//            std::function<Pupil(const cv::Mat&)> runSecondary = [&](const cv::Mat &img){ return pupilDetectionMethodsSecondary[pupilDetectionIndex]->run(img); };
-//            synchronizer.addFuture(QtConcurrent::run(run, bwFrame));
-//            synchronizer.addFuture(QtConcurrent::run(runSecondary, bwFrameSecondary));
+            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrame));
+            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameSecondary));
         }
         synchronizer.waitForFinished();
         // Unhandled exceptions in the QtConcurrent::run function are thrown at the result() call
@@ -329,7 +608,7 @@ void PupilDetection::onNewStereoImage(const CameraImage &simg) {
         pupil.clear();
         pupilSecondary.clear();
     }
-    //runtimeHistory.push_back(std::make_pair(simg.timestamp, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count()));
+    //runtimeHistory.push_back(std::make_pair(simg->timestamp, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count()));
 
     // Shift the pupil position back to the original image coordinates instead of ROI
     if(useROIPreProcessing) {
@@ -342,13 +621,13 @@ void PupilDetection::onNewStereoImage(const CameraImage &simg) {
         std::pair<double, double> diameters = stereoCalibration->undistortPupilDiameters(pupil, pupilSecondary);
         pupil.undistortedDiameter = diameters.first;
         pupilSecondary.undistortedDiameter = diameters.second;
-        //std::cout<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 <<std::endl;
+        //qDebug()<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 ;
     } else if(!usePupilUndistort && useImageUndistort) {
         pupil.undistortedDiameter = pupil.diameter();
         pupilSecondary.undistortedDiameter = pupil.diameter();
     }
 
-    pupil.algorithmName = pupilDetectionMethods[pupilDetectionIndex]->title();
+    pupil.algorithmName = pupilDetectionMethods1[pupilDetectionIndex]->title();
     pupilSecondary.algorithmName = pupil.algorithmName;
 
     // If both pupil detections are valid and the camera is calibrated, we can perform unit conversion to absolute measure
@@ -365,104 +644,654 @@ void PupilDetection::onNewStereoImage(const CameraImage &simg) {
         cv::Point2f mainPointsArr[4]; // rotatedRect points in order: bottomLeft, topLeft, topRight, bottomRight
         rotPupil.points(mainPointsArr);
         int secondPoint = rotPupil.size.width > rotPupil.size.height ? 2 : 0; // if the pupil major axis is horizontal use topLeft and topRight, else topLeft and bottomLeft
-        //cv::line(mimg.img,mainPointsArr[1], mainPointsArr[secondPoint], cv::Scalar(255, 0, 0));
+        //cv::line(mimg->img,mainPointsArr[1], mainPointsArr[secondPoint], cv::Scalar(255, 0, 0));
 
         cv::Point2f secondaryPointsArr[4];
         rotPupilSecondary.points(secondaryPointsArr);
-        //cv::line(mimg.imgSecondary,secondaryPointsArr[1], secondaryPointsArr[secondPoint], cv::Scalar(255, 0, 0));
+        //cv::line(mimg->imgSecondary,secondaryPointsArr[1], secondaryPointsArr[secondPoint], cv::Scalar(255, 0, 0));
 
         std::vector<cv::Point2f> mainPoints{mainPointsArr[1], mainPointsArr[secondPoint]}, secondaryPoints{secondaryPointsArr[1], secondaryPointsArr[secondPoint]};
         std::vector<cv::Point3f> worldPoints = stereoCalibration->convertPointsTo3D(mainPoints, secondaryPoints);
 
         pupil.physicalDiameter = static_cast<float>(cv::norm(worldPoints[0] - worldPoints[1]));
         pupilSecondary.physicalDiameter = pupil.physicalDiameter;
-        //runtimeHistory.push_back(std::make_pair(simg.timestamp, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count()));
+        //runtimeHistory.push_back(std::make_pair(simg->timestamp, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count()));
     }
 
-    if (trackingOn && drawTimer.elapsed() > drawDelay) {
+    std::vector<Pupil> Pupils;
+    Pupils.push_back(pupil);
+    Pupils.push_back(pupilSecondary);
+
+    // NOTE: It is important to not only check for drawDelay, but care for the special case,
+    // when the last signals from an image playback arrive before another drawDelay is happened,
+    // to not make the playback stuck just near the end. That is why we check for frame number too
+    if ((drawTimer.elapsed() > drawDelay) ||
+        (camera->getType() == STEREO_IMAGE_FILE && (
+                (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == simg.frameNumber) ||
+                (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == simg.frameNumber)
+        ) ) ) {
+
         drawTimer.start();
-        CameraImage mimg = simg;
+        const CameraImage &mimg = simg;
         mimg.img = simg.img.clone();
         mimg.imgSecondary = simg.imgSecondary.clone();
 
-        if (mimg.img.channels() == 1) {
-            cv::cvtColor(mimg.img, mimg.img, cv::COLOR_GRAY2BGR);
-            cv::cvtColor(mimg.imgSecondary, mimg.imgSecondary, cv::COLOR_GRAY2BGR);
-        }
-
-        if(showROI) {
-            cv::rectangle(mimg.img, roi, cv::Scalar(255, 0, 255 ), 3);
-            cv::rectangle(mimg.imgSecondary, roiSecondary, cv::Scalar(255, 0, 255 ), 3);
-        }
-
-        if(pupil.valid(-2.0)) {
-            cv::ellipse(mimg.img, pupil, cv::Scalar( 0, 0, 255 ), 1);
-            if(showPupilCenter)
-                cv::circle(mimg.img, pupil.center, 1, CV_RGB(255,0,0),3);
+        std::vector<cv::Rect> ROIs;
+        if(useROIPreProcessing) {
+            ROIs.push_back(ROIstereoImageOnePupil1);
+            ROIs.push_back(ROIstereoImageOnePupil2);
         } else {
-            cv::putText(mimg.img, "NO PUPIL FOUND", cv::Point(static_cast<int>(0.25 * mimg.img.cols),
-                                                              static_cast<int>(0.25 * mimg.img.rows)), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(255, 0, 255), 4);
+            ROIs.push_back(roi);
+            ROIs.push_back(roiSecondary);
+            //ROIs.push_back(cv::Rect(0,0, bwFrame.size().width, bwFrame.size().height));
+            //ROIs.push_back(cv::Rect(0,0, bwFrameSecondary.size().width, bwFrameSecondary.size().height));
         }
+        emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
 
-        if(pupilSecondary.valid(-2.0)) {
-            cv::ellipse(mimg.imgSecondary, pupilSecondary, cv::Scalar( 0, 0, 255 ), 1);
-            if(showPupilCenter)
-                cv::circle(mimg.imgSecondary, pupilSecondary.center, 1, CV_RGB(255,0,0),3);
-        } else {
-            cv::putText(mimg.imgSecondary, "NO PUPIL FOUND", cv::Point(static_cast<int>(0.25 * mimg.img.cols),
-                                                                       static_cast<int>(0.25 * mimg.img.rows)), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(255, 0, 255), 4);
-        }
+        // to inform imagePlaybackControlDialog about the just processed image->
+        if(camera->getType() == STEREO_IMAGE_FILE)
+                emit processedImageLowFPS(mimg);
 
-        emit processedImage(mimg);
+        emit processedPupilDataLowFPS(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
     }
 
-    emit processedStereoPupilData(simg.timestamp, pupil, pupilSecondary, QString::fromStdString(simg.filename));
+    emit processedPupilData(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
+}
+// Slot callback for receiving new stereo camera images, associated with two viewpoints, both looking at both eyes
+// Performs the processing/pupil detection
+// Emits the pupil detection result as a signal, as well as processed images with plotted pupil contours
+// Depending on the configuration, performs undistortion on the pupil detections
+void PupilDetection::onNewStereoImageForTwoPupil(const CameraImage &simg) {
+
+    if (synchronised) {
+        const QMutexLocker locker(imageMutex);
+        onNewStereoImageForTwoPupilImpl(simg);
+//        qDebug() << "pupilDetection locking";
+        //      qDebug() << "pupilDetection image processed, unlocking";
+        imagePublished->wakeAll();
+        if (trackingOn) {
+            qDebug() << "Locking image processing";
+            imageProcessed->wait(imageMutex);
+        }
+    }
+    else {
+        onNewStereoImageForTwoPupilImpl(simg);
+    }
 }
 
-// Set the ROI for the main camera image
-void PupilDetection::setROI(QRectF roi) {
-    if(!roi.isEmpty())
-        ROI = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()),
-                       static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+void PupilDetection::onNewStereoImageForTwoPupilImpl(const CameraImage &simg) {
+
+    // at the moment, the images are not undistorted completely but only the major axis points are undistorted after detection for absolute unit conversion
+    // This creates a discrepancy between the undistorted pixel size and the physical measure, as a fix, undistortedDiamter can be calculated using useUndistort
+
+    if (!trackingOn) {
+        qDebug() << simg.frameNumber;
+        // TODO: also emit one in case the file camera was PAUSED !
+        if ((drawTimer.elapsed() > drawDelay) ||
+            (camera->getType() == STEREO_IMAGE_FILE && (
+                    (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == simg.frameNumber) ||
+                    (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == simg.frameNumber)
+            ) ) ) {
+            emit processedImageLowFPS(simg);
+        }
+        return;
+    }
+
+    cv::Mat bwFrameA1 = simg.img;
+    cv::Mat bwFrameA2 = simg.imgSecondary;
+    cv::Mat bwFrameB1 = simg.img;
+    cv::Mat bwFrameB2 = simg.imgSecondary;
+    cv::Rect roiA1 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Rect roiA2 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Rect roiB1 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+    cv::Rect roiB2 = cv::Rect(0, 0, simg.img.cols, simg.img.rows);
+
+    if(useROIPreProcessing && !ROIstereoImageTwoPupilA1.empty() && roiA1 != ROIstereoImageTwoPupilA1 && ROIstereoImageTwoPupilA1.width<=bwFrameA1.cols && ROIstereoImageTwoPupilA1.height<=bwFrameA1.rows) {
+        roiA1 = ROIstereoImageTwoPupilA1;
+        bwFrameA1 = bwFrameA1(ROIstereoImageTwoPupilA1);
+    } else if(autoParamEnabled && autoParamScheduled)
+        ROIstereoImageTwoPupilA1 = roiA1;
+
+    if(useROIPreProcessing && !ROIstereoImageTwoPupilA2.empty() && roiA2 != ROIstereoImageTwoPupilA2 && ROIstereoImageTwoPupilA2.width<=bwFrameA2.cols && ROIstereoImageTwoPupilA2.height<=bwFrameA2.rows) {
+        roiA2 = ROIstereoImageTwoPupilA2;
+        bwFrameA2 = bwFrameA2(ROIstereoImageTwoPupilA2);
+    } else if(autoParamEnabled && autoParamScheduled)
+        ROIstereoImageTwoPupilA2 = roiA2;
+
+    if(useROIPreProcessing && !ROIstereoImageTwoPupilB1.empty() && roiB1 != ROIstereoImageTwoPupilB1 && ROIstereoImageTwoPupilB1.width<=bwFrameB1.cols && ROIstereoImageTwoPupilB1.height<=bwFrameB1.rows) {
+        roiB1 = ROIstereoImageTwoPupilB1;
+        bwFrameB1 = bwFrameB1(ROIstereoImageTwoPupilB1);
+    } else if(autoParamEnabled && autoParamScheduled)
+        ROIstereoImageTwoPupilB1 = roiB1;
+
+    if(useROIPreProcessing && !ROIstereoImageTwoPupilB2.empty() && roiB2 != ROIstereoImageTwoPupilB2 && ROIstereoImageTwoPupilB2.width<=bwFrameB2.cols && ROIstereoImageTwoPupilB2.height<=bwFrameB2.rows) {
+        roiB2 = ROIstereoImageTwoPupilB2;
+        bwFrameB2 = bwFrameB2(ROIstereoImageTwoPupilB2);
+    } else if(autoParamEnabled && autoParamScheduled)
+        ROIstereoImageTwoPupilB2 = roiB2;
+
+    if(autoParamEnabled && autoParamScheduled) {
+        performAutoParam();
+        autoParamScheduled = false;
+    }
+
+    if (bwFrameA1.channels() > 1) {
+        cv::cvtColor(bwFrameA1, bwFrameA1, cv::COLOR_BGR2GRAY);
+        cv::cvtColor(bwFrameB1, bwFrameB1, cv::COLOR_BGR2GRAY);
+    }
+    if (bwFrameA2.channels() > 1) {
+        cv::cvtColor(bwFrameA2, bwFrameA2, cv::COLOR_BGR2GRAY);
+        cv::cvtColor(bwFrameB2, bwFrameB2, cv::COLOR_BGR2GRAY);
+    }
+
+    // We execute pupil detection for main and secondary images concurrently using treads, we execute both in separate threads, then wait till both are finished
+    QFutureSynchronizer<Pupil> synchronizer;
+    Pupil pupilA1;
+    Pupil pupilA2;
+    Pupil pupilB1;
+    Pupil pupilB2;
+
+    try {
+        //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+        if(useOutlineConfidence) {
+            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameA1));
+            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameA2));
+            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods3[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameB1));
+            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods4[pupilDetectionIndex], &PupilDetectionMethod::runWithConfidence, bwFrameB2));
+        } else {
+            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods1[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameA1));
+            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods2[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameA2));
+            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods3[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameB1));
+            synchronizer.addFuture(QtConcurrent::run(pupilDetectionMethods4[pupilDetectionIndex], &PupilDetectionMethod::run, bwFrameB2));
+        }
+        synchronizer.waitForFinished();
+        // Unhandled exceptions in the QtConcurrent::run function are thrown at the result() call
+        pupilA1 = synchronizer.futures().at(0).result();
+        pupilA2 = synchronizer.futures().at(1).result();
+        pupilB1 = synchronizer.futures().at(2).result();
+        pupilB2 = synchronizer.futures().at(3).result();
+    } catch (...) {
+        pupilA1.clear();
+        pupilA2.clear();
+        pupilB1.clear();
+        pupilB2.clear();
+    }
+    //runtimeHistory.push_back(std::make_pair(simg->timestamp, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count()));
+
+    // Shift the pupil position back to the original image coordinates instead of ROI
+    if(useROIPreProcessing) {
+        pupilA1.shift(roiA1.tl());
+        pupilA2.shift(roiA2.tl());
+        pupilB1.shift(roiB1.tl());
+        pupilB2.shift(roiB2.tl());
+    }
+
+    if(usePupilUndistort && !useImageUndistort) {
+        //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+        std::pair<double, double> diameters1 = stereoCalibration->undistortPupilDiameters(pupilA1, pupilB1);
+        pupilA1.undistortedDiameter = diameters1.first;
+        pupilB1.undistortedDiameter = diameters1.second;
+        std::pair<double, double> diameters2 = stereoCalibration->undistortPupilDiameters(pupilA2, pupilB2);
+        pupilA2.undistortedDiameter = diameters2.first;
+        pupilB2.undistortedDiameter = diameters2.second;
+        //qDebug()<< std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count() / 1000.0 ;
+    } else if(!usePupilUndistort && useImageUndistort) {
+        pupilA1.undistortedDiameter = pupilA1.diameter();
+        pupilA2.undistortedDiameter = pupilA1.diameter();
+        pupilB1.undistortedDiameter = pupilB1.diameter();
+        pupilB2.undistortedDiameter = pupilB1.diameter();
+    }
+
+    pupilA1.algorithmName = pupilDetectionMethods1[pupilDetectionIndex]->title();
+    pupilA2.algorithmName = pupilA1.algorithmName;
+    pupilB1.algorithmName = pupilDetectionMethods1[pupilDetectionIndex]->title();
+    pupilB2.algorithmName = pupilB1.algorithmName;
+
+    // Eye A
+    // If both pupil detections are valid and the camera is calibrated, we can perform unit conversion to absolute measure
+    if(pupilA1.valid(-2.0) && pupilA2.valid(-2.0) && calibrated) {
+        //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
+        Pupil rotPupilA1(pupilA1);
+        rotPupilA1.angle += 360-rotPupilA1.angle;
+        Pupil rotPupilA2(pupilA2);
+        rotPupilA2.angle += 360-rotPupilA2.angle;
+
+        // convert pupil detection from pixel into mm through stereo calibration
+        // Select the top left and top right corner of the bounding rects of the pupils as the points we triangulate
+        cv::Point2f mainPointsArrA[4]; // rotatedRect points in order: bottomLeft, topLeft, topRight, bottomRight
+        rotPupilA1.points(mainPointsArrA);
+        int secondPointA = rotPupilA1.size.width > rotPupilA1.size.height ? 2 : 0; // if the pupil major axis is horizontal use topLeft and topRight, else topLeft and bottomLeft
+        //cv::line(mimg->img,mainPointsArr[1], mainPointsArr[secondPoint], cv::Scalar(255, 0, 0));
+
+        cv::Point2f secondaryPointsArrA[4];
+        rotPupilA2.points(secondaryPointsArrA);
+        //cv::line(mimg->imgSecondary,secondaryPointsArr[1], secondaryPointsArr[secondPoint], cv::Scalar(255, 0, 0));
+
+        std::vector<cv::Point2f> mainPointsA{mainPointsArrA[1], mainPointsArrA[secondPointA]}, secondaryPointsA{secondaryPointsArrA[1], secondaryPointsArrA[secondPointA]};
+        std::vector<cv::Point3f> worldPointsA = stereoCalibration->convertPointsTo3D(mainPointsA, secondaryPointsA);
+
+        pupilA1.physicalDiameter = static_cast<float>(cv::norm(worldPointsA[0] - worldPointsA[1]));
+        pupilA2.physicalDiameter = pupilA1.physicalDiameter;
+        //runtimeHistory.push_back(std::make_pair(simg->timestamp, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count()));
+    }
+
+    // Eye B
+    // If both pupil detections are valid and the camera is calibrated, we can perform unit conversion to absolute measure
+    if(pupilB1.valid(-2.0) && pupilB2.valid(-2.0) && calibrated) {
+        //std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
+        Pupil rotPupilB1(pupilB1);
+        rotPupilB1.angle += 360-rotPupilB1.angle;
+        Pupil rotPupilB2(pupilB2);
+        rotPupilB2.angle += 360-rotPupilB2.angle;
+
+        // convert pupil detection from pixel into mm through stereo calibration
+        // Select the top left and top right corner of the bounding rects of the pupils as the points we triangulate
+        cv::Point2f mainPointsArrB[4]; // rotatedRect points in order: bottomLeft, topLeft, topRight, bottomRight
+        rotPupilB1.points(mainPointsArrB);
+        int secondPointB = rotPupilB1.size.width > rotPupilB1.size.height ? 2 : 0; // if the pupil major axis is horizontal use topLeft and topRight, else topLeft and bottomLeft
+        //cv::line(mimg->img,mainPointsArr[1], mainPointsArr[secondPoint], cv::Scalar(255, 0, 0));
+
+        cv::Point2f secondaryPointsArrB[4];
+        rotPupilB2.points(secondaryPointsArrB);
+        //cv::line(mimg->imgSecondary,secondaryPointsArr[1], secondaryPointsArr[secondPoint], cv::Scalar(255, 0, 0));
+
+        std::vector<cv::Point2f> mainPointsB{mainPointsArrB[1], mainPointsArrB[secondPointB]}, secondaryPointsB{secondaryPointsArrB[1], secondaryPointsArrB[secondPointB]};
+        std::vector<cv::Point3f> worldPointsB = stereoCalibration->convertPointsTo3D(mainPointsB, secondaryPointsB);
+
+        pupilB1.physicalDiameter = static_cast<float>(cv::norm(worldPointsB[0] - worldPointsB[1]));
+        pupilB2.physicalDiameter = pupilB1.physicalDiameter;
+        //runtimeHistory.push_back(std::make_pair(simg->timestamp, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start).count()));
+    }
+
+    std::vector<Pupil> Pupils;
+    Pupils.push_back(pupilA1);
+    Pupils.push_back(pupilA2);
+    Pupils.push_back(pupilB1);
+    Pupils.push_back(pupilB2);
+
+    // NOTE: It is important to not only check for drawDelay, but care for the special case,
+    // when the last signals from an image playback arrive before another drawDelay is happened,
+    // to not make the playback stuck just near the end. That is why we check for frame number too
+    if ((drawTimer.elapsed() > drawDelay) ||
+        (camera->getType() == STEREO_IMAGE_FILE && (
+                (!static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getLastCommissionedFrameNumber() == simg.frameNumber) ||
+                (static_cast<FileCamera*>(camera)->isPlaying() && static_cast<FileCamera*>(camera)->getNumImagesTotal()-1 == simg.frameNumber)
+        ) ) ) {
+
+        drawTimer.start();
+        const CameraImage &mimg = simg;
+        mimg.img = simg.img.clone();
+        mimg.imgSecondary = simg.imgSecondary.clone();
+
+        std::vector<cv::Rect> ROIs;
+        if(useROIPreProcessing) {
+            ROIs.push_back(ROIstereoImageTwoPupilA1);
+            ROIs.push_back(ROIstereoImageTwoPupilA2);
+            ROIs.push_back(ROIstereoImageTwoPupilB1);
+            ROIs.push_back(ROIstereoImageTwoPupilB2);
+        } else {
+            ROIs.push_back(roiA1);
+            ROIs.push_back(roiA2);
+            ROIs.push_back(roiB1);
+            ROIs.push_back(roiB2);
+
+        }
+        emit processedImageLowFPS(mimg, currentProcMode, ROIs, Pupils);
+
+        // to inform imagePlaybackControlDialog about the just processed image
+        if(camera->getType() == STEREO_IMAGE_FILE)
+                emit processedImageLowFPS(mimg);
+
+        emit processedPupilDataLowFPS(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
+    }
+
+    emit processedPupilData(simg.timestamp, currentProcMode, Pupils, QString::fromStdString(simg.filename));
 }
 
-// Set the ROI for the secondary camera image
-void PupilDetection::setSecondaryROI(QRectF roi) {
-    if(!roi.isEmpty())
-        ROISecondary = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()),
-                                static_cast<int>(roi.width()), static_cast<int>(roi.height()));
-}
-
+// GB: I found this function like this, and did not bother it
 template <typename T> void PupilDetection::writeVectorCSV(std::vector<std::pair<uint64_t , T>> data, const std::string &header, const std::string &filename) {
     // Debug helper function
     std::ofstream file(filename);
 
     if(file.is_open()) {
 
-        file << header << std::endl;
+        file << header ;
 
         for(typename std::vector<std::pair<uint64_t , T>>::iterator it = data.begin(); it != data.end(); ++it) {
-            file << std::get<0>((*it)) << "," << std::get<1>((*it)) << std::endl;
+            file << std::get<0>((*it)) << "," << std::get<1>((*it)) ;
         }
 
         file.close();
     } else {
-        std::cerr<<"Failed to open file : "<<filename<<std::endl;
+        std::cerr<<"Failed to open file : "<<filename;
     }
-}
-
-// Draws the ROI rectangle on the processed image
-void PupilDetection::onShowROI(bool value) {
-    showROI = value;
-}
-
-// Draws the pupil center on the processed image
-void PupilDetection::onShowPupilCenter(bool value) {
-    showPupilCenter = value;
 }
 
 // When the config changes, emit a signal to inform others of the current settings config i.e. subject configuration
 void PupilDetection::setConfigLabel(QString config) {
     currentConfigLabel = config;
+        if (config =="Automatic Parametrization")
+        setAutoParamSettingsEnabled(true);
+    else
+        setAutoParamSettingsEnabled(false);
+
     emit configChanged(config);
+}
+
+// TODO: use only this everywhere, and remove mainwondow's trackingOn bool
+bool PupilDetection::isTrackingOn() {
+    return trackingOn;
+}
+
+QRect PupilDetection::getROIsingleImageOnePupil() {
+    return QRect(ROIsingleImageOnePupil.x, ROIsingleImageOnePupil.y, ROIsingleImageOnePupil.width, ROIsingleImageOnePupil.height);
+}
+QRect PupilDetection::getROIsingleImageTwoPupilA() {
+    return QRect(ROIsingleImageTwoPupilA.x, ROIsingleImageTwoPupilA.y, ROIsingleImageTwoPupilA.width, ROIsingleImageTwoPupilA.height);
+}
+QRect PupilDetection::getROIsingleImageTwoPupilB() {
+    return QRect(ROIsingleImageTwoPupilB.x, ROIsingleImageTwoPupilB.y, ROIsingleImageTwoPupilB.width, ROIsingleImageTwoPupilB.height);
+}
+QRect PupilDetection::getROIstereoImageOnePupil1() {
+    return QRect(ROIstereoImageOnePupil1.x, ROIstereoImageOnePupil1.y, ROIstereoImageOnePupil1.width, ROIstereoImageOnePupil1.height);
+}
+QRect PupilDetection::getROIstereoImageOnePupil2() {
+    return QRect(ROIstereoImageOnePupil2.x, ROIstereoImageOnePupil2.y, ROIstereoImageOnePupil2.width, ROIstereoImageOnePupil2.height);
+}
+QRect PupilDetection::getROIstereoImageTwoPupilA1() {
+    return QRect(ROIstereoImageTwoPupilA1.x, ROIstereoImageTwoPupilA1.y, ROIstereoImageTwoPupilA1.width, ROIstereoImageTwoPupilA1.height);
+}
+QRect PupilDetection::getROIstereoImageTwoPupilA2() {
+    return QRect(ROIstereoImageTwoPupilA2.x, ROIstereoImageTwoPupilA2.y, ROIstereoImageTwoPupilA2.width, ROIstereoImageTwoPupilA2.height);
+}
+QRect PupilDetection::getROIstereoImageTwoPupilB1() {
+    return QRect(ROIstereoImageTwoPupilB1.x, ROIstereoImageTwoPupilB1.y, ROIstereoImageTwoPupilB1.width, ROIstereoImageTwoPupilB1.height);
+}
+QRect PupilDetection::getROIstereoImageTwoPupilB2() {
+    return QRect(ROIstereoImageTwoPupilB2.x, ROIstereoImageTwoPupilB2.y, ROIstereoImageTwoPupilB2.width, ROIstereoImageTwoPupilB2.height);
+}
+QRect PupilDetection::getROImirrImageOnePupil1() {
+    return QRect(ROImirrImageOnePupil1.x, ROImirrImageOnePupil1.y, ROImirrImageOnePupil1.width, ROImirrImageOnePupil1.height);
+}
+QRect PupilDetection::getROImirrImageOnePupil2() {
+    return QRect(ROImirrImageOnePupil2.x, ROImirrImageOnePupil2.y, ROImirrImageOnePupil2.width, ROImirrImageOnePupil2.height);
+}
+
+void PupilDetection::setROIsingleImageOnePupil(QRectF roi) {
+    if(!roi.isEmpty())
+        ROIsingleImageOnePupil = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+}
+void PupilDetection::setROIsingleImageTwoPupilA(QRectF roi) {
+    if(!roi.isEmpty())
+        ROIsingleImageTwoPupilA = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+}
+void PupilDetection::setROIsingleImageTwoPupilB(QRectF roi) {
+    if(!roi.isEmpty())
+        ROIsingleImageTwoPupilB = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+}
+void PupilDetection::setROIstereoImageOnePupil1(QRectF roi) {
+    if(!roi.isEmpty())
+        ROIstereoImageOnePupil1 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+}
+void PupilDetection::setROIstereoImageOnePupil2(QRectF roi) {
+    if(!roi.isEmpty())
+        ROIstereoImageOnePupil2 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+}
+void PupilDetection::setROIstereoImageTwoPupilA1(QRectF roi) {
+    if(!roi.isEmpty())
+        ROIstereoImageTwoPupilA1 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+}
+void PupilDetection::setROIstereoImageTwoPupilA2(QRectF roi) {
+    if(!roi.isEmpty())
+        ROIstereoImageTwoPupilA2 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+}
+void PupilDetection::setROIstereoImageTwoPupilB1(QRectF roi) {
+    if(!roi.isEmpty())
+        ROIstereoImageTwoPupilB1 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+}
+void PupilDetection::setROIstereoImageTwoPupilB2(QRectF roi) {
+    if(!roi.isEmpty())
+        ROIstereoImageTwoPupilB2 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+}
+void PupilDetection::setROImirrImageOnePupil1(QRectF roi) {
+    if(!roi.isEmpty())
+        ROImirrImageOnePupil1 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+}
+void PupilDetection::setROImirrImageOnePupil2(QRectF roi) {
+    if(!roi.isEmpty())
+        ROImirrImageOnePupil2 = cv::Rect(static_cast<int>(roi.topLeft().x()), static_cast<int>(roi.topLeft().y()), static_cast<int>(roi.width()), static_cast<int>(roi.height()));
+}
+
+ProcMode PupilDetection::getCurrentProcMode() {
+    return (ProcMode)currentProcMode;
+}
+
+void PupilDetection::setCurrentProcMode(int val) {
+
+    configureCameraConnection(true);
+
+    currentProcMode = (ProcMode)val;
+
+    configureCameraConnection(false);
+}
+
+void PupilDetection::setAutoParamEnabled(bool state) {
+    autoParamEnabled = state;
+
+    // GB TODO: do update here onse more for sure?
+}
+
+bool PupilDetection::isAutoParamSettingsEnabled(){
+    return autoParamSettingsEnabled;
+}
+
+void PupilDetection::setAutoParamSettingsEnabled(bool enabled){
+    autoParamSettingsEnabled = enabled;
+}
+
+void PupilDetection::setAutoParamPupSizePercent(float value) {
+    autoParamPupSizePercent = value;
+}
+
+float PupilDetection::getAutoParamPupSizePercent() {
+    return autoParamPupSizePercent;
+}
+
+void PupilDetection::setAutoParamScheduled(bool state) {
+    autoParamScheduled = state;
+}
+
+void PupilDetection::performAutoParam() {
+
+    qDebug() << "autoParamEnabled = " << autoParamEnabled;
+
+    if(!autoParamEnabled)
+        return;
+
+    std::vector<PupilDetectionMethod*> algInstances;
+
+    std::vector<cv::Rect> rois;
+
+    switch(currentProcMode) {
+        case SINGLE_IMAGE_ONE_PUPIL:
+            algInstances.push_back(getCurrentMethod1());
+            rois.push_back(ROIsingleImageOnePupil);
+            break;
+        case SINGLE_IMAGE_TWO_PUPIL:
+            algInstances.push_back(getCurrentMethod1());
+            algInstances.push_back(getCurrentMethod2());
+            rois.push_back(ROIsingleImageTwoPupilA);
+            rois.push_back(ROIsingleImageTwoPupilB);
+            break;
+        case STEREO_IMAGE_ONE_PUPIL:
+            algInstances.push_back(getCurrentMethod1());
+            algInstances.push_back(getCurrentMethod2());
+            rois.push_back(ROIstereoImageOnePupil1);
+            rois.push_back(ROIstereoImageOnePupil2);
+            break;
+        case STEREO_IMAGE_TWO_PUPIL:
+            algInstances.push_back(getCurrentMethod1());
+            algInstances.push_back(getCurrentMethod2());
+            algInstances.push_back(getCurrentMethod3());
+            algInstances.push_back(getCurrentMethod4());
+            rois.push_back(ROIstereoImageTwoPupilA1);
+            rois.push_back(ROIstereoImageTwoPupilA2);
+            rois.push_back(ROIstereoImageTwoPupilB1);
+            rois.push_back(ROIstereoImageTwoPupilB2);
+            break;
+        default:
+            return;
+    }
+
+    // useROIPreProcessing &&  (( NEMJÓ, MINDENKÉPP KELL LÉTEZŐ ROI))
+    if((rois[0].width == 0 || rois[0].height == 0))
+        return;
+
+    // min 2 and max 8 mm means that the minimum is 1/4th of 8,
+    // or in other words: 2 = 0.25 *8;
+    float minToMaxDia = 0.25f;
+
+    // NOTE: These are only DIAMETER values!
+    float pupSizeFactorMin = (autoParamPupSizePercent/100.0f *minToMaxDia);
+    if(pupSizeFactorMin < 0.01f)
+        pupSizeFactorMin = 0.01f;
+    float pupSizeFactorMax = (autoParamPupSizePercent/100.0f);
+
+    for(size_t c=0; c<algInstances.size(); c++) {
+        // for each algorithm instance, we perform the pupilDetectionMethod-type-specific automatic parametrization
+
+        //std::string algName = pupilDetectionMethods1[pupilDetectionIndex]->title();
+        float roiWidth = static_cast<float>( rois[c].width );
+        float roiHeight = static_cast<float>( rois[c].height );
+
+        float minDim = (roiWidth<=roiHeight) ? roiWidth : roiHeight;
+        // bool isWidthTheMinDim = (roiWidth<=roiHeight) ? true : false;
+        // bool isWidthTheMinDim = (roiWidth<=roiHeight) ? true : false;
+
+        // now we get the RADIUS values
+        float minRadius = pupSizeFactorMin*minDim /2.0f;
+        float maxRadius = pupSizeFactorMax*minDim /2.0f;
+
+        //qDebug() << "roiWidth = " << roiWidth;
+        //qDebug() << "roiHeight =" << roiHeight;
+        //qDebug() << "minDim =" << minDim;
+        //qDebug() << "minRadius = " << minRadius;
+        //qDebug() << "maxRadius =" << maxRadius;
+        
+        if(pupilDetectionIndex == 0) {
+            // ELSE
+            ElSe *alg = dynamic_cast<ElSe*>(algInstances[c]);
+
+            // Note: Empirical correction
+            maxRadius *= 1.1;
+
+            alg->minAreaRatio = static_cast<float>( minRadius*minRadius*M_PI / (roiWidth*roiHeight) );
+            alg->maxAreaRatio = static_cast<float>( maxRadius*maxRadius*M_PI / (roiWidth*roiHeight) );
+
+            qDebug() << "Set AutoParam for algorithm ElSe, instance " << c;
+            qDebug() << "minAreaRatio =" << alg->minAreaRatio;
+            qDebug() << "maxAreaRatio =" << alg->maxAreaRatio;
+                
+        } else if(pupilDetectionIndex == 1) {
+            // EXCUSE
+            ExCuSe *alg = dynamic_cast<ExCuSe*>(algInstances[c]);
+
+            alg->max_ellipse_radi = static_cast<int>(round(maxRadius));
+
+            qDebug() << "Set AutoParam for algorithm ExCuSe, instance " << c;
+            qDebug() << "max_ellipse_radi =" << alg->max_ellipse_radi;
+
+        } if(pupilDetectionIndex == 2) {
+            // PURE
+            PuRe *alg = dynamic_cast<PuRe*>(algInstances[c]);
+
+            // These are just a relative reference. User cannot set these to keep them constant
+            // Anyway I guess a camera calibration that supports a precise px-to-mm mapping, could also be utilized here
+            // Now we just back-calculate the roi width (= inter-canthi distance)
+
+            alg->meanCanthiDistanceMM = (roiWidth / 2.0f) / maxRadius *8.0f; // THIS /2.0f is important. Image width is HALF of the canthi distance
+            alg->maxPupilDiameterMM = 8.0f;
+            alg->minPupilDiameterMM = 8.0f * minToMaxDia;
+
+            qDebug() << "Set AutoParam for algorithm PuRe, instance " << c;
+            qDebug() << "meanCanthiDistanceMM =" << alg->meanCanthiDistanceMM;
+            qDebug() << "maxPupilDiameterMM =" << alg->maxPupilDiameterMM;
+            qDebug() << "minPupilDiameterMM =" << alg->minPupilDiameterMM;
+
+        } if(pupilDetectionIndex == 3) {
+            // PUREST
+            PuReST *alg = dynamic_cast<PuReST*>(algInstances[c]);
+
+            alg->meanCanthiDistanceMM = (roiWidth / 2.0f) / maxRadius *8.0f; // THIS /2.0f is important. Image width is HALF of the canthi distance
+            alg->maxPupilDiameterMM = 8.0f;
+            alg->minPupilDiameterMM = 8.0f * minToMaxDia; //2.0f;
+
+            qDebug() << "Set AutoParam for algorithm PuReSt, instance " << c;
+            qDebug() << "meanCanthiDistanceMM =" << alg->meanCanthiDistanceMM;
+            qDebug() << "maxPupilDiameterMM =" << alg->maxPupilDiameterMM;
+            qDebug() << "minPupilDiameterMM =" << alg->minPupilDiameterMM;
+
+        } if(pupilDetectionIndex == 4) {
+            // STARBURST
+            Starburst *alg = dynamic_cast<Starburst*>(algInstances[c]);
+
+            //threshold of pupil edge points detection
+            alg->edge_threshold = 18;
+            // approx max size of the reflection relative to image height -> height/this
+            alg->corneal_reflection_ratio_to_image_size = static_cast<int>( roiHeight / round((maxRadius* 0.2f)) );
+            //corneal reflection search window size
+            alg->crWindowSize = static_cast<int>( round(maxRadius * 2.0f) );
+
+            qDebug() << "Set AutoParam for algorithm Starburst, instance " << c;
+            qDebug() << "set now: edge_threshold =" << alg->edge_threshold;
+            qDebug() << "set now: corneal_reflection_ratio_to_image_size =" << alg->corneal_reflection_ratio_to_image_size;
+            qDebug() << "set now: crWindowSize =" << alg->crWindowSize;
+
+        } if(pupilDetectionIndex == 5) {
+            // SWIRSKI2D
+            Swirski2D *alg = dynamic_cast<Swirski2D*>(algInstances[c]);
+
+            alg->params.Radius_Min = static_cast<int>( round(minRadius) );
+            alg->params.Radius_Max = static_cast<int>( round(maxRadius) );
+
+            qDebug() << "Set AutoParam for algorithm Swirski2D, instance " << c;
+            qDebug() << "set now: params.Radius_Min =" << alg->params.Radius_Min;
+            qDebug() << "set now: params.Radius_Max =" << alg->params.Radius_Max;
+
+        }
+
+    }
+}
+
+void PupilDetection::setSynchronised(bool synchronised) {
+    PupilDetection::synchronised = synchronised;
+}
+
+void PupilDetection::configureCameraConnection(bool connectOrDisconnect) {
+    if(!camera)
+        return;
+
+    if(!connectOrDisconnect) {
+        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage)));
+        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
+        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage)));
+        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
+//        disconnect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
+    } else {
+        if (currentProcMode == ProcMode::SINGLE_IMAGE_ONE_PUPIL) {
+            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForOnePupil(CameraImage)));
+        } else if (currentProcMode == ProcMode::SINGLE_IMAGE_TWO_PUPIL) {
+            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewSingleImageForTwoPupil(CameraImage)));
+        } else if (currentProcMode == ProcMode::STEREO_IMAGE_ONE_PUPIL) {
+            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForOnePupil(CameraImage)));
+        } else if (currentProcMode == ProcMode::STEREO_IMAGE_TWO_PUPIL) {
+            connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewStereoImageForTwoPupil(CameraImage)));
+            // } else if(currentProcMode == ProcMode::MIRR_IMAGE_ONE_PUPIL) {
+            //     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), this, SLOT(onNewMirrImageForOnePupil(CameraImage)));
+        } else {
+            qDebug() << "Could not determine pupilDetection proc mode or it is still undetermined";
+        }
+    }
 }

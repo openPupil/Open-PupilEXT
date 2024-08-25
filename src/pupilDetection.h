@@ -1,9 +1,7 @@
-
-#ifndef PUPILEXT_PUPILDETECTION_H
-#define PUPILEXT_PUPILDETECTION_H
+#pragma once
 
 /**
-    @author Moritz Lode
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include <QtCore/QObject>
@@ -13,44 +11,51 @@
 #include "pupil-detection-methods/PupilDetectionMethod.h"
 #include "devices/singleCamera.h"
 #include "stereoCameraCalibration.h"
+#include "devices/singleWebcam.h"
 
 Q_DECLARE_METATYPE(Pupil)
+Q_DECLARE_METATYPE(cv::Rect)
+Q_DECLARE_METATYPE(std::vector<Pupil>)
+Q_DECLARE_METATYPE(std::vector<cv::Rect>)
 
 /**
-    Object that performs the pupil detection on images, should be executed in an own thread
-
-    Supports single and stereo camera pupil detection
-
-slots:
-
-    onNewImage(): on each new camera image, pupil detection is performed
-    onNewStereoImage(): on each new stereo camera image, pupil detection is performed concurrently
-
-    setAlgorithm(): select the algorithm to apply
-    setROI(): define the ROI for pupil detectionm
-    setSecondaryROI(): for stereo pupil detection, select secondary ROI
-
-signals:
-
-    processedImage(): Outputs camera images with rendered pupil detection results
-    processedPupilData(): Pupil measurements of the pupil detection, in form of a Pupil class object
-
-    processingStarted(): signal to notify pupil detection start
-    processingFinished(): signal to notify pupil detection end
-
-    fps(double fps): processing frame rate of the pupil detection
-    algorithmChanged(): signal to notify pupil detection algorithm change, used for interface updates
+    Enum for different camera image processing modes. These require separate ROI configurations
 */
+enum ProcMode {
+    UNDETERMINED = 0,
+    SINGLE_IMAGE_ONE_PUPIL = 1,
+    SINGLE_IMAGE_TWO_PUPIL = 2,
+    STEREO_IMAGE_ONE_PUPIL = 3,
+    STEREO_IMAGE_TWO_PUPIL = 4 //,
+    // MIRR_IMAGE_ONE_PUPIL = 3
+};
+
+
+enum PupilVecIdx {
+    SINGLE_IMAGE_ONE_PUPIL_MAIN = 0,
+    SINGLE_IMAGE_TWO_PUPIL_A = 0,
+    SINGLE_IMAGE_TWO_PUPIL_B = 1,
+    STEREO_IMAGE_ONE_PUPIL_MAIN = 0,
+    STEREO_IMAGE_ONE_PUPIL_SEC = 1,
+    STEREO_IMAGE_TWO_PUPIL_A_MAIN = 0,
+    STEREO_IMAGE_TWO_PUPIL_A_SEC = 1,
+    STEREO_IMAGE_TWO_PUPIL_B_MAIN = 2,
+    STEREO_IMAGE_TWO_PUPIL_B_SEC = 3,
+    MIRR_IMAGE_ONE_PUPIL_MAIN = 0,
+    MIRR_IMAGE_ONE_PUPIL_SEC = 1
+};
+
+
 class PupilDetection : public QObject {
     Q_OBJECT
 
 public:
 
-    explicit PupilDetection(QObject *parent = 0);
+    explicit PupilDetection(QMutex *imageMutex, QWaitCondition *imagePublished, QWaitCondition *imageProcessed, QObject *parent = 0);
     ~PupilDetection() override;
 
     std::vector<PupilDetectionMethod*> getMethods() {
-        return pupilDetectionMethods;
+        return pupilDetectionMethods1;
     }
 
     QString getCurrentConfigLabel() {
@@ -61,37 +66,7 @@ public:
         currentConfigLabel = config;
     }
 
-    PupilDetectionMethod* getCurrentMethod() {
-        return pupilDetectionMethods[pupilDetectionIndex];
-    }
-
-    PupilDetectionMethod* getMethod(std::string method) {
-        for(auto pm: pupilDetectionMethods) {
-            if(pm->title() == method)
-                return pm;
-        }
-        return nullptr;
-    }
-
-    PupilDetectionMethod* getCurrentSecondaryMethod() {
-        return pupilDetectionMethodsSecondary[pupilDetectionIndex];
-    }
-
-    PupilDetectionMethod* getSecondaryMethod(std::string method) {
-        for(auto pm: pupilDetectionMethodsSecondary) {
-            if(pm->title() == method)
-                return pm;
-        }
-        return nullptr;
-    }
-
-    bool isStereo() {
-        return stereoMode;
-    }
-
-    void setUpdateFPS(int fps) {
-        drawDelay = 1000/fps;
-    }
+    // GB: getCurrentMethod() and its stereo pair were refactored and declaration moved a few lines down
 
     bool isOutlineConfidenceEnabled() {
         return useOutlineConfidence;
@@ -107,6 +82,9 @@ public:
 
     void enableROIPreProcessing(bool value) {
         useROIPreProcessing = value;
+
+        // in order to inform any existing videoView that ROI is not used for pupil detection
+        emit onROIPreprocessingChanged(value);
     }
 
     bool isPupilUndistortionEnabled() {
@@ -131,6 +109,65 @@ public:
         return camera != nullptr;
     }
 
+    // all maximum of 4 threads, using 4 different pupilDetectionMethods variables thread-safely
+    PupilDetectionMethod* getCurrentMethod1() {
+        return pupilDetectionMethods1[pupilDetectionIndex];
+    }
+    PupilDetectionMethod* getMethod1(std::string method) {
+        for(auto pm: pupilDetectionMethods1) {
+            if(pm->title() == method)
+                return pm;
+        }
+        return nullptr;
+    }
+    //
+    PupilDetectionMethod* getCurrentMethod2() {
+        return pupilDetectionMethods2[pupilDetectionIndex];
+    }
+    PupilDetectionMethod* getMethod2(std::string method) {
+        for(auto pm: pupilDetectionMethods2) {
+            if(pm->title() == method)
+                return pm;
+        }
+        return nullptr;
+    }
+
+    PupilDetectionMethod* getCurrentMethod3() {
+        return pupilDetectionMethods3[pupilDetectionIndex];
+    }
+    PupilDetectionMethod* getMethod3(std::string method) {
+        for(auto pm: pupilDetectionMethods3) {
+            if(pm->title() == method)
+                return pm;
+        }
+        return nullptr;
+    }
+
+    PupilDetectionMethod* getCurrentMethod4() {
+        return pupilDetectionMethods4[pupilDetectionIndex];
+    }
+    PupilDetectionMethod* getMethod4(std::string method) {
+        for(auto pm: pupilDetectionMethods4) {
+            if(pm->title() == method)
+                return pm;
+        }
+        return nullptr;
+    }
+    //
+    bool isStereo() {
+        if( camera &&
+            (   camera->getType() == CameraImageType::LIVE_STEREO_CAMERA ||
+                camera->getType() == CameraImageType::STEREO_IMAGE_FILE ) )
+            return true;
+        else
+            return false;
+    }
+    bool hasOpenCamera() {
+        if (camera)
+            return camera->isOpen();
+        return false;
+    }
+
     void startDetection();
     void stopDetection();
 
@@ -142,15 +179,33 @@ private:
     CameraCalibration *singleCalibration;
     StereoCameraCalibration *stereoCalibration;
 
-    std::vector<PupilDetectionMethod*> pupilDetectionMethods;
-    std::vector<PupilDetectionMethod*> pupilDetectionMethodsSecondary;
-
     int pupilDetectionIndex;
     QString currentConfigLabel;
 
     FrameRateCounter *frameCounter;
-    cv::Rect ROI;
-    cv::Rect ROISecondary;
+
+    ProcMode currentProcMode;
+
+    std::vector<PupilDetectionMethod*> pupilDetectionMethods1;
+    std::vector<PupilDetectionMethod*> pupilDetectionMethods2;
+    std::vector<PupilDetectionMethod*> pupilDetectionMethods3;
+    std::vector<PupilDetectionMethod*> pupilDetectionMethods4;
+    
+    // NOTE:
+    // in case of e.g.: ROIstereoImageTwoPupilA1
+    // the NUMBER in the end denotes the different VIEWPOINTS of the same pupil
+    // the LETTER denotes different EYES
+    cv::Rect ROIsingleImageOnePupil; // formerly cv::Rect ROI;
+    cv::Rect ROIsingleImageTwoPupilA;
+    cv::Rect ROIsingleImageTwoPupilB;
+    cv::Rect ROIstereoImageOnePupil1; // formerly cv::Rect ROI;
+    cv::Rect ROIstereoImageOnePupil2; // formerly cv::Rect ROISecondary;
+    cv::Rect ROIstereoImageTwoPupilA1;
+    cv::Rect ROIstereoImageTwoPupilA2;
+    cv::Rect ROIstereoImageTwoPupilB1;
+    cv::Rect ROIstereoImageTwoPupilB2;
+    cv::Rect ROImirrImageOnePupil1;
+    cv::Rect ROImirrImageOnePupil2;
 
     QElapsedTimer processingTimer;
 
@@ -158,41 +213,105 @@ private:
     int drawDelay;
 
     QMutex mutex;
+    QMutex *imageMutex;
+    QWaitCondition *imageProcessed;
+    QWaitCondition *imagePublished;
 
-    bool stereoMode;
     bool calibrated;
     bool trackingOn;
     bool useOutlineConfidence;
     bool useROIPreProcessing;
     bool usePupilUndistort;
     bool useImageUndistort;
-    bool showROI;
-    bool showPupilCenter;
+    //bool showROI;
+    //bool showPupilCenter;
 
     std::vector<std::pair<uint64_t, long>> runtimeHistory;
 
     template<typename T> void writeVectorCSV(std::vector<std::pair<uint64_t , T>> data, const std::string &header, const std::string &filename);
 
+    void populateWithMethods(std::vector<PupilDetectionMethod*> &vec);
+
+
+    bool autoParamEnabled = false; // true as long as there is demand for autoParam. Also for informing other class instances through getter
+    float autoParamPupSizePercent = 50;
+    bool autoParamScheduled = false; // true only if a new performAutoParam() is necessary shortly. (need this, because performAutoParam cannot do anything when called without ROIs defined)
+    
+    bool autoParamSettingsEnabled = false; // True if pupil detection algorithm has Automatic Parametrization setting selected.
+
+    bool synchronised = false; // True if both PupilDetection and Playback are running and synchronized.
+
+    void performAutoParam();
+
+    PupilDetectionMethod* getCurrentMethod(){
+        return getCurrentMethod1();
+    };
+
+    void onNewSingleImageForOnePupilImpl(const CameraImage &image);
+    void onNewSingleImageForTwoPupilImpl(const CameraImage &cimg);
+    void onNewStereoImageForOnePupilImpl(const CameraImage &simg);
+    void onNewStereoImageForTwoPupilImpl(const CameraImage &simg);
+
+    void configureCameraConnection(bool connectOrDisconnect);
+
 public slots:
-
-    void onNewImage(const CameraImage &img);
-    void onNewStereoImage(const CameraImage &simg);
-
-    void onShowROI(bool value);
-    void onShowPupilCenter(bool value);
-
 
     void setAlgorithm(QString method);
     void setConfigLabel(QString config);
 
-    void setROI(QRectF roi);
-    void setSecondaryROI(QRectF roi);
+    void onNewSingleImageForOnePupil(const CameraImage &img);
+    void onNewSingleImageForTwoPupil(const CameraImage &img);
+    void onNewStereoImageForOnePupil(const CameraImage &simg);
+    void onNewStereoImageForTwoPupil(const CameraImage &simg);
+
+    void setAutoParamEnabled(bool state);
+    void setAutoParamPupSizePercent(float value);
+    bool isAutoParamSettingsEnabled();
+    void setAutoParamSettingsEnabled(bool enabled);
+    float getAutoParamPupSizePercent();
+    //void performAutoParam();
+    void setAutoParamScheduled(bool state);
+
+    bool isTrackingOn();
+    ProcMode getCurrentProcMode();
+    void setCurrentProcMode(int val);
+    
+    QRect getROIsingleImageOnePupil();
+    QRect getROIsingleImageTwoPupilA();
+    QRect getROIsingleImageTwoPupilB();
+    QRect getROIstereoImageOnePupil1();
+    QRect getROIstereoImageOnePupil2();
+    QRect getROIstereoImageTwoPupilA1();
+    QRect getROIstereoImageTwoPupilA2();
+    QRect getROIstereoImageTwoPupilB1();
+    QRect getROIstereoImageTwoPupilB2();
+    QRect getROImirrImageOnePupil1();
+    QRect getROImirrImageOnePupil2();
+    
+    void setROIsingleImageOnePupil(QRectF roi); // formerly void setROI(QRectF roi);
+    void setROIsingleImageTwoPupilA(QRectF roi);
+    void setROIsingleImageTwoPupilB(QRectF roi);
+    void setROIstereoImageOnePupil1(QRectF roi); // formerly void setROI(QRectF roi);
+    void setROIstereoImageOnePupil2(QRectF roi); // formerly void setSecondaryROI(QRectF roi);
+    void setROIstereoImageTwoPupilA1(QRectF roi);
+    void setROIstereoImageTwoPupilA2(QRectF roi);
+    void setROIstereoImageTwoPupilB1(QRectF roi);
+    void setROIstereoImageTwoPupilB2(QRectF roi);
+    void setROImirrImageOnePupil1(QRectF roi);
+    void setROImirrImageOnePupil2(QRectF roi);
+
+    void setSynchronised(bool synchronised);
 
 signals:
 
-    void processedImage(const CameraImage &image);
-    void processedPupilData(quint64 timestamp, const Pupil &pupil, const QString &filename);
-    void processedStereoPupilData(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filename);
+    void processedImageLowFPS(CameraImage image);
+
+//    void processedPlaybackImage(CameraImage mimg);
+    void processedImageLowFPS(CameraImage mimg, int currentProcMode, std::vector<cv::Rect> ROIs, std::vector<Pupil> Pupils);
+    void processedPupilData(quint64 timestamp, int currentProcMode, const std::vector<Pupil> &Pupils, const QString &filename);
+    void processedPupilDataLowFPS(quint64 timestamp, int currentProcMode, const std::vector<Pupil> &Pupils, const QString &filename);
+
+    void onROIPreprocessingChanged(bool state);
 
     void processingStarted();
     void processingFinished();
@@ -202,6 +321,3 @@ signals:
     void configChanged(QString config);
 
 };
-
-
-#endif //PUPILEXT_PUPILDETECTION_H

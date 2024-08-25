@@ -232,14 +232,14 @@ void StereoCameraCalibration::onNewImage(const CameraImage &cimg) {
                 cv::putText(imgSecondary, "Pattern not found (Stereo)", cv::Point(0.25*img.cols, 0.25*img.rows), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(0,0,255), 3);
             }
 
-            emit processedImage(mimg);
+            emit processedImageLowFPS(mimg);
         }
     } else if(mode==CAPTURING) {
 
         cv::putText(img, "CALIBRATING", cv::Point(0.1*img.cols, 0.1*img.rows), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(255,0,0), 3);
         cv::putText(imgSecondary, "CALIBRATING", cv::Point(0.1*img.cols, 0.1*img.rows), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(255,0,0), 3);
 
-        emit processedImage(mimg);
+        emit processedImageLowFPS(mimg);
 
         calibrationSuccess = QtConcurrent::run(this, &StereoCameraCalibration::calibrate);
         //calibrationSuccess.waitForFinished();
@@ -249,7 +249,7 @@ void StereoCameraCalibration::onNewImage(const CameraImage &cimg) {
         cv::putText(img, "CALIBRATING", cv::Point(0.1*img.cols, 0.1*img.rows), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(255,0,0), 3);
         cv::putText(imgSecondary, "CALIBRATING", cv::Point(0.1*img.cols, 0.1*img.rows), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(255,0,0), 3);
 
-        emit processedImage(mimg);
+        emit processedImageLowFPS(mimg);
 
         if(calibrationSuccess.isFinished() && calibrationSuccess.result()) {
             // Emit data
@@ -290,7 +290,7 @@ void StereoCameraCalibration::onNewImage(const CameraImage &cimg) {
             cv::putText(undistSec, "AVG. MAE: " + std::to_string(avgMAESec) + "px", cv::Point(0.1 * undist.cols, 0.3 * undist.rows), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(0, 0, 255), 3);
             mimg.imgSecondary = undistSec;
 
-            emit processedImage(mimg);
+            emit processedImageLowFPS(mimg);
         }
     } else if(mode==VERIFYING) {
 
@@ -421,13 +421,13 @@ void StereoCameraCalibration::onNewImage(const CameraImage &cimg) {
                 cv::putText(imgSecondary, "Pattern not found (Stereo)", cv::Point(0.25*img.cols, 0.25*img.rows), cv::FONT_HERSHEY_PLAIN, 4, cv::Scalar(0,0,255), 3);
             }
 
-            emit processedImage(mimg);
+            emit processedImageLowFPS(mimg);
         }
     } else {
         if(timer.elapsed() > updateDelay && !img.empty()) {
             timer.restart();
 
-            emit processedImage(mimg);
+            emit processedImageLowFPS(mimg);
         }
     }
 }

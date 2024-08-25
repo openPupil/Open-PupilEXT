@@ -15,7 +15,9 @@ StereoCameraCalibrationView::StereoCameraCalibrationView(StereoCamera *camera, Q
     settingsDirectory = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 
     if(!settingsDirectory.exists()) {
-        settingsDirectory.mkdir(".");
+// mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
+//        settingsDirectory.mkdir(".");
+        QDir().mkpath(settingsDirectory.absolutePath());
     }
 
     QVBoxLayout* layout = new QVBoxLayout(this);
@@ -156,7 +158,7 @@ StereoCameraCalibrationView::StereoCameraCalibrationView(StereoCamera *camera, Q
     connect(camera, SIGNAL(onNewGrabResult(CameraImage)), calibrationWorker, SLOT(onNewImage(CameraImage)));
     //connect(this, SIGNAL(onNewImage(CameraImage)), calibrationWorker, SLOT(onNewImage(CameraImage)));
     // Show the processed calibration images in the live-view
-    connect(calibrationWorker, SIGNAL(processedImage(CameraImage)), this, SLOT(updateView(CameraImage)));
+    connect(calibrationWorker, SIGNAL(processedImageLowFPS(CameraImage)), this, SLOT(updateView(CameraImage)));
     connect(calibrationWorker, SIGNAL (finishedCalibration()), this, SLOT (onCalibrationFinished()));
 
     if(!calibrationWorker->isCalibrated()) {
@@ -229,7 +231,7 @@ void StereoCameraCalibrationView::onSaveClick() {
     QString filename = QFileDialog::getSaveFileName(this, tr("Save Calibration File"), "", tr("XML files (*.xml)"));
 
     if(!filename.isEmpty()) {
-        filename.replace(" ", "");
+        // filename.replace(" ", ""); // Commented out by BG on 2024.04.22., refer to https://github.com/openPupil/Open-PupilEXT/issues/42
 
         QFileInfo fileInfo(filename);
         // check if filename has extension, else append xml to it
@@ -258,7 +260,7 @@ void StereoCameraCalibrationView::closeEvent(QCloseEvent *event) {
 
     if(calibrationWorker->isCalibrated()) {
         QString configFile = camera->getCalibrationFilename();
-        configFile.replace(" ", "");
+        //configFile.replace(" ", ""); // Commented out by BG on 2024.04.22., refer to https://github.com/openPupil/Open-PupilEXT/issues/42
         std::cout<<"Saving calibration file to settings directory: "<< configFile.toStdString() <<std::endl;
         calibrationWorker->saveToFile(configFile.toStdString().c_str());
         QWidget::closeEvent(event);
@@ -288,7 +290,7 @@ void StereoCameraCalibrationView::onSharpnessThresholdBoxChange() {
 // Calibration filename is predefined by the configured calibration settings (pattern size etc.)
 void StereoCameraCalibrationView::loadConfigFile() {
     QString configFile = camera->getCalibrationFilename();
-    configFile.replace(" ", "");
+    //configFile.replace(" ", ""); // Commented out by BG on 2024.04.22., refer to https://github.com/openPupil/Open-PupilEXT/issues/42
     if (QFile::exists(configFile)) {
         std::cout << "Found calibration file in settings directory. Loading: " << configFile.toStdString()
                   << std::endl;

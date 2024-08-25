@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_STEREOCAMERACALIBRATIONVIEW_H
-#define PUPILEXT_STEREOCAMERACALIBRATIONVIEW_H
+#pragma once
 
 /**
     See https://docs.opencv.org/2.4/doc/tutorials/calib3d/camera_calibration/camera_calibration.html
@@ -88,9 +86,6 @@ public slots:
 
 signals:
 
-    void onNewImage(const CameraImage &img);
+    void onNewImage(CameraImage img);
 
 };
-
-
-#endif //PUPILEXT_STEREOCAMERACALIBRATIONVIEW_H

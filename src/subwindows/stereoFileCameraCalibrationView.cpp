@@ -17,7 +17,9 @@ StereoFileCameraCalibrationView::StereoFileCameraCalibrationView(FileCamera *cam
     settingsDirectory = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 
     if(!settingsDirectory.exists()) {
-        settingsDirectory.mkdir(".");
+// mkdir(".") DOES NOT WORK ON MACOS, ONLY WINDOWS. (Reported on MacOS 12.7.6 and Windows 10)
+//        settingsDirectory.mkdir(".");
+        QDir().mkpath(settingsDirectory.absolutePath());
     }
 
     QVBoxLayout* layout = new QVBoxLayout(this);

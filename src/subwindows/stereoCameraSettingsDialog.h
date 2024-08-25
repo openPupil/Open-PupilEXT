@@ -1,11 +1,8 @@
-
-#ifndef PUPILEXT_STEREOCAMERASETTINGSDIALOG_H
-#define PUPILEXT_STEREOCAMERASETTINGSDIALOG_H
+#pragma once
 
 /**
-    @author Moritz Lode
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
-
 
 #include <QtCore/qobjectdefs.h>
 #include <QtWidgets/QDialog>
@@ -15,7 +12,10 @@
 #include <QtWidgets/QCheckBox>
 #include "../devices/camera.h"
 #include "../devices/stereoCamera.h"
-#include "serialSettingsDialog.h"
+#include "MCUSettingsDialog.h"
+#include "../camImageRegionsWidget.h"
+#include "../SVGIconColorAdjuster.h"
+#include "stereoCameraView.h"
 
 /**
     Custom widget for configuring a stereo camera setup, main and secondary camera are selected and opened, hardware trigger established and camera settings configured.
@@ -29,11 +29,12 @@ class StereoCameraSettingsDialog : public QDialog {
 
 public:
 
-    explicit StereoCameraSettingsDialog(StereoCamera *camera, SerialSettingsDialog *serialSettings, QWidget *parent = nullptr);
+    explicit StereoCameraSettingsDialog(StereoCamera *cameraPtr, MCUSettingsDialog *MCUSettings, QWidget *parent = nullptr);
 
     ~StereoCameraSettingsDialog() override;
 
     void accept() override;
+    void setCameraConfigurable(bool state);
 
 protected:
 
@@ -48,42 +49,94 @@ private:
     QDir settingsDirectory;
     QSettings *applicationSettings;
 
-    SerialSettingsDialog *serialSettings;
+    MCUSettingsDialog *MCUSettings;
 
     QPushButton *saveButton;
     QPushButton *loadButton;
-    QPushButton *gainAutoOnceButton;
-    QPushButton *exposureAutoOnceButton;
-    QPushButton *startHWButton;
-    QPushButton *stopHWButton;
-    QPushButton *updateDevicesButton;
-    QPushButton *openButton;
-    QPushButton *closeButton;
+    QPushButton *autoGainOnceButton;
+    QPushButton *autoExposureOnceButton;
+    QPushButton *HWTstartStopButton;
 
-    QDoubleSpinBox *gainInputBox;
+    QPushButton *updateDevicesButton;
+    QPushButton *cameraOpenCloseButton;
+
+    QDoubleSpinBox *gainBox;
     QSpinBox *exposureInputBox;
 
     QComboBox *mainCameraBox;
     QComboBox *secondaryCameraBox;
 
     QLabel *frameRateValueLabel;
-    QCheckBox *framerateEnabled;
-    QSpinBox *framerateInputBox;
+    QRadioButton *SWTradioButton;
+    QCheckBox *SWTframerateEnabled;
+    QSpinBox *SWTframerateBox;
 
-    QPushButton *serialConfigButton;
-    QComboBox *lineSourceBox;
+    QPushButton *MCUConfigButton;
+    QFormLayout *HWTgroupLayout;
+    QLabel *HWTframerateLabel;
+    QLabel *HWTlineSourceLabel;
+    QLabel *HWTtimeSpanLabel;
+    QComboBox *HWTlineSourceBox;
+    bool HWTrunning = false;
+    QRadioButton *HWTradioButton;
+    QHBoxLayout *HWTframerateLayout;
+    QSpinBox *HWTframerateBox;
+    QDoubleSpinBox *HWTtimeSpanBox;
 
-    QSpinBox *triggerFramerateInputBox;
-    QDoubleSpinBox *triggerTimeSpanInputBox;
+    QGroupBox *MCUConnGroup;
+    QPushButton *MCUConnDisconnButton;
 
-    QGroupBox *hwTriggerGroup;
+    QGroupBox *triggerGroup;
     QGroupBox *analogGroup;
     QGroupBox *acquisitionGroup;
 
     void createForm();
-    void updateForms();
     void loadSettings();
     void saveSettings();
+
+    QHBoxLayout *SWTframerateLayout;
+    QLabel *frameRateLabel;
+    QLabel *exposureLabel;
+
+    QLabel *imageROIwidthLabel;
+    QLabel *imageROIheightLabel;
+    QLabel *imageROIoffsetXLabel;
+    QLabel *imageROIoffsetYLabel;
+    QLabel *binningLabel;
+
+    QLabel *imageROIwidthMaxLabel;
+    QLabel *imageROIheightMaxLabel;
+    QLabel *imageROIoffsetXMaxLabel;
+    QLabel *imageROIoffsetYMaxLabel;
+
+    QSpinBox *imageROIwidthInputBox;
+    QSpinBox *imageROIheightInputBox;
+    QSpinBox *imageROIoffsetXInputBox;
+    QSpinBox *imageROIoffsetYInputBox;
+    QComboBox *binningBox;
+
+    CamImageRegionsWidget *camImageRegionsWidget;
+
+    int lastUsedBinningVal = 0;
+
+public slots:
+    void setLimitationsWhileTracking(bool state);
+    void setLimitationsWhileCameraNotOpen(bool state);
+
+    void updateImageROISettingsValues();
+    void updateCamImageRegionsWidget();
+    void updateSensorSize();
+
+    void startHardwareTrigger();
+    void stopHardwareTrigger();
+    void setHWTlineSource(int lineSourceNum);
+    void setHWTruntime(double runtimeMinutes);
+    void setHWTframerate(int fps);
+
+    void setExposureTimeValue(int value);
+    void setGainValue(double value);
+
+    void updateForms();
 
 private slots:
 
@@ -99,24 +152,43 @@ private slots:
 
     void onLineSourceChange(int index);
     void updateFrameRateValue();
-    void startHardwareTrigger();
-    void stopHardwareTrigger();
-
-    void onSerialDisconnect();
-    void onSerialConnect();
 
     void onSettingsChange();
 
-signals:
+    void onSetImageROIwidth(int val);
+    void onSetImageROIheight(int val);
+    void onSetImageROIoffsetX(int val);
+    void onSetImageROIoffsetY(int val);
+    void onBinningModeChange(int index);
 
-    void onSerialConfig();
+    void mainCameraBoxCurrentIndexChanged(int);
+    void secondaryCameraBoxCurrentIndexChanged(int);
+    void HWTstartStopButtonClicked();
+    void cameraOpenCloseButtonClicked();
+    void MCUConnDisconnButtonClicked();
+
+    void updateImageROISettingsMax();
+
+    void updateHWTStartStopRelatedWidgets();
+    void updateMCUConnDisconnButtonState();
+
+public slots:
+    void openStereoCamera(const QString &camName1, const QString &camName2);
+    void connectMCU();
+    void startHWT();
+
+signals:
+    void onMCUConfig();
     void onHardwareTriggerStart(QString cmd);
     void onHardwareTriggerStop(QString cmd);
 
     void onHardwareTriggerEnable();
     void onHardwareTriggerDisable();
 
+    void onImageROIChanged(QRect rect);
+    void onSensorSizeChanged(QSize size);
+
+    void stereoCamerasOpened();
+    void stereoCamerasClosed();
+
 };
-
-
-#endif //PUPILEXT_STEREOCAMERASETTINGSDIALOG_H

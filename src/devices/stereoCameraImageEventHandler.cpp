@@ -18,10 +18,14 @@ StereoCameraImageEventHandler::~StereoCameraImageEventHandler() {
 // Event handler that is executed if for any of the two cameras in the stereo camera images were skipped
 // If image skipping happens in one of the two cameras, one may assume that the images are not in sync
 // anymore and the onImageGrabbed event handler may not be able produce any stereo images due to unsync framecount
+// BG: NOTE: According to Basler docs this will only ever get called when grabStrategy is set to LatestImageOnly or LatestImages, which is never the case for us ..(?)
+// https://zh.docs.baslerweb.com/pylonapi/cpp/class_pylon_1_1_c_basler_universal_image_event_handler#function-onimagesskipped
 void StereoCameraImageEventHandler::OnImagesSkipped(CInstantCamera& camera, size_t countOfSkippedImages) {
     std::cout << "OnImagesSkipped event for device " << camera.GetDeviceInfo().GetModelName() << std::endl;
     std::cout << countOfSkippedImages  << " images have been skipped." << std::endl;
     std::cout << std::endl;
+
+    emit imagesSkipped();
 }
 
 // Event handler that is executed for EACH image acquisition of EACH camera
@@ -53,9 +57,18 @@ void StereoCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
         // We assume that when both cameras are started grabbing at the same time, the framenumbers should match (at each camera acquisition start, the framenumber is reset)
         // Combining images based on timestamps showed to be error prone as the time difference between the two images started to drift for unknown reasons
 
-        //int diff = std::abs((int)(timeStamp - stereoImage.timestamp));
-        //std::cout<<"Grabresult diff: "<<diff<<std::endl;
+//        int diff = std::abs((int)(timeStamp - stereoImage.timestamp));
+//        std::cout<<"Grabresult timestamp diff: "<<diff<<std::endl;
 
+//        int diff2 = std::abs((int)(frameNumber - stereoImage.frameNumber));
+//        std::cout<<"Grabresult frameNumber diff: "<<diff2<<std::endl;
+
+        if (camera.GetDeviceInfo().GetModelName().find("Emu") != String_t::npos){
+            stereoImage.timestamp += frameNumber;
+        }
+
+        //std::cout << "Image frameNumber: " << stereoImage.frameNumber << std::endl;
+        //std::cout << "Received frameNumber: " << frameNumber << " Device id: " << camera.GetDeviceInfo().GetDeviceGUID() <<  std::endl;
         if(stereoImage.frameNumber == frameNumber) {
             // If framenumber matches the already contained image in the stereo image this means the missing second images is now found
             // Cameracontextvalue describes the index of the camera in a basler camera array (main or secondary)
@@ -67,6 +80,7 @@ void StereoCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
             //std::cout<< "Stereoimage complete: " << stereoImage.frameNumber << " " << stereoImage.timestamp <<std::endl;
             //std::cout<< "-------------------------------" <<std::endl;
             emit onNewGrabResult(stereoImage);
+//            std::cout << "STEREO GRAB RESULT: " << stereoImage.frameNumber << " AT TIME: " << stereoImage.timestamp << std::endl;
         } else {
             // Else, we have a "new" stereo image, set the timestamp, image and wait for the second missing one, then emit
             stereoImage.timestamp = timeStamp;
@@ -80,6 +94,13 @@ void StereoCameraImageEventHandler::OnImageGrabbed(CInstantCamera& camera, const
         mutex.unlock();
     } else {
         std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription() << std::endl;
+
+        // If there is faulty connection /hw. interface problem
+        if(ptrGrabResult->GetErrorCode() == 3791651083 || // Error code for "The image stream is out of sync."
+           ptrGrabResult->GetErrorCode() == 31 || // Error code for device not functioning
+           QString::fromStdString(ptrGrabResult->GetErrorDescription().c_str()).contains("sync")) {
+            emit imagesSkipped();
+        }
     }
 
 }

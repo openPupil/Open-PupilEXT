@@ -1,0 +1,7 @@
+Sample experiment code for PupilEXT integration (currently v0.1.2 beta)
+
+These code use PsychoPy (https://www.psychopy.org/)
+
+The experiment code was made and tested with PsychoPy version 2023-2-3, but the PupilEXT helper class itself should be compatible to way earlier versions as well. 
+
+Author: Gábor Bényei

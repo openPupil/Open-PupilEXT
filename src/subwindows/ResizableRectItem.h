@@ -1,10 +1,8 @@
-
-#ifndef PUPILEXT_RESIZABLERECTITEM_H
-#define PUPILEXT_RESIZABLERECTITEM_H
+#pragma once
 
 /**
     Source https://github.com/sashoalm/ResizableRectItem
-    @author Alexander Almaleh, Moritz Lode (Updated 2020)
+    @author Alexander Almaleh, Moritz Lode (Updated 2020), Gabor Benyei (Updated 2023)
 */
 
 #include <QtWidgets/qgraphicsitem.h>
@@ -28,10 +26,22 @@ Q_OBJECT
 public:
 
     explicit ResizableRectItem(QRectF rect, QGraphicsItem *parent=0);
+    explicit ResizableRectItem(QRectF rect, QSizeF aspectRatio, QGraphicsItem *parent=0);
 
     QRectF getRect() const;
 
+    void setMinSize(QSizeF size);
+    void setAspectRatioLock(QSizeF aspectRatio) {
+        ARLock = aspectRatio;
+    }
+
+    void setNormalizedRect(const QRectF rect);
+
 private:
+
+    QSizeF minSize = QSizeF(0,0);
+    QSizeF ARLock = QSizeF(0,0);
+    bool keepingAspectRatio = true;
 
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
@@ -49,6 +59,3 @@ signals:
     void onChange();
 
 };
-
-
-#endif //PUPILEXT_RESIZABLERECTITEM_H

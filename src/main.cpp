@@ -1,7 +1,11 @@
 #include "mainwindow.h"
 #include <QApplication>
 
+#include <QSettings>
+
 #include <pylon/PylonIncludes.h>
+
+#include "execArgParser.h"
 
 // Stream operator for custom types needed to save those types to QTs application settings structure
 #ifndef QT_NO_DATASTREAM
@@ -52,24 +56,43 @@ QDataStream &operator>>(QDataStream &stream, QMap<QString, QList<float>> &map)
 
 int main(int argc, char *argv[])
 {
-    QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
-    QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    try {
 
-    QApplication a(argc, argv);
+        int result = 0;
+        do {
+            QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+            QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
-    // Changing this may change the settings path thus not loading old application settings!
-    QCoreApplication::setOrganizationName("FGLT");
-    QCoreApplication::setApplicationName("PupilEXT");
-    QCoreApplication::setApplicationVersion("0.1.1 Beta");
+            QApplication a(argc, argv);
 
-    qRegisterMetaTypeStreamOperators<QMap<QString, QList<float>>>("QMap<QString,QList<float>>");
-    qRegisterMetaTypeStreamOperators<QList<QPair<QString, QString>>>("QList<QPair<QString, QString>>");
+            // Changing this may change the settings path thus not loading old application settings!
+            QCoreApplication::setOrganizationName("FGLT");
+            QCoreApplication::setApplicationName("PupilEXT");
+            QCoreApplication::setApplicationVersion("0.1.2 Beta");
 
-    Pylon::PylonAutoInitTerm autoInitTerm;  // PylonInitialize() will be called here
+            qRegisterMetaTypeStreamOperators<QMap<QString, QList<float>>>("QMap<QString,QList<float>>");
+            qRegisterMetaTypeStreamOperators<QList<QPair<QString, QString>>>("QList<QPair<QString, QString>>");
 
-    MainWindow w;
-    w.setWindowIcon(QIcon(":/icon.svg"));
-    w.show();
+            Pylon::PylonAutoInitTerm autoInitTerm;  // PylonInitialize() will be called here
 
-    return a.exec();
+            // To be able to interpret start arguments (supplied through command line startup, via e.g. .lnk icons in windows OS with arguments, or batch file exe call)
+            // useful e.g. in case of automatic exec on scheduled PC startup for warming up camera device before experimental session
+            ExecArgParser* execArgParser = new ExecArgParser(argc, argv);
+
+            MainWindow w;
+            w.setWindowIcon(QIcon(":/icon.svg"));
+            w.show();
+
+            execArgParser->connectMainWindow(&w);
+            execArgParser->iterThroughDuties();
+
+            result = a.exec();
+        } while( result == MainWindow::EXIT_CODE_REBOOT );
+        return result;
+
+    } catch (const std::exception &e) {
+        std::cout << e.what() << std::endl;
+        throw;
+    }
+    return -1;
 }

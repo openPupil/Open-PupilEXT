@@ -1,6 +1,4 @@
-
-#ifndef PUPILEXT_SINGLECAMERAIMAGEEVENTHANDLER_H
-#define PUPILEXT_SINGLECAMERAIMAGEEVENTHANDLER_H
+#pragma once
 
 /**
     @author Moritz Lode
@@ -11,11 +9,10 @@
 #include <pylon/PylonImage.h>
 #include <pylon/ImageEventHandler.h>
 #include <pylon/PylonIncludes.h>
+#include <QDateTime>
 #include "camera.h"
 
 using namespace Pylon;
-
-Q_DECLARE_METATYPE(cv::Mat)
 
 /**
     Image event handler, gets called at each new image received from a single camera (Basler camera)
@@ -49,7 +46,6 @@ private:
 signals:
 
     void onNewGrabResult(CameraImage grabResult);
+    void imagesSkipped();
 
 };
-
-#endif //PUPILEXT_SINGLECAMERAIMAGEEVENTHANDLER_H

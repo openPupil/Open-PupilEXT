@@ -13,13 +13,15 @@ set(MACOSX_BUNDLE_ICON_FILE icon.icns)
 set(APP_ICON_MACOSX ${PROJECT_SOURCE_DIR}/icon.icns)
 set_source_files_properties(${APP_ICON_MACOSX} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 
+
 # For packaging add the following code - add_executable(PupilEXT MACOSX_BUNDLE main.cpp
 add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} ${APP_ICON_MACOSX}
         mainwindow.cpp
-        subwindows/serialSettingsDialog.cpp subwindows/serialSettingsDialog.h
+        supportFunctions.h
+        subwindows/MCUSettingsDialog.cpp subwindows/MCUSettingsDialog.h
         dataWriter.cpp dataWriter.h
         signalPubSubHandler.h
-        subwindows/gettingsStartedWizard.cpp subwindows/gettingsStartedWizard.h
+        subwindows/gettingStartedWizard.cpp subwindows/gettingStartedWizard.h
         pupil-detection-methods/Pupil.h pupil-detection-methods/PupilDetectionMethod.h
         pupil-detection-methods/ElSe.cpp pupil-detection-methods/ElSe.h
         pupil-detection-methods/ExCuSe.cpp pupil-detection-methods/ExCuSe.h
@@ -56,16 +58,44 @@ add_executable(PupilEXT main.cpp ${RESOURCE_ADDED} ${APP_ICON_RESOURCE_WINDOWS} 
         devices/stereoCameraImageEventHandler.cpp devices/stereoCameraImageEventHandler.h
         subwindows/stereoCameraCalibrationView.h subwindows/stereoCameraCalibrationView.cpp
         stereoCameraCalibration.h stereoCameraCalibration.cpp cameraFrameRateCounter.h subwindows/generalSettingsDialog.cpp subwindows/generalSettingsDialog.h subwindows/stereoFileCameraCalibrationView.cpp subwindows/stereoFileCameraCalibrationView.h
+        execArgParser.h execArgParser.cpp eyeDataSerializer.h eyeDataSerializer.cpp camTempMonitor.h camTempMonitor.cpp dataStreamer.h dataStreamer.cpp metaSnapshotOrganizer.h metaSnapshotOrganizer.cpp
+        devices/singleWebcam.h devices/singleWebcam.cpp devices/singleWebcamImageEventHandler.h devices/singleWebcamImageEventHandler.cpp
+        subwindows/singleWebcamSettingsDialog.h subwindows/singleWebcamSettingsDialog.cpp
+        connPoolCOM.h connPoolUDP.h PRGmainwindow.cpp
+        recEventTracker.h recEventTracker.cpp
+        subwindows/streamingSettingsDialog.h subwindows/streamingSettingsDialog.cpp
+        subwindows/singleWebcamCalibrationView.h subwindows/singleWebcamCalibrationView.cpp
+        subwindows/IPCtrl.h subwindows/IPCtrl.cpp
+        subwindows/remoteCCDialog.h subwindows/remoteCCDialog.cpp
+        subwindows/playbackDial.h subwindows/playbackSlider.h subwindows/imagePlaybackControlDialog.h subwindows/imagePlaybackControlDialog.cpp
         subwindows/singleFileCameraCalibrationView.h subwindows/singleFileCameraCalibrationView.cpp subwindows/RestorableQMdiSubWindow.h subwindows/subjectSelectionDialog.cpp subwindows/subjectSelectionDialog.h
         subwindows/singleCameraSharpnessView.h subwindows/singleCameraSharpnessView.cpp sharpnessCalculation.h sharpnessCalculation.cpp
         subwindows/calibrationHelpDialog.h subwindows/calibrationHelpDialog.cpp
-        subwindows/pupil-detection-methods/json.h)
+        subwindows/pupil-detection-methods/json.h subwindows/timestampSpinBox.h subwindows/timestampSpinBox.cpp
+        SVGIconColorAdjuster.h
+        camImageRegionsWidget.h camImageRegionsWidget.cpp
+        playbackSynchroniser.cpp
+        playbackSynchroniser.h
+        subwindows/outputDataRuleDialog.h
+        subwindows/outputDataRuleDialog.cpp
+        devices/cameraConfigurationEventHandler.h
+        dataTypes.cpp
+        dataTypes.h
+        subwindows/sceneImageView.cpp
+        subwindows/sceneImageView.h
+        subwindows/sceneImageWidget.cpp
+        subwindows/sceneImageWidget.h
+)
+
+# On linux with GCC and QT 5.15.2 setting standard here is recognized and is not overwritten by QT
+#set_property(TARGET PupilEXT PROPERTY CXX_STANDARD 17)
+#set(CMAKE_CXX_STANDARD 17)
 
 if(SPII_BUILD_FOUND)
 
     target_link_libraries(${CMAKE_PROJECT_NAME}
             "singleeyefitter"
-            Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport #Qt5::OpenGL
+            Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport Qt5::Network Qt5::Xml #Qt5::OpenGL
             ${Boost_LIBRARIES}
             TBB::tbb
             #Boost::boost
@@ -80,7 +110,7 @@ else()
 
     target_link_libraries(${CMAKE_PROJECT_NAME}
         "singleeyefitter"
-        Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport #Qt5::OpenGL
+        Qt5::Widgets Qt5::Concurrent Qt5::SerialPort Qt5::Charts Qt5::Svg Qt5::PrintSupport Qt5::Network Qt5::Xml #Qt5::OpenGL
         ${Boost_LIBRARIES}
         TBB::tbb
         #Boost::boost
@@ -100,7 +130,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 
 if(MSVC OR WIN32)
-    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE /W3)
+    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE /W3 /MP)
 else()
     target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall -pedantic)
 endif()
@@ -118,6 +148,8 @@ endif()
 install(PROGRAMS "$<TARGET_FILE:Qt5::QSvgIconPlugin>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/iconengines")
 install(PROGRAMS "$<TARGET_FILE:Qt5::QSvgPlugin>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/imageformats")
 install(PROGRAMS "$<TARGET_FILE:Qt5::PrintSupport>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/printsupport")
+install(PROGRAMS "$<TARGET_FILE:Qt5::Network>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/network")
+install(PROGRAMS "$<TARGET_FILE:Qt5::Xml>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release/xml")
 
 install(PROGRAMS "$<TARGET_FILE:Qt5::Gui>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
 install(PROGRAMS "$<TARGET_FILE:Qt5::Core>" DESTINATION "${PROJECT_SOURCE_DIR}/bin/release")
@@ -141,6 +173,8 @@ endif()
 install(PROGRAMS "$<TARGET_FILE:Qt5::QSvgIconPlugin>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/iconengines")
 install(PROGRAMS "$<TARGET_FILE:Qt5::QSvgPlugin>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/imageformats")
 install(PROGRAMS "$<TARGET_FILE:Qt5::PrintSupport>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/printsupport")
+install(PROGRAMS "$<TARGET_FILE:Qt5::Network>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/network")
+install(PROGRAMS "$<TARGET_FILE:Qt5::Xml>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/xml")
 
 install(PROGRAMS "$<TARGET_FILE:Qt5::Gui>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 install(PROGRAMS "$<TARGET_FILE:Qt5::Core>" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

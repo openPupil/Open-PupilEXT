@@ -1,15 +1,15 @@
-#ifndef PUPILEXT_GRAPHPLOT_H
-#define PUPILEXT_GRAPHPLOT_H
+#pragma once
 
 /**
-    @author Moritz Lode
+    @author Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include <QtWidgets/QWidget>
 #include <QtCore/qobjectdefs.h>
-
 #include "qcustomplot/qcustomplot.h"
 #include "../pupil-detection-methods/Pupil.h"
+#include "../pupilDetection.h"
+#include "../dataTypes.h"
 
 /**
     Custom lineplot graph widget employing the QCustomPlot library for plotting
@@ -24,9 +24,19 @@ class GraphPlot : public QWidget {
 
 public:
 
-    static uint64 sharedTimestamp; // timestamp that shares every graph so the times match
+    enum InteractionMode {
+        AUTO_SCROLL_X_AUTO_SCALE_Y = 1,
+        AUTO_SCROLL_X_MANUAL_SCALE_Y = 2,
+        MANUAL_SCALE_SCROLL_X_Y = 3,
+        AUTO_SCROLL_X_FIXED_SCALE_Y = 4,
+    };
 
-    explicit GraphPlot(QString plotValue, bool stereoMode=false, bool legend=false, QWidget *parent=0);
+    int numGraphs;
+
+    static uint64 sharedTimestamp; // timestamp that shares every graph so the times match
+    uint64 lastTimestamp = 0;
+
+    explicit GraphPlot(DataTypes::DataType plotDataKey, ProcMode procMode=ProcMode::SINGLE_IMAGE_ONE_PUPIL, bool legend=false, QWidget *parent=0);
     ~GraphPlot() override;
 
     QSize sizeHint() const override;
@@ -36,32 +46,56 @@ private slots:
 
     void reset();
     void contextMenuRequest(QPoint pos);
-    void enableInteractions();
-    void enableYAxisInteraction();
+//    void enableInteractions();
+//    void enableYAxisInteraction();
 
 public slots:
 
-    void appendData(quint64 timestamp, const Pupil &pupil, const QString &filename);
-    void appendData(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filename);
+    //void appendData(quint64 timestamp, const Pupil &pupil, const QString &filename);
+    //void appendData(quint64 timestamp, const Pupil &pupil, const Pupil &pupilSec, const QString &filename);
+
+    void appendData(quint64 timestamp, int procMode, const std::vector<Pupil> &Pupils, const QString &filename); // GB
 
     void appendData(const double &fps);
     void appendData(const int &framecount);
 
+//    void onPlaybackSafelyStopped();
+//    void onPlaybackSafelyStarted();
+    void scheduleReset();
+
+    void setKnownTimeZero(uint64_t timestamp);
+
 private:
 
-    QString plotValue;
+    QSettings *applicationSettings;
+    double yAxisLimitLowT;
+    double yAxisLimitHighT;
+    double yAxisLimitLow;
+    double yAxisLimitHigh;
+
+    InteractionMode currentInteractionMode = InteractionMode::AUTO_SCROLL_X_AUTO_SCALE_Y;
+
+    DataTypes::DataType plotDataKey;
+
+    ProcMode currentProcMode;
 
     QCustomPlot *customPlot;
     QCPGraph *graph;
 
-    QElapsedTimer timer;
     uint64 incrementedTimestamp;
 
-    bool interaction;
-    bool yinteraction;
+    bool resetScheduled = false;
 
-    int updateDelay;
+    void setPupilData(const Pupil &pupil, int graphID, quint64 timestamp);
 
+//    bool interaction;
+//    bool yinteraction;
+
+    void loadYaxisSettings();
+    void saveYaxisSettings();
+
+private slots:
+    void setInteractionMode(InteractionMode m);
+    void updateYaxisRange();
+    void clearClick();
 };
-
-#endif //PUPILEXT_GRAPHPLOT_H

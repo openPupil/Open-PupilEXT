@@ -1,9 +1,7 @@
-
-#ifndef PUPILEXT_STEREOCAMERA_H
-#define PUPILEXT_STEREOCAMERA_H
+#pragma once
 
 /**
-    @author Moritz Lode
+    @authors Moritz Lode, Bényei Gábor, Attila Boncser
 */
 
 
@@ -13,8 +11,10 @@
 #include <pylon/BaslerUniversalInstantCameraArray.h>
 #include "../frameRateCounter.h"
 #include "stereoCameraImageEventHandler.h"
+#include "cameraConfigurationEventHandler.h"
 #include "../stereoCameraCalibration.h"
 #include "../cameraFrameRateCounter.h"
+#include "hardwareTriggerConfiguration.h"
 
 using namespace Pylon;
 using namespace Basler_UniversalCameraParams;
@@ -22,7 +22,7 @@ using namespace Basler_UniversalCameraParams;
 /**
     StereoCamera represents a stereo camera (two Basler cameras), main camera and secondary camera
 
-    The camer settings of the main camera are used for the secondary camera
+    The camera settings of the main camera are used for the secondary camera
 
     getFriendlyNames(): return the Basler device names for both cameras in a vector list
     attachCameras(): defines the two camera devices by device names
@@ -56,6 +56,9 @@ public:
     void close() override;
     CameraImageType getType() override;
 
+    void startGrabbing() override;
+    void stopGrabbing() override;
+
     std::vector<QString> getFriendlyNames();
 
     void autoGainOnce();
@@ -66,6 +69,7 @@ public:
     int getExposureTimeMax();
 
     bool isEnabledAcquisitionFrameRate();
+    bool isEmulated();
     double getResultingFrameRateValue();
 
     int getAcquisitionFPSValue();
@@ -77,7 +81,7 @@ public:
     double getGainMax();
 
     void attachCameras(const CDeviceInfo &diMain, const CDeviceInfo &diSecondary);
-    void open();
+    void open(bool enableHardwareTrigger);
 
     String_t getLineSource();
 
@@ -89,11 +93,21 @@ public:
     void saveMainToFile(const String_t &filename);
     //void saveSecondaryToFile(const String_t &filename);
 
+    int getImageROIwidth() override; 
+    int getImageROIheight() override; 
+    int getImageROIoffsetX() override; 
+    int getImageROIoffsetY() override;
+    int getImageROIwidthMax() override; // both setImageROI and setImageResize depends on this
+    int getImageROIheightMax() override; // both setImageROI and setImageResize depends on this
+    QRectF getImageROI() override;
+    int getBinningVal();
+    std::vector<double> getTemperatures();
+
+    bool isGrabbing() override;
+
 private:
 
     QDir settingsDirectory;
-
-    CBaslerUniversalInstantCameraArray cameras;
 
     uint64 cameraMainTime;
     uint64 cameraSecondaryTime;
@@ -101,8 +115,12 @@ private:
 
     String_t lineSource;
 
-    StereoCameraImageEventHandler *cameraImageEventHandler;
-
+    CBaslerUniversalInstantCameraArray cameras;
+    StereoCameraImageEventHandler *cameraImageEventHandler = nullptr;
+    CameraConfigurationEventHandler *cameraConfigurationEventHandler0 = nullptr;
+    CameraConfigurationEventHandler *cameraConfigurationEventHandler1 = nullptr;
+    HardwareTriggerConfiguration* hardwareTriggerConfiguration0 = nullptr;
+    HardwareTriggerConfiguration* hardwareTriggerConfiguration1 = nullptr;
     CameraFrameRateCounter *frameCounter;
 
     StereoCameraCalibration *cameraCalibration;
@@ -110,6 +128,9 @@ private:
 
     void synchronizeTime();
     void loadCalibrationFile();
+    void genericExceptionOccured(const GenericException &e);
+
+    void safelyCloseCameras();
 
 public slots:
 
@@ -120,12 +141,22 @@ public slots:
     void setAcquisitionFPSValue(int value);
     void resynchronizeTime();
 
+    bool setBinningVal(int value);
+    bool setImageROIwidth(int width);
+    bool setImageROIheight(int height);
+    bool setImageROIoffsetX(int offsetX);
+    bool setImageROIoffsetY(int offsetY);
+
+    bool setImageROIwidthEmu(int width);
+    bool setImageROIheightEmu(int height);
+    bool setImageROIoffsetXEmu(int offsetX);
+    bool setImageROIoffsetYEmu(int offsetY);
+
 signals:
 
     void fps(double fps);
     void framecount(int framecount);
+    void cameraDeviceRemoved();
+    void imagesSkipped();
 
 };
-
-
-#endif //PUPILEXT_STEREOCAMERA_H

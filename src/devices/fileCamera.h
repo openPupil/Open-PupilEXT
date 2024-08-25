@@ -1,15 +1,15 @@
-
-#ifndef PUPILEXT_FILECAMERA_H
-#define PUPILEXT_FILECAMERA_H
+#pragma once
 
 /**
-    @author Moritz Lode
+    @authors Moritz Lode, Gabor Benyei, Attila Boncser
 */
 
 #include "camera.h"
 #include "../frameRateCounter.h"
 #include "../imageReader.h"
 #include "../stereoCameraCalibration.h"
+
+//#include "../offlineEventLogReader.h"
 
 /**
     FileCamera represents virtual camera which replays images from disk given a directory of images
@@ -29,13 +29,16 @@ class FileCamera : public Camera
     Q_OBJECT
 
 public:
-    explicit FileCamera(const QString &directory, int playbackSpeed = 30, bool playbackLoop = false, QObject *parent = 0);
+    explicit FileCamera(const QString &directory, QMutex *imageMutex,  QWaitCondition *imagePublished, QWaitCondition *imageProcessed, int playbackSpeed = 30, bool playbackLoop = false, QObject *parent = 0);
 
     ~FileCamera() override;
 
     bool isOpen() override;
     void close() override;
     CameraImageType getType() override;
+
+    void startGrabbing() override;
+    void stopGrabbing() override;
 
     void start();
     void stop();
@@ -61,8 +64,63 @@ public:
         imageReader->setPlaybackLoop(loop);
     }
 
+    bool isGrabbing(){
+        return imageReader->isPlaying();
+    }
+
+    bool isPlaying() {
+        return imageReader->isPlaying();
+    }
+    QString getImageDirectoryName() {
+        return imageReader->getImageDirectoryName();
+    }
+    QString getImageWidth() {
+        return QString::number(imageReader->getImageWidth());
+    }
+    QString getImageHeight() {
+        return QString::number(imageReader->getImageHeight());
+    }
+
+    cv::Mat getStillImageSingle(int frameNumber) {
+        return imageReader->getStillImageSingle(frameNumber);
+    }
+    std::vector<cv::Mat> getStillImageStereo(int frameNumber) {
+        return imageReader->getStillImageStereo(frameNumber);
+    }
+    int getFrameNumberForTimestamp(uint64_t timestamp) {
+        return imageReader->getFrameNumberForTimestamp(timestamp);
+    }
+    uint64_t getTimestampForFrameNumber(int frameNumber) {
+        return imageReader->getTimestampForFrameNumber(frameNumber);
+    }
+    int getNumImagesTotal() {
+        return imageReader->getNumImagesTotal();
+    }
+    uint64_t getRecordingDuration() {
+        return imageReader->getRecordingDuration();
+    }
+    void seekToFrame(int frameNumber) {
+        imageReader->seekToFrame(frameNumber);
+    }
+    /*uint64_t getLastCommissionedTimestamp() {
+        return imageReader->getLastCommissionedTimestamp();
+    }*/
+    int getLastCommissionedFrameNumber() {
+        return imageReader->getLastCommissionedFrameNumber();
+    }
+
+    int getImageROIwidth() override;
+    int getImageROIheight() override;
+    int getImageROIwidthMax() override;
+    int getImageROIheightMax() override;
+    int getImageROIoffsetX() override; 
+    int getImageROIoffsetY() override;
+    QRectF getImageROI() override;
+
     CameraCalibration *getCameraCalibration();
     StereoCameraCalibration *getStereoCameraCalibration();
+
+    ImageReader *getImageReader() const;
 
 private:
     FrameRateCounter *frameCounter;
@@ -74,12 +132,20 @@ private:
     StereoCameraCalibration *stereoCameraCalibration;
     QThread *calibrationThread;
 
+    //OfflineEventLogReader *offlineEventLogReader;
+
 signals:
 
     void fps(double fps);
     void framecount(int framecount);
 
     void finished();
-};
+    void paused();
 
-#endif //PUPILEXT_FILECAMERA_H
+    void endReached();
+
+public slots:
+    void step1frameNext();
+    void step1framePrev();
+
+};

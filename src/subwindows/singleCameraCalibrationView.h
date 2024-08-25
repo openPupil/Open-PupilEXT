@@ -1,10 +1,8 @@
-
-#ifndef PUPILEXT_SINGLECAMERACALIBRATIONVIEW_H
-#define PUPILEXT_SINGLECAMERACALIBRATIONVIEW_H
+#pragma once
 
 /**
     See https://docs.opencv.org/2.4/doc/tutorials/calib3d/camera_calibration/camera_calibration.html
-    @author Moritz Lode
+    @author Moritz Lode, Attila Boncser
 */
 
 #include <QtWidgets/QWidget>
@@ -22,6 +20,7 @@
     Custom widget for conducting camera calibration on a given single camera using a calibration pattern
 
     Different pattern are supported. See OpenCVs calibration documentation on the different supported pattern.
+    
 
  signals:
     onNewImage(): Signal send to distribute images showing camera calibration results
@@ -85,9 +84,6 @@ public slots:
 
 signals:
 
-    void onNewImage(const CameraImage &img);
+    void onNewImage(CameraImage img);
 
 };
-
-
-#endif //PUPILEXT_SINGLECAMERACALIBRATIONVIEW_H
