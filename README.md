@@ -248,7 +248,7 @@ void onTick() {
   LED_Green = !LED_Green;
   Trigger = !Trigger;
   LED_ticker++;
-  if (LED_ticker >= 2 * Threshold_Ticker) {
+  if (LED_ticker >= 2 * Threshold_Ticker && Threshold_Ticker!=0) { // This line was modified to check "&& Threshold_Ticker!=0" by Gabor Benyei
     myTick.detach();
     LED_Green = 0;
     Trigger = 0;
@@ -687,7 +687,7 @@ endif()
 set(PYLON_HOME "/Library/Frameworks/pylon.framework")
 set(PYLON_INCLUDE_DIR "/Library/Frameworks/pylon.framework/Headers")
 
-find_package(Qt5 COMPONENTS Widgets Concurrent SerialPort Charts Svg PrintSupport REQUIRED)
+find_package(Qt5 COMPONENTS Widgets Concurrent SerialPort Charts Svg PrintSupport Network Xml REQUIRED)
 find_package(OpenCV REQUIRED PATHS "/usr/local/Cellar/opencv/4.5.1_3")
 find_package(Boost 1.72 REQUIRED)
 find_package(TBB REQUIRED PATHS "${PROJECT_SOURCE_DIR}/external/tbb")
@@ -712,6 +712,14 @@ else()
 endif()
 
 include_directories(${Qt5Core_INCLUDE_DIRS}
+        ${Qt5Widgets_INCLUDE_DIRS}
+        ${Qt5Concurrent_INCLUDE_DIRS}
+        ${Qt5SerialPort_INCLUDE_DIRS}
+        ${Qt5Charts_INCLUDE_DIRS}
+        ${Qt5Svg_INCLUDE_DIRS}
+        ${Qt5PrintSupport_INCLUDE_DIRS}
+        ${Qt5Network_INCLUDE_DIRS}
+        ${Qt5Xml_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIRS}
         ${TBB_INCLUDE_DIR}
@@ -727,7 +735,15 @@ add_subdirectory (singleeyefitter)
 message(STATUS "")
 message(STATUS "spii_LIBRARIES:\"${spii_LIBRARIES}\"")
 message(STATUS "--- Include directories ---" )
-message(STATUS " QT5Core_INCLUDE_DIRS: ${Qt5Core_INCLUDE_DIRS}" )
+message(STATUS " QT5Core_INCLUDE_DIRS: ${Qt5Core_INCLUDE_DIRS}")
+message(STATUS " Qt5Concurrent_INCLUDES: ${Qt5Concurrent_INCLUDE_DIRS}")
+message(STATUS " Qt5SerialPort_INCLUDES: ${Qt5SerialPort_INCLUDE_DIRS}")
+message(STATUS " Qt5Charts_INCLUDES: ${Qt5Charts_INCLUDE_DIRS}")
+message(STATUS " Qt5Svg_INCLUDES: ${Qt5Svg_INCLUDE_DIRS}")
+message(STATUS " Qt5PrintSupport_INCLUDES: ${Qt5PrintSupport_INCLUDE_DIRS}")
+message(STATUS " Qt5Network_INCLUDES: ${Qt5Network_INCLUDE_DIRS}")
+message(STATUS " Qt5Xml_INCLUDES: ${Qt5Xml_INCLUDE_DIRS}")
+
 message(STATUS " OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}" )
 message(STATUS " Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}" )
 message(STATUS " TBB_INCLUDE_DIRS: ${TBB_INCLUDE_DIR}" )
@@ -841,7 +857,7 @@ set(TBB_INCLUDE_DIR "C:/vcpkg/installed/x64-windows/include/tbb")
 set(SPII_INSTALL_DIR "${PROJECT_SOURCE_DIR}/external/spii")
 set(spii_INCLUDE_DIRS ${SPII_INSTALL_DIR}/include)
 set(PYLON_HOME "C:/Program Files/Basler/pylon 6/Development/")
-find_package(Qt5 COMPONENTS Widgets SerialPort Charts Svg PrintSupport REQUIRED)
+find_package(Qt5 COMPONENTS Widgets SerialPort Charts Svg PrintSupport Network Xml REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Boost 1.72 REQUIRED)
 find_package(TBB REQUIRED PATHS "${PROJECT_SOURCE_DIR}/external/tbb")
@@ -864,6 +880,14 @@ else()
 endif()
 
 include_directories(${Qt5Core_INCLUDE_DIRS}
+        ${Qt5Widgets_INCLUDE_DIRS}
+        ${Qt5Concurrent_INCLUDE_DIRS}
+        ${Qt5SerialPort_INCLUDE_DIRS}
+        ${Qt5Charts_INCLUDE_DIRS}
+        ${Qt5Svg_INCLUDE_DIRS}
+        ${Qt5PrintSupport_INCLUDE_DIRS}
+        ${Qt5Network_INCLUDE_DIRS}
+        ${Qt5Xml_INCLUDE_DIRS}
         ${OpenCV_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIRS}
         ${TBB_INCLUDE_DIR}
@@ -879,7 +903,15 @@ add_subdirectory (singleeyefitter)
 message(STATUS "")
 message(STATUS "spii_LIBRARIES:\"${spii_LIBRARIES}\"")
 message(STATUS "--- Include directories ---" )
-message(STATUS " QT5Core_INCLUDE_DIRS: ${Qt5Core_INCLUDE_DIRS}" )
+message(STATUS " QT5Core_INCLUDE_DIRS: ${Qt5Core_INCLUDE_DIRS}")
+message(STATUS " Qt5Concurrent_INCLUDES: ${Qt5Concurrent_INCLUDE_DIRS}")
+message(STATUS " Qt5SerialPort_INCLUDES: ${Qt5SerialPort_INCLUDE_DIRS}")
+message(STATUS " Qt5Charts_INCLUDES: ${Qt5Charts_INCLUDE_DIRS}")
+message(STATUS " Qt5Svg_INCLUDES: ${Qt5Svg_INCLUDE_DIRS}")
+message(STATUS " Qt5PrintSupport_INCLUDES: ${Qt5PrintSupport_INCLUDE_DIRS}")
+message(STATUS " Qt5Network_INCLUDES: ${Qt5Network_INCLUDE_DIRS}")
+message(STATUS " Qt5Xml_INCLUDES: ${Qt5Xml_INCLUDE_DIRS}")
+
 message(STATUS " OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS}" )
 message(STATUS " Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}" )
 message(STATUS " TBB_INCLUDE_DIRS: ${TBB_INCLUDE_DIR}" )
@@ -941,6 +973,17 @@ DOI={10.3389/fnins.2021.676220},
 ISSN={1662-453X}}
 ```
 
+#### Additional citation for Release v0.1.2 beta:
+G. L. Bényei, A. B. Boncsér, P. Pajkossy, "Promise of open-source, low-cost pupillometry - Contribution to the PupilEXT platform," ECEM Conference Poster, Aug. 2024, doi: 10.13140/RG.2.2.33761.93284.
+```bib
+@Misc{10.13140/RG.2.2.33761.93284,
+AUTHOR = {Gábor L., Bényei and Attila B., Boncsér and Péter, Pajkossy},
+TITLE = {Promise of open-source, low-cost pupillometry - Contribution to the PupilEXT platform},    
+YEAR={2024}, 
+URL={https://www.doi.org/10.13140/RG.2.2.33761.93284},
+DOI={10.13140/RG.2.2.33761.93284}}
+```
+
 ## 7. References
 <a id="1">**[1]**</a> Dongheng Li and Derrick J. Parkhurst. Starburst: A robust algorithm for video-based eye tracking. IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR), September 2005.
 
@@ -979,7 +1022,7 @@ PupilEXT integrates several open source libraries. This document provides a list
 
 ### List of Software Libraries
 
-<a id="QT" href="https://www.qt.io/"><b>QT</b></a>  is an open-source widget toolkit for creating graphical user interfaces as well as cross-platform applications that run on various software and hardware platforms such as Linux, Windows, MacOS, Android or embedded systems. (License: GPL 3.0)
+<a id="QT" href="https://www.qt.io/"><b>QT</b></a>  is an open-source widget toolkit for creating graphical user interfaces as well as cross-platform applications that run on various software and hardware platforms such as Linux, Windows, macOS, Android or embedded systems. (License: GPL 3.0)
 
 <a id="QCustomPlot" href="https://www.qcustomplot.com/"><b>QCustomPlot</b></a> is a Qt C++ widget for plotting and data visualization. It has no further dependencies and is well documented. (License: GPL 3.0)
 
@@ -997,9 +1040,24 @@ PupilEXT integrates several open source libraries. This document provides a list
 
 <a id="Tbb" href="https://github.com/oneapi-src/oneTBB"><b>Tbb</b></a> is for parallel programming. ([License](https://github.com/oneapi-src/oneTBB/blob/master/LICENSE.txt))
 
+<a id="Gflags" href="https://github.com/gflags/gflags"><b>Gflags</b></a> is a library for comandline processing. ([License](https://github.com/gflags/gflags/blob/master/COPYING.txt))
+
+### List of used graphics, icons, and helper scripts
+
 <a id="Breeze-Icons" href="https://github.com/KDE/breeze-icons"><b>Breeze Icons</b></a> is a set of icons. ([License](https://github.com/KDE/breeze-icons/blob/master/icons/LICENSE))
 
-<a id="Gflags" href="https://github.com/gflags/gflags"><b>Gflags</b></a> is a library for comandline processing. ([License](https://github.com/gflags/gflags/blob/master/COPYING.txt))
+The following icon files are modifications of existing icons from the KDE Breeze icon set: 1cam1pup.svg, 1cam2pup.svg, 1cam1pup.svg, 1Mcam1pup.svg, 2cam1pup.svg, 2cam2pup.svg, 2cam2pupNS.svg, media-record-green.svg, camera-video-stereo.svg, crosshairs-gaze-calibration.svg, crosshairs-gaze-validation.svg. These modified files were made by contributor Gábor Bényei, and can be found in the icons folder as resources, licensed in accordance to KDE Breeze license (GNU LESSER GENERAL PUBLIC LICENSE Version 3).
+
+The following icon files are the work of Gábor Bényei, and are declared public domain: computer-connection.svg, equals1b.svg, plus1b.svg, messageEmpty.svg, rs232.svg.
+
+The OpenCV logo (OpenCV_Logo_with_text_svg_version.svg) is the work of Adi Shavit, under BSD license. License text and source: https://commons.wikimedia.org/wiki/File:OpenCV_Logo_with_text_svg_version.svg, last accessed 2024.08.16. 09:36 CET
+
+The Qt logo (Qt_logo_2016.svg) is the work of The Qt Project, and is public domain. License reference and source: https://commons.wikimedia.org/wiki/File:Qt_logo_2016.svg, last accessed 2024.08.16 09:36 CET
+
+The script make_dmg_from_app.command is a customized version of a dmg maker script from Andy Maloney's blog:
+https://asmaloney.com/2013/07/howto/packaging-a-mac-os-x-application-using-a-dmg/, last accessed 2024.08.23. 06:50 CET
+
+PupilEXT_dmg_background contains the PupilEXT logo, which is the work of the authors of PupilEXT v0.1.1, and was edited by Gabor Benyei to make the installer background image
 
 ## 9. Acknowledgment
 We thank the German Research Foundation (DFG) by funding the research (grant number: 450636577).
