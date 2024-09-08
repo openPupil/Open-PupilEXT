@@ -56,6 +56,10 @@ For initial testing, we recommend using the provided demo datasets. See section 
 If you have new ideas, questions or want to discuss some extended topics, please use our discussion forum:
 https://github.com/openPupil/Open-PupilEXT/discussions
 
+**!! NEW 08/2024 !!: Release of PupilEXT v0.1.2**
+
+A new branch called Experimental-Community-Version has been created (see https://github.com/openPupil/Open-PupilEXT/tree/Experimental-Community-Version) to support community additions. In this new branch PupilEXT v0.1.2 is available. Its maintainers are Gábor Bényei and Attila Boncsér. For further information check out the community [README](https://github.com/openPupil/Open-PupilEXT/tree/Experimental-Community-Version). More informations about the new features are also available here: https://github.com/openPupil/Open-PupilEXT/discussions/27
+
 **!! NEW 04/2022 !!: A Python version of PupilEXT is now available.**
 
 Note that the Python package of PupilEXT is currently in the experimental stage.
