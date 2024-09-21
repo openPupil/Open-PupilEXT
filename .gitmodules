@@ -1,3 +1,6 @@
 [submodule "3rdparty/vcpkg"]
 	path = 3rdparty/vcpkg
 	url = https://github.com/microsoft/vcpkg
+[submodule "3rdparty/oneTBB"]
+	path = 3rdparty/oneTBB
+	url = https://github.com/oneapi-src/oneTBB.git
