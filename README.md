@@ -18,7 +18,7 @@
     <img src="Misc/img/StartupAnim.gif" align="center" width="55%" height="20%">&nbsp;
   <img src="Misc/img/Calibration.gif" align="center" width="40%" height="15%">
   </p>
- 
+
 
 # PupilEXT: flexible open-source platform for high resolution pupillometry in vision research
 
@@ -41,11 +41,11 @@ We aimed to provide a professional open-source pupillometry measurement platform
 
 - [x]  High resolution pupillometry
 - [x]  Real-time pupillometry
-- [x]  Professional graphical user interface programmed with QT/C++ 
+- [x]  Professional graphical user interface programmed with QT/C++
 - [x]  Supporting stereo camera setups
 - [x]  Supporting single camera setups
 - [x]  Supporting Basler branded cameras (USB3). Tested with Basler acA2040-120um and acA1300-200um.
-- [x]  Offline pupillometry with externally recorded images 
+- [x]  Offline pupillometry with externally recorded images
 - [x]  Cross-platform software: MacOS, Windows, Linux
 - [x]  Intgrates six leading open-source pupil detection algorithms: Starburst [[1\]](#1), Swirski2D [[2\]](#2), ExCuSe [[3\]](#3), ElSe [[4\]](#4), PuRe [[5\]](#5), and PuReST [[6\]](#6).
 
@@ -149,7 +149,7 @@ After you have downloaded the software, you can open the dmg file and run PupilE
 
 **Step 3: Testing with the demo datasets**
 
-You can load the provided demo dataset (see section 2.4) into PupilEXT for initial testing and enjoying the features during offline analysis. We recommend watching the video tutorials (see section 2.5) of PupilEXT before using the provided eye images. 
+You can load the provided demo dataset (see section 2.4) into PupilEXT for initial testing and enjoying the features during offline analysis. We recommend watching the video tutorials (see section 2.5) of PupilEXT before using the provided eye images.
 
 **Additional Information**
 
@@ -189,7 +189,7 @@ We used the [Mbed 5 framework](https://os.mbed.com) for programming the STM32 Nu
 
 **Step 1: Installation of Mbed Studio**
 
-Download and install Mbed Studio. A free account is required before you can use it. 
+Download and install Mbed Studio. A free account is required before you can use it.
 
 https://os.mbed.com/studio/
 
@@ -333,7 +333,7 @@ Pinout sketch STM32 Nucleo L432KC: https://os.mbed.com/platforms/ST-Nucleo-L432K
 
 Pinout sketch STM32 Nucleo F767ZI: https://os.mbed.com/platforms/ST-Nucleo-F767ZI/
 
-We recommend verifying that the microcontroller has been successfully flashed. To do this, you can enter the following command ``<TX10X1000000>`` (Protocol: ``<T X Count_of_Trigger X Time_Trigger_on_us>``) in a serial monitor (Baudrate: 115200). For example, when using the protocol ``<TX5X1000000>``. This command will flash the green led 5 times at 1 Hz. For this, copy&paste **everything inside the highlighted area `` ``** to the serial monitor. As serial communication interace, either use the integrated serial monitor of Mbed Studio or another one like HWMonitor or [CoolTerm](https://freeware.the-meiers.org). The command ``<TX10X1000000>`` should start a flashing green LED (10 times) on the microcontroller, with a turn-on time of 1000000 microseconds in each cycle. Since the hardware-trigger PIN of the microcontroller is "connected" to the LED, it signifies that the PC-to-microcontroller communication and the signal generation are working. Additionally, the trigger signal can be measured using an oscilloscope. 
+We recommend verifying that the microcontroller has been successfully flashed. To do this, you can enter the following command ``<TX10X1000000>`` (Protocol: ``<T X Count_of_Trigger X Time_Trigger_on_us>``) in a serial monitor (Baudrate: 115200). For example, when using the protocol ``<TX5X1000000>``. This command will flash the green led 5 times at 1 Hz. For this, copy&paste **everything inside the highlighted area `` ``** to the serial monitor. As serial communication interace, either use the integrated serial monitor of Mbed Studio or another one like HWMonitor or [CoolTerm](https://freeware.the-meiers.org). The command ``<TX10X1000000>`` should start a flashing green LED (10 times) on the microcontroller, with a turn-on time of 1000000 microseconds in each cycle. Since the hardware-trigger PIN of the microcontroller is "connected" to the LED, it signifies that the PC-to-microcontroller communication and the signal generation are working. Additionally, the trigger signal can be measured using an oscilloscope.
 
 Once the microcontroller's correct operation has been checked, the cameras can be connected to the microcontroller and the PC via USB. Simultaneously, the hardware trigger PIN of the microcontroller should be connected in parallel with GPIO PINs of camera 1 and camera 2. Do not forget to connect the GND line of the camera to the GND PIN of the microcontroller. The figure in [``Misc/img/PupilEXT_Measuremtn_Setups.png``](Misc/img/PupilEXT_Measuremtn_Setups.png) illustrates the setup of a stereo camera configuration. After the connection has been made correctly, the PupilEXT software can be started to begin measuring the pupil diameter through the stereo camera system.
 
@@ -376,15 +376,15 @@ Three videos are provided to illustrate the handling and the features of the *Pu
 
 ## 3. Build PupilEXT from source: The advanced way
 
-If you would like to contribute to this project, extend PupilEXT with custom functions, or the provided binaries do not work on your machine, building PupilEXT on your machine is necessary. The annoying part of compiling C++ projects is the integration of third-party libraries into a project. For this, you have three options: (i) use a system package manager like brew to download and build third-party libraries; (ii) download the libraries without a package manager and build it; (iii) integrating the libraries directly into the project. 
+If you would like to contribute to this project, extend PupilEXT with custom functions, or the provided binaries do not work on your machine, building PupilEXT on your machine is necessary. The annoying part of compiling C++ projects is the integration of third-party libraries into a project. For this, you have three options: (i) use a system package manager like brew to download and build third-party libraries; (ii) download the libraries without a package manager and build it; (iii) integrating the libraries directly into the project.
 
-If you want to stick with option (ii) you are a professional C++ developer and do not need this tutorial. Option (i) is preferable if you have several C++ projects on your machine and want to share the libraries between the projects, saving disc space (see section 3.1 and section 3.2). However, we highly recommend option (iii), which has the advatange that the integration of thirdparty libraries is fully automated(see section 3.0). You should have intermediate knowledge of C++ programming and CMake before you follow this tutorial, as we provide no warranty. 
+If you want to stick with option (ii) you are a professional C++ developer and do not need this tutorial. Option (i) is preferable if you have several C++ projects on your machine and want to share the libraries between the projects, saving disc space (see section 3.1 and section 3.2). However, we highly recommend option (iii), which has the advatange that the integration of thirdparty libraries is fully automated(see section 3.0). You should have intermediate knowledge of C++ programming and CMake before you follow this tutorial, as we provide no warranty.
 
 PupilEXT need the following libraries: Boost 1.75-0_2, Ceres 2.0.0, Eigen 3.3.9, OpenCV 4.5.1_3, QT 5.15.0, [spii](https://github.com/PetterS/spii), tbb, pylon 6.
 
 **Important Note 1:** When using Boost@1.76 or higher, you will run into compiling issues, as boost::math::sign will not work, which is used by one of the pupil detection methods.
 
-**Important Note 2:** If you want to follow option (i) or (ii)  you need to remove the 'vcpkg.json' file and the '.vscode' folder. 
+**Important Note 2:** If you want to follow option (i) or (ii)  you need to remove the 'vcpkg.json' file and the '.vscode' folder.
 
 ### 3.0 Build PupilEXT with vcpkg manifest (recommended)
 
@@ -404,6 +404,8 @@ https://www.qt.io/download-open-source?hsCtaTracking=9f6a2170-a938-42df-a8e2-a9f
 
 QT 6 or higher is currently not supported.
 
+Update: On Mac QT 6.7.2 seems to work either.
+
 **Step 3: Clone this repository**
 
 Type into your terminal the following command
@@ -412,18 +414,21 @@ Type into your terminal the following command
 git clone --recurse-submodules https://github.com/openPupil/Open-PupilEXT.git
 ```
 
-The ``--recurse-submodules`` option is important, as vcpkg is a submodule. Without this option, the 3rdparty folder will not contain vcpkg packet manager. 
+The ``--recurse-submodules`` option is important, as vcpkg is a submodule. Without this option, the 3rdparty folder will not contain vcpkg packet manager.
 
-Open the ``CMakeLists.tx`` file in the PupilEXT root and change the following line, according to your installed QT and user name
+Open the ``CMakeLists.tx`` file in the PupilEXT root and change the following line, according to your installed QT, user name and cpu archteure.
 
 ```Cmake
 set(QT_VERSION 5.15.2) # Change the version according to your installation
 set(USER_NAME_MAC papillon) # Only necessary for macOS users, skip if you are on WIN
+
+set(CMAKE_OSX_ARCHITECTURES_VALUE "arm64") # Options for cmake: arm64, x86_64 - needed for oneTBB
+set(VCPKG_VALUE_ARCH "arm64-osx") # Options for vcpkg: arm64-osx, x64-osx
 ```
 
 **Step 4: Decide which Editor to use**
 
-Depending on which editor is used, the procedure is slightly different. We have created a summary of how to proceed if you want to use [Visual Studio Code](https://code.visualstudio.com), [CLion](https://www.jetbrains.com/clion/promo/?source=google&medium=cpc&campaign=11964013627&gclid=Cj0KCQjw-NaJBhDsARIsAAja6dPFpHIXmFeKhVv0qheHTki-WmG5DepDCzR0iWuYQqAXEM1eEAELpy4aApLsEALw_wcB) or [QT Creator](https://www.qt.io/product/development-tools) to start PupilEXT (see the below option 1 to 4). 
+Depending on which editor is used, the procedure is slightly different. We have created a summary of how to proceed if you want to use [Visual Studio Code](https://code.visualstudio.com), [CLion](https://www.jetbrains.com/clion/promo/?source=google&medium=cpc&campaign=11964013627&gclid=Cj0KCQjw-NaJBhDsARIsAAja6dPFpHIXmFeKhVv0qheHTki-WmG5DepDCzR0iWuYQqAXEM1eEAELpy4aApLsEALw_wcB) or [QT Creator](https://www.qt.io/product/development-tools) to start PupilEXT (see the below option 1 to 4).
 
 **Option 1: Build with Visual Studio Code**
 
@@ -435,7 +440,7 @@ First, the following extensions must be downloaded in the editor for the procedu
 
 (3) Cmake Tools extension: https://code.visualstudio.com/docs/cpp/cmake-linux
 
-Then open the ``.vscode/settings.json`` file in the cloned PupilEXT folder with a text editor. The entry ``"VCPKG_TARGET_TRIPLET": "x64-osx"`` must be changed to ``"VCPKG_TARGET_TRIPLET": "x64-windows-static-md"`` if you have a Windows operating system. If you are on a Mac, leave the entry as it is. Open the project folder with Visual Studio Code and build the project. If you press build for the first time, it may take a little longer, as the required libraries are downloaded and will build automatically. Make sure that you have enough disc space on your machine.
+Then open the ``.vscode/settings.json`` file in the cloned PupilEXT folder with a text editor. The entry ``"VCPKG_TARGET_TRIPLET": "x64-osx"`` must be changed to ``"VCPKG_TARGET_TRIPLET": "x64-windows-static-md"`` if you have a Windows operating system. If you are on a Mac, leave the entry as it is. However, when using a Mac with apple silicon (e.g. M3 Max or similar) you need to change this entry to ``"VCPKG_TARGET_TRIPLET": "arm64-osx"``. Open the project folder with Visual Studio Code and build the project. If you press build for the first time, it may take a little longer, as the required libraries are downloaded and will build automatically. Make sure that you have enough disc space on your machine.
 
 **Option 2: Build with CLion**
 
@@ -444,17 +449,17 @@ Open the project folder with CLion. Then some settings have to be made. For this
 ```shell
 -DVCPKG_TARGET_TRIPLET=x64-osx -DCMAKE_TOOLCHAIN_FILE=3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake
 ```
-Note that `x64-osx` must be changed to `x64-windows-static-md`, if you are on a Windows machine. Next, choose for the build directory, the following folder: ``build``. This is very important, as the CMakeLists.txt is adjusted to find the libraries in a folder called ``build``. By default, CLion will build the project in a folder called ``cmake-build-debug``, which will not work with the current CMakeLists.txt. Press okay and build the project. The C++ libraries will be downloaded and build automatically for you. The first run will take some time. Make sure that you have enough disc space. 
+Note that `x64-osx` must be changed to `x64-windows-static-md`, if you are on a Windows machine. However, when using a Mac with apple silicon (e.g. M3 Max or similar) you need to change this entry to ``"VCPKG_TARGET_TRIPLET": "arm64-osx"``. Next, choose for the build directory, the following folder: ``build``. This is very important, as the CMakeLists.txt is adjusted to find the libraries in a folder called ``build``. By default, CLion will build the project in a folder called ``cmake-build-debug``, which will not work with the current CMakeLists.txt. Press okay and build the project. The C++ libraries will be downloaded and build automatically for you. The first run will take some time. Make sure that you have enough disc space.
 
 **Option 3: Build with QT Creator**
 
-QTCreator also supports CMake, which means that PupilEXT can also be opened there. As with CLion, only the following options need to be added: 
+QTCreator also supports CMake, which means that PupilEXT can also be opened there. As with CLion, only the following options need to be added:
 
 ```shell
 -DVCPKG_TARGET_TRIPLET=x64-osx -DCMAKE_TOOLCHAIN_FILE=3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake
 ```
 
-Note that `x64-osx` must be changed to `x64-windows-static-md`, if you are on a Windows machine. Next, choose for the build directory, the following folder: ``build``.
+Note that `x64-osx` must be changed to `x64-windows-static-md`, if you are on a Windows machine. However, when using a Mac with apple silicon (e.g. M3 Max or similar) you need to change this entry to `"VCPKG_TARGET_TRIPLET": "arm64-osx"`. Next, choose for the build directory, the following folder: ``build``.
 
 **Option 4: Build from terminal**
 
@@ -473,6 +478,7 @@ cmake --build . --config Release
 
 ./src/PupilEXT
 ```
+Note that you need to change `-DVCPKG_TARGET_TRIPLET=x64-osx` to `"VCPKG_TARGET_TRIPLET": "arm64-osx"` if you have an apple silicon.
 
 If you are on Windows 10  use these commands (not tested, but should be similar):
 
@@ -491,9 +497,9 @@ Then, the executable will be available here ``/Open-PupilEXT-main/build/src/Pupi
 
 Note, the option ``-DCMAKE_TOOLCHAIN_FILE=3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmak`` makes sure to use the submodule as package manager and download the C++ libraries defined in the vcpkg.json file. The ``-DVCPKG_TARGET_TRIPLET=x64-os`` option is necessary to let vcpkg know which triplet your need. On Windows you need to change the tripplet to ``-DVCPKG_TARGET_TRIPLET=x64-windows-static-md``.
 
-### 3.1 How to build from source on MacOS
+### 3.1 How to build from source on MacOS (outdated)
 
-**Step 1: Download and install the Pylon Camera Softwware**
+**Step 1: Download and install the latest Pylon Camera Softwware**
 
 Download the Pylon Camera Software Suite (*.dmg-File) from the Basler Website:
 https://www.baslerweb.com/de/vertrieb-support/downloads/downloads-software/
@@ -536,7 +542,7 @@ Open the downloaded folder ``spii-master`` with [CLion](https://www.jetbrains.co
 
 **Step 6: Add spii to PupilEXT**
 
-The source files of PupilEXT are located here in Github under the PupilEXT folder. Download it from GitHub and create a new folder called ``PupilEXT/external`` in the main PupilEXT folder. In ``external/`` add another new folder called ``spii/``. 
+The source files of PupilEXT are located here in Github under the PupilEXT folder. Download it from GitHub and create a new folder called ``PupilEXT/external`` in the main PupilEXT folder. In ``external/`` add another new folder called ``spii/``.
 
 In the folder ``PupilEXT/external/spii`` you need to copy the spii build created in step 5. First go to ``spii-master/cmake-build-release`` and copy the folder ``spii-master/cmake-build-release/lib`` to ``spii-master``. Then copy all files inside the ``spii-master/`` folder into ``PupilEXT/external/spii``.
 
@@ -647,11 +653,11 @@ set(PYLON_INCLUDE_DIR ${PYLON_INCLUDE_DIR} "/Library/Frameworks/pylon.framework/
 
 **Old description (not needed):**
 
-The last step is to change something in the Pylon library; otherwise, the library will not be found properly. For this, open the following folder on your computer: /Library/Frameworks/pylon.framework/Versions/A/Headers/GenICam. All files in this folder must be copied to /Library/Frameworks/pylon.framework/Versions/A/Headers. 
+The last step is to change something in the Pylon library; otherwise, the library will not be found properly. For this, open the following folder on your computer: /Library/Frameworks/pylon.framework/Versions/A/Headers/GenICam. All files in this folder must be copied to /Library/Frameworks/pylon.framework/Versions/A/Headers.
 
 ---
 
-Now, you should be able to start PupilEXT properly in CLion. Please remember to use the **release** option as in step 5; otherwise, PupilEXT will run in debug mode and will be significantly slower. 
+Now, you should be able to start PupilEXT properly in CLion. Please remember to use the **release** option as in step 5; otherwise, PupilEXT will run in debug mode and will be significantly slower.
 
 ### 3.2 How to build from source on Windows 10
 
@@ -807,7 +813,7 @@ C:\Qt\Qt5.13.1\5.10.0\msvc2017_64\bin
 C:\vcpkg\installed\x64-windows\bin
 ```
 
-In order to start the programme, the SPII DLL must be added to ``PupilEXT\cmake-build-debug\src``. If everything has been done correctly, you can now press Start and the software should open without any issues. 
+In order to start the programme, the SPII DLL must be added to ``PupilEXT\cmake-build-debug\src``. If everything has been done correctly, you can now press Start and the software should open without any issues.
 
 ## 4. Misc
 
@@ -827,11 +833,11 @@ B. Zandi, M. Lode, A. Herzog, G. Sakas, and T. Q. Khanh, “PupilEXT: Flexible O
 AUTHOR = {Zandi, Babak and Lode, Moritz and Herzog, Alexander and Sakas, Georgios and Khanh, Tran Quoc},
 TITLE = {PupilEXT: Flexible Open-Source Platform for High-Resolution Pupillometry in Vision Research},
 JOURNAL = {Frontiers in Neuroscience},
-VOLUME={15},      
-PAGES={603},     
-YEAR={2021}, 
+VOLUME={15},
+PAGES={603},
+YEAR={2021},
 URL={https://www.frontiersin.org/article/10.3389/fnins.2021.676220},
-DOI={10.3389/fnins.2021.676220},    
+DOI={10.3389/fnins.2021.676220},
 ISSN={1662-453X}}
 ```
 
