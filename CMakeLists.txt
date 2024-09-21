@@ -39,6 +39,12 @@ set(QT_VERSION 6.7.2)
 # Windows users can ignore this line
 set(USER_NAME_MAC papillonmacpro)
 
+# Adjust architecture for Mac
+# Options for cmake: arm64, x86_64
+# Options for vcpkg: arm64-osx, x64-osx
+set(CMAKE_OSX_ARCHITECTURES_VALUE "arm64")
+set(VCPKG_VALUE_ARCH "arm64-osx")
+
 # ------------------------------------------------------------------------
 # ------------------------------------------------------------------------
 # ------------------------------------------------------------------------
@@ -71,7 +77,7 @@ if(APPLE)
     set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/Users/${USER_NAME_MAC}/Qt/5.15.2/clang_64")
     set(Qt5_DIR "/Users/${USER_NAME_MAC}/Qt/${QT_VERSION}/clang_64/lib/cmake/Qt5")
 
-    set(VCPKG_TARGET_TRIPLET x64-osx CACHE STRING "")
+    set(VCPKG_TARGET_TRIPLET ${CMAKE_OSX_ARCHITECTURES} CACHE STRING "")
 
     # -------------------------------------------------------
     # Build TBB ---------------------------------------------
@@ -83,15 +89,17 @@ if(APPLE)
     include(ExternalProject)
 
     ExternalProject_Add(Build_TBB
-    PREFIX ${PROJECT_SOURCE_DIR}
-    SOURCE_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
-    TMP_DIR "3rdparty/oneTBB/"
-    STAMP_DIR "3rdparty/oneTBB/"
-    LOG_DIR "3rdparty/oneTBB/"
-    BINARY_DIR "3rdparty/oneTBB/"
-    INSTALL_DIR "3rdparty/oneTBB/"
-    CMAKE_ARGS -DTBB_TEST=OFF -DCMAKE_INSTALL_PREFIX=build -DCMAKE_OSX_ARCHITECTURES=x86_64 -DBUILD_SHARED_LIBS=OFF -DTBBMALLOC_BUILD=OFF -DTBBMALLOC_PROXY_BUILD=OFF
+      PREFIX ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
+      SOURCE_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
+      TMP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/tmp
+      STAMP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/stamp
+      LOG_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/log
+      BINARY_DIR ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build
+      INSTALL_DIR ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/install
+      CMAKE_ARGS -DTBB_TEST=OFF -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -DBUILD_SHARED_LIBS=OFF -DTBBMALLOC_BUILD=OFF -DTBBMALLOC_PROXY_BUILD=OFF -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES_VALUE}
+      BUILD_BYPRODUCTS ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build/lib/libtbb.a
     )
+
 
     set(TBB_DIR "${PROJECT_SOURCE_DIR}build/3rdparty/oneTBB/build/lib/cmake/TBB/") #Setting the module paths to the <package-name>config.cmake files for each lib
     set(TBB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/include")
