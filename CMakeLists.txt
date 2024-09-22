@@ -37,7 +37,7 @@ set(QT_VERSION 6.7.2)
 
 # Provide the user name for your system, which is used to find the Qt5_DIR on mac
 # Windows users can ignore this line
-set(USER_NAME_MAC papillonmacpro)
+set(USER_NAME_MAC $ENV{USER})
 
 # Adjust architecture for Mac
 # Options for cmake: arm64, x86_64
@@ -96,38 +96,38 @@ if(APPLE)
 
     # -------------------------------------------------------
     # Build TBB ---------------------------------------------
-    set(TBB_LIB_NAME 3rdparty/oneTBB)
+    # set(TBB_LIB_NAME 3rdparty/oneTBB)
 
-    add_subdirectory(${TBB_LIB_NAME})
+    # add_subdirectory(${TBB_LIB_NAME})
 
-    if(NOT TBB_ALREADY_BUILT)
-        message(STATUS "--------------------- TBB automatic mode ---------------------")
-        include(ExternalProject)
-        ExternalProject_Add(Build_TBB
-        PREFIX ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
-        SOURCE_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
-        TMP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/tmp
-        STAMP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/stamp
-        LOG_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/log
-        BINARY_DIR ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build
-        INSTALL_DIR ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/install
-        CMAKE_ARGS -DTBB_TEST=OFF -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -DBUILD_SHARED_LIBS=OFF -DTBBMALLOC_BUILD=OFF -DTBBMALLOC_PROXY_BUILD=OFF -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES_VALUE}
-        BUILD_BYPRODUCTS ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build/lib/libtbb.a
-        )
-    endif()
+    # if(NOT TBB_ALREADY_BUILT)
+    #    message(STATUS "--------------------- TBB automatic mode ---------------------")
+    #    include(ExternalProject)
+    #    ExternalProject_Add(Build_TBB
+    #    PREFIX ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
+    #    SOURCE_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
+    #    TMP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/tmp
+    #    STAMP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/stamp
+    #    LOG_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/log
+    #    BINARY_DIR ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build
+    #    INSTALL_DIR ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/install
+    #    CMAKE_ARGS -DTBB_TEST=OFF -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -DBUILD_SHARED_LIBS=OFF -DTBBMALLOC_BUILD=OFF -DTBBMALLOC_PROXY_BUILD=OFF -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES_VALUE}
+    #    BUILD_BYPRODUCTS ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build/lib/libtbb.a
+    #    )
+    # endif()
 
 
-    set(TBB_DIR "${PROJECT_SOURCE_DIR}build/3rdparty/oneTBB/build/lib/cmake/TBB/") #Setting the module paths to the <package-name>config.cmake files for each lib
-    set(TBB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/include")
+    # set(TBB_DIR "${PROJECT_SOURCE_DIR}build/3rdparty/oneTBB/build/lib/cmake/TBB/") #Setting the module paths to the <package-name>config.cmake files for each lib
+    # set(TBB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/include")
 
     # findpackage will not work with externalProject_Add. The libs need to be added manually
     # Source of the following code suggestion:
     # https://stackoverflow.com/questions/6351609/cmake-linking-to-library-downloaded-from-externalproject-add
-    set(TBB_LIB_DIR "${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build/lib/")
-    set(prefix "lib")
-    set(suffix ".a")
+    # set(TBB_LIB_DIR "${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build/lib/")
+    # set(prefix "lib")
+    # set(suffix ".a")
 
-    link_directories(${TBB_LIB_DIR})
+    # link_directories(${TBB_LIB_DIR})
 
     set(OMP_INCLUDE_DIRS "/usr/local/Cellar/libomp/14.0.6/include")
 
@@ -143,39 +143,39 @@ elseif(MSVC OR WIN32)
 
     # -------------------------------------------------------
     # Build TBB ---------------------------------------------
-    message(STATUS "--------------------- TBB automatic mode ---------------------")
-    set(TBB_LIB_NAME 3rdparty/oneTBB)
+    # message(STATUS "--------------------- TBB automatic mode ---------------------")
+    # set(TBB_LIB_NAME 3rdparty/oneTBB)
 
-    add_subdirectory(${TBB_LIB_NAME})
+    # add_subdirectory(${TBB_LIB_NAME})
 
-    include(ExternalProject)
+    # include(ExternalProject)
 
-    if(NOT TBB_ALREADY_BUILT)
-        message(STATUS "--------------------- TBB automatic mode ---------------------")
-        include(ExternalProject)
-        ExternalProject_Add(Build_TBB
-        PREFIX ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
-        SOURCE_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
-        TMP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/tmp
-        STAMP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/stamp
-        LOG_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/log
-        BINARY_DIR ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build
-        INSTALL_DIR ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/install
-        CMAKE_ARGS -DTBB_TEST=OFF -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -DBUILD_SHARED_LIBS=OFF -DTBBMALLOC_BUILD=OFF -DTBBMALLOC_PROXY_BUILD=OFF
-        )
-    endif()
+    # if(NOT TBB_ALREADY_BUILT)
+    #    message(STATUS "--------------------- TBB automatic mode ---------------------")
+    #    include(ExternalProject)
+    #    ExternalProject_Add(Build_TBB
+    #    PREFIX ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
+    #    SOURCE_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
+    #    TMP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/tmp
+    #    STAMP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/stamp
+    #    LOG_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/log
+    #    BINARY_DIR ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build
+    #    INSTALL_DIR ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/install
+    #    CMAKE_ARGS -DTBB_TEST=OFF -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -DBUILD_SHARED_LIBS=OFF -DTBBMALLOC_BUILD=OFF -DTBBMALLOC_PROXY_BUILD=OFF
+    #    )
+    # endif()
 
-    set(TBB_DIR "${PROJECT_SOURCE_DIR}build/3rdparty/oneTBB/build/lib/cmake/TBB/") #Setting the module paths to the <package-name>config.cmake files for each lib
-    set(TBB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/include")
+    # set(TBB_DIR "${PROJECT_SOURCE_DIR}build/3rdparty/oneTBB/build/lib/cmake/TBB/") #Setting the module paths to the <package-name>config.cmake files for each lib
+    # set(TBB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/include")
 
     # findpackage will not work with externalProject_Add. The libs need to be added manually
     # Source of the following code suggestion:
     # https://stackoverflow.com/questions/6351609/cmake-linking-to-library-downloaded-from-externalproject-add
-    set(TBB_LIB_DIR "${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build/lib/")
-    set(prefix "")
-    set(suffix ".lib")
+    # set(TBB_LIB_DIR "${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build/lib/")
+    # set(prefix "")
+    # set(suffix ".lib")
 
-    link_directories(${TBB_LIB_DIR})
+    # link_directories(${TBB_LIB_DIR})
 
     # -------------------------------------------------------
     # -------------------------------------------------------
@@ -202,7 +202,7 @@ set(glog_DIR "${PROJECT_SOURCE_DIR}/build/vcpkg_installed/${VCPKG_TARGET_TRIPLET
 
 # Using the find package commands ----------------------------------------------------------------
 find_package(OpenCV CONFIG REQUIRED)
-#find_package(TBB CONFIG REQUIRED)
+find_package(TBB CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(Ceres CONFIG REQUIRED)
 find_package(glog CONFIG REQUIRED)
