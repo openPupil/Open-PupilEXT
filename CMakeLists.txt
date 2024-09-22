@@ -66,6 +66,21 @@ message("CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 message(STATUS "--------------------------------------------------------" )
 # ------------------------------------------------------------------------
 
+# Check if TBB library exists
+find_library(TBB_LIBRARY
+  NAMES tbb
+  PATHS ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build/lib
+)
+
+if(TBB_LIBRARY)
+    message(STATUS "--------------------- TBB found (automatic) ---------------------")
+    set(TBB_ALREADY_BUILT TRUE)
+else()
+    message(STATUS "--------------------- TBB not found, will build it (automatic) ---------------------")
+    set(TBB_ALREADY_BUILT FALSE)
+endif()
+
+
 # The VCPKG_TARGET_TRIPLET should be commented out if you already set it during the cmake call in the settings.json
 if(APPLE)
 	set(PYLON_HOME "/Library/Frameworks/pylon.framework")
@@ -81,24 +96,25 @@ if(APPLE)
 
     # -------------------------------------------------------
     # Build TBB ---------------------------------------------
-    message(STATUS "--------------------- TBB automatic mode ---------------------")
     set(TBB_LIB_NAME 3rdparty/oneTBB)
 
     add_subdirectory(${TBB_LIB_NAME})
 
-    include(ExternalProject)
-
-    ExternalProject_Add(Build_TBB
-      PREFIX ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
-      SOURCE_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
-      TMP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/tmp
-      STAMP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/stamp
-      LOG_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/log
-      BINARY_DIR ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build
-      INSTALL_DIR ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/install
-      CMAKE_ARGS -DTBB_TEST=OFF -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -DBUILD_SHARED_LIBS=OFF -DTBBMALLOC_BUILD=OFF -DTBBMALLOC_PROXY_BUILD=OFF -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES_VALUE}
-      BUILD_BYPRODUCTS ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build/lib/libtbb.a
-    )
+    if(NOT TBB_ALREADY_BUILT)
+        message(STATUS "--------------------- TBB automatic mode ---------------------")
+        include(ExternalProject)
+        ExternalProject_Add(Build_TBB
+        PREFIX ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
+        SOURCE_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
+        TMP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/tmp
+        STAMP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/stamp
+        LOG_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/log
+        BINARY_DIR ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build
+        INSTALL_DIR ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/install
+        CMAKE_ARGS -DTBB_TEST=OFF -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -DBUILD_SHARED_LIBS=OFF -DTBBMALLOC_BUILD=OFF -DTBBMALLOC_PROXY_BUILD=OFF -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES_VALUE}
+        BUILD_BYPRODUCTS ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build/lib/libtbb.a
+        )
+    endif()
 
 
     set(TBB_DIR "${PROJECT_SOURCE_DIR}build/3rdparty/oneTBB/build/lib/cmake/TBB/") #Setting the module paths to the <package-name>config.cmake files for each lib
