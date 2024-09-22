@@ -1,6 +1,6 @@
 {
     "cmake.configureSettings": {
-        "VCPKG_TARGET_TRIPLET": "x64-osx",
+        "VCPKG_TARGET_TRIPLET": "arm64-osx", // Caution: Change this to your target triplet
         "CMAKE_TOOLCHAIN_FILE": "3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake"
     },
     "cmake.cmakePath": "/opt/homebrew/bin/cmake" // Caution: Change this to your cmake path
