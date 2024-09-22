@@ -150,16 +150,20 @@ elseif(MSVC OR WIN32)
 
     include(ExternalProject)
 
-    ExternalProject_Add(Build_TBB
-    PREFIX ${PROJECT_SOURCE_DIR}
-    SOURCE_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
-    TMP_DIR "3rdparty/oneTBB/"
-    STAMP_DIR "3rdparty/oneTBB/"
-    LOG_DIR "3rdparty/oneTBB/"
-    BINARY_DIR "3rdparty/oneTBB/"
-    INSTALL_DIR "3rdparty/oneTBB/"
-    CMAKE_ARGS -DTBB_TEST=OFF -DCMAKE_INSTALL_PREFIX=build -DBUILD_SHARED_LIBS=OFF -DTBBMALLOC_BUILD=OFF -DTBBMALLOC_PROXY_BUILD=OFF
-    )
+    if(NOT TBB_ALREADY_BUILT)
+        message(STATUS "--------------------- TBB automatic mode ---------------------")
+        include(ExternalProject)
+        ExternalProject_Add(Build_TBB
+        PREFIX ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
+        SOURCE_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB
+        TMP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/tmp
+        STAMP_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/stamp
+        LOG_DIR ${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/log
+        BINARY_DIR ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/build
+        INSTALL_DIR ${PROJECT_SOURCE_DIR}/build/3rdparty/oneTBB/install
+        CMAKE_ARGS -DTBB_TEST=OFF -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -DBUILD_SHARED_LIBS=OFF -DTBBMALLOC_BUILD=OFF -DTBBMALLOC_PROXY_BUILD=OFF
+        )
+    endif()
 
     set(TBB_DIR "${PROJECT_SOURCE_DIR}build/3rdparty/oneTBB/build/lib/cmake/TBB/") #Setting the module paths to the <package-name>config.cmake files for each lib
     set(TBB_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/3rdparty/oneTBB/include")
